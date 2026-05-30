@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sync Upstream"
+  short_description: "Sync Wei-Shaw upstream and preview conflicts"
+  default_prompt: "Use $sync-upstream to sync Wei-Shaw/sub2api into my fork, update local main, and check whether my current branch will conflict."
