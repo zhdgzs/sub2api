@@ -560,6 +560,7 @@ export interface SystemSettings {
   rewrite_message_cache_control: boolean;
   antigravity_user_agent_version: string;
   openai_codex_user_agent: string;
+  openai_allow_claude_code_codex_plugin: boolean;
   web_search_emulation_enabled?: boolean;
 
   // Payment configuration
@@ -611,6 +612,9 @@ export interface SystemSettings {
 
   // OpenAI fast/flex policy
   openai_fast_policy_settings?: OpenAIFastPolicySettings;
+
+  // Allow user view error requests
+  allow_user_view_error_requests: boolean;
 }
 
 export interface UpdateSettingsRequest {
@@ -792,6 +796,7 @@ export interface UpdateSettingsRequest {
   rewrite_message_cache_control?: boolean;
   antigravity_user_agent_version?: string;
   openai_codex_user_agent?: string;
+  openai_allow_claude_code_codex_plugin?: boolean;
   // Payment configuration
   payment_enabled?: boolean;
   risk_control_enabled?: boolean;
@@ -840,6 +845,8 @@ export interface UpdateSettingsRequest {
 
   // OpenAI fast/flex policy
   openai_fast_policy_settings?: OpenAIFastPolicySettings;
+
+  allow_user_view_error_requests?: boolean;
 }
 
 /**
