@@ -20,8 +20,8 @@ User value:
 
 ## Requirements
 
-- Implementation is limited to frontend changes for this task.
 - Add an account-list filter for OpenAI `credentials.plan_type` without changing the meaning of the existing auth-type filter.
+- The account-list filter must be implemented across the frontend query parameters and backend list query, because the admin account list is server-paginated.
 - The initial plan-type filter scope is OpenAI only; Gemini and Antigravity tier values are not part of this change.
 - The plan-type filter options are `free`, `plus`, `team`, and `pro`.
 - The `pro` option must match both `plan_type = pro` and the existing displayed-as-Pro alias `plan_type = chatgptpro`.
@@ -30,7 +30,7 @@ User value:
 - Existing accounts must not be migrated or bulk-updated by this change.
 - Existing auth-type filtering must keep working unchanged.
 - Backend create defaults and non-UI account creation flows must remain unchanged.
-- Backend list filtering implementation is out of scope for this frontend-only pass.
+- Backend filtering must read the `plan_type` query value, validate supported values, pass it through the handler/service/repository layers, and apply it against `credentials.plan_type`.
 
 ## Acceptance Criteria
 
@@ -54,7 +54,6 @@ User value:
 - Changing non-UI account creation flows such as import, CRS sync, Codex import, or OAuth callback creation.
 - Adding database columns unless planning later determines JSON filtering is insufficient.
 - Changing account scheduling semantics beyond the default values used for new accounts.
-- Changing backend account list query behavior.
 
 ## Open Questions
 

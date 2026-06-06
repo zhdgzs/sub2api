@@ -205,6 +205,7 @@ func TestBulkUpdateAcceptsFilterTargetRequest(t *testing.T) {
 		"filters": map[string]any{
 			"platform":     "openai",
 			"type":         "oauth",
+			"plan_type":    "pro",
 			"status":       "active",
 			"group":        "12",
 			"privacy_mode": "blocked",
@@ -221,4 +222,29 @@ func TestBulkUpdateAcceptsFilterTargetRequest(t *testing.T) {
 	var resp map[string]any
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
 	require.Equal(t, float64(0), resp["code"])
+	require.NotNil(t, adminSvc.lastBulkUpdateInput)
+	require.NotNil(t, adminSvc.lastBulkUpdateInput.Filters)
+	require.Equal(t, "pro", adminSvc.lastBulkUpdateInput.Filters.PlanType)
+}
+
+func TestBulkUpdateRejectsInvalidPlanTypeFilter(t *testing.T) {
+	adminSvc := newStubAdminService()
+	router := setupAccountMixedChannelRouter(adminSvc)
+
+	body, _ := json.Marshal(map[string]any{
+		"filters": map[string]any{
+			"plan_type": "enterprise",
+		},
+		"schedulable": true,
+	})
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/admin/accounts/bulk-update", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(rec, req)
+
+	require.Equal(t, http.StatusBadRequest, rec.Code)
+
+	var resp map[string]any
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+	require.Equal(t, "INVALID_PLAN_TYPE_FILTER", resp["reason"])
 }

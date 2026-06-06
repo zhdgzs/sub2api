@@ -462,10 +462,10 @@ func (r *accountRepository) Delete(ctx context.Context, id int64) error {
 }
 
 func (r *accountRepository) List(ctx context.Context, params pagination.PaginationParams) ([]service.Account, *pagination.PaginationResult, error) {
-	return r.ListWithFilters(ctx, params, "", "", "", "", 0, "")
+	return r.ListWithFilters(ctx, params, "", "", "", "", "", 0, "")
 }
 
-func (r *accountRepository) ListWithFilters(ctx context.Context, params pagination.PaginationParams, platform, accountType, status, search string, groupID int64, privacyMode string) ([]service.Account, *pagination.PaginationResult, error) {
+func (r *accountRepository) ListWithFilters(ctx context.Context, params pagination.PaginationParams, platform, accountType, planType, status, search string, groupID int64, privacyMode string) ([]service.Account, *pagination.PaginationResult, error) {
 	q := r.client.Account.Query()
 
 	if platform != "" {
@@ -473,6 +473,21 @@ func (r *accountRepository) ListWithFilters(ctx context.Context, params paginati
 	}
 	if accountType != "" {
 		q = q.Where(dbaccount.TypeEQ(accountType))
+	}
+	if planType != "" {
+		normalizedPlanType := strings.ToLower(strings.TrimSpace(planType))
+		q = q.Where(dbaccount.PlatformEQ(service.PlatformOpenAI))
+		q = q.Where(dbpredicate.Account(func(s *entsql.Selector) {
+			path := sqljson.Path("plan_type")
+			if normalizedPlanType == "pro" {
+				s.Where(entsql.Or(
+					sqljson.ValueEQ(dbaccount.FieldCredentials, "pro", path),
+					sqljson.ValueEQ(dbaccount.FieldCredentials, "chatgptpro", path),
+				))
+				return
+			}
+			s.Where(sqljson.ValueEQ(dbaccount.FieldCredentials, normalizedPlanType, path))
+		}))
 	}
 	if status != "" {
 		switch status {

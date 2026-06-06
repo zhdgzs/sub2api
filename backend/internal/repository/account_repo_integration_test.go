@@ -242,6 +242,7 @@ func (s *AccountRepoSuite) TestListWithFilters() {
 		setup       func(client *dbent.Client)
 		platform    string
 		accType     string
+		planType    string
 		status      string
 		search      string
 		groupID     int64
@@ -271,6 +272,67 @@ func (s *AccountRepoSuite) TestListWithFilters() {
 			wantCount: 1,
 			validate: func(accounts []service.Account) {
 				s.Require().Equal(service.AccountTypeAPIKey, accounts[0].Type)
+			},
+		},
+		{
+			name: "filter_by_plan_type_free_openai_only",
+			setup: func(client *dbent.Client) {
+				mustCreateAccount(s.T(), client, &service.Account{
+					Name:        "openai-free",
+					Platform:    service.PlatformOpenAI,
+					Credentials: map[string]any{"plan_type": "free"},
+				})
+				mustCreateAccount(s.T(), client, &service.Account{
+					Name:        "openai-plus",
+					Platform:    service.PlatformOpenAI,
+					Credentials: map[string]any{"plan_type": "plus"},
+				})
+				mustCreateAccount(s.T(), client, &service.Account{
+					Name:        "anthropic-free",
+					Platform:    service.PlatformAnthropic,
+					Credentials: map[string]any{"plan_type": "free"},
+				})
+			},
+			planType:  "free",
+			wantCount: 1,
+			validate: func(accounts []service.Account) {
+				s.Require().Equal(service.PlatformOpenAI, accounts[0].Platform)
+				s.Require().Equal("openai-free", accounts[0].Name)
+			},
+		},
+		{
+			name: "filter_by_plan_type_pro_aliases_openai_only",
+			setup: func(client *dbent.Client) {
+				mustCreateAccount(s.T(), client, &service.Account{
+					Name:        "openai-pro",
+					Platform:    service.PlatformOpenAI,
+					Credentials: map[string]any{"plan_type": "pro"},
+				})
+				mustCreateAccount(s.T(), client, &service.Account{
+					Name:        "openai-chatgptpro",
+					Platform:    service.PlatformOpenAI,
+					Credentials: map[string]any{"plan_type": "chatgptpro"},
+				})
+				mustCreateAccount(s.T(), client, &service.Account{
+					Name:        "openai-team",
+					Platform:    service.PlatformOpenAI,
+					Credentials: map[string]any{"plan_type": "team"},
+				})
+				mustCreateAccount(s.T(), client, &service.Account{
+					Name:        "anthropic-pro",
+					Platform:    service.PlatformAnthropic,
+					Credentials: map[string]any{"plan_type": "pro"},
+				})
+			},
+			planType:  "pro",
+			wantCount: 2,
+			validate: func(accounts []service.Account) {
+				names := make([]string, 0, len(accounts))
+				for i := range accounts {
+					s.Require().Equal(service.PlatformOpenAI, accounts[i].Platform)
+					names = append(names, accounts[i].Name)
+				}
+				s.ElementsMatch([]string{"openai-pro", "openai-chatgptpro"}, names)
 			},
 		},
 		{
@@ -445,7 +507,7 @@ func (s *AccountRepoSuite) TestListWithFilters() {
 
 			tt.setup(client)
 
-			accounts, _, err := repo.ListWithFilters(ctx, pagination.PaginationParams{Page: 1, PageSize: 10}, tt.platform, tt.accType, tt.status, tt.search, tt.groupID, tt.privacyMode)
+			accounts, _, err := repo.ListWithFilters(ctx, pagination.PaginationParams{Page: 1, PageSize: 10}, tt.platform, tt.accType, tt.planType, tt.status, tt.search, tt.groupID, tt.privacyMode)
 			s.Require().NoError(err)
 			s.Require().Len(accounts, tt.wantCount)
 			if tt.validate != nil {
@@ -512,7 +574,7 @@ func (s *AccountRepoSuite) TestPreload_And_VirtualFields() {
 	s.Require().Len(got.Groups, 1, "expected Groups to be populated")
 	s.Require().Equal(group.ID, got.Groups[0].ID)
 
-	accounts, page, err := s.repo.ListWithFilters(s.ctx, pagination.PaginationParams{Page: 1, PageSize: 10}, "", "", "", "acc", 0, "")
+	accounts, page, err := s.repo.ListWithFilters(s.ctx, pagination.PaginationParams{Page: 1, PageSize: 10}, "", "", "", "", "acc", 0, "")
 	s.Require().NoError(err, "ListWithFilters")
 	s.Require().Equal(int64(1), page.Total)
 	s.Require().Len(accounts, 1)

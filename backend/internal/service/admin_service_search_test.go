@@ -17,6 +17,7 @@ type accountRepoStubForAdminList struct {
 	listWithFiltersParams   pagination.PaginationParams
 	listWithFiltersPlatform string
 	listWithFiltersType     string
+	listWithFiltersPlanType string
 	listWithFiltersStatus   string
 	listWithFiltersSearch   string
 	listWithFiltersPrivacy  string
@@ -25,11 +26,12 @@ type accountRepoStubForAdminList struct {
 	listWithFiltersErr      error
 }
 
-func (s *accountRepoStubForAdminList) ListWithFilters(_ context.Context, params pagination.PaginationParams, platform, accountType, status, search string, groupID int64, privacyMode string) ([]Account, *pagination.PaginationResult, error) {
+func (s *accountRepoStubForAdminList) ListWithFilters(_ context.Context, params pagination.PaginationParams, platform, accountType, planType, status, search string, groupID int64, privacyMode string) ([]Account, *pagination.PaginationResult, error) {
 	s.listWithFiltersCalls++
 	s.listWithFiltersParams = params
 	s.listWithFiltersPlatform = platform
 	s.listWithFiltersType = accountType
+	s.listWithFiltersPlanType = planType
 	s.listWithFiltersStatus = status
 	s.listWithFiltersSearch = search
 	s.listWithFiltersPrivacy = privacyMode
@@ -170,7 +172,7 @@ func TestAdminService_ListAccounts_WithSearch(t *testing.T) {
 		}
 		svc := &adminServiceImpl{accountRepo: repo}
 
-		accounts, total, err := svc.ListAccounts(context.Background(), 1, 20, PlatformGemini, AccountTypeOAuth, StatusActive, "acc", 0, "", "name", "ASC")
+		accounts, total, err := svc.ListAccounts(context.Background(), 1, 20, PlatformGemini, AccountTypeOAuth, "", StatusActive, "acc", 0, "", "name", "ASC")
 		require.NoError(t, err)
 		require.Equal(t, int64(10), total)
 		require.Equal(t, []Account{{ID: 1, Name: "acc"}}, accounts)
@@ -184,6 +186,24 @@ func TestAdminService_ListAccounts_WithSearch(t *testing.T) {
 	})
 }
 
+func TestAdminService_ListAccounts_WithPlanType(t *testing.T) {
+	t.Run("plan_type 参数正常传递到 repository 层", func(t *testing.T) {
+		repo := &accountRepoStubForAdminList{
+			listWithFiltersAccounts: []Account{{ID: 3, Name: "acc3"}},
+			listWithFiltersResult:   &pagination.PaginationResult{Total: 1},
+		}
+		svc := &adminServiceImpl{accountRepo: repo}
+
+		accounts, total, err := svc.ListAccounts(context.Background(), 1, 20, PlatformOpenAI, AccountTypeOAuth, "pro", StatusActive, "acc3", 0, "", "", "")
+		require.NoError(t, err)
+		require.Equal(t, int64(1), total)
+		require.Equal(t, []Account{{ID: 3, Name: "acc3"}}, accounts)
+		require.Equal(t, "pro", repo.listWithFiltersPlanType)
+		require.Equal(t, PlatformOpenAI, repo.listWithFiltersPlatform)
+		require.Equal(t, AccountTypeOAuth, repo.listWithFiltersType)
+	})
+}
+
 func TestAdminService_ListAccounts_WithPrivacyMode(t *testing.T) {
 	t.Run("privacy_mode 参数正常传递到 repository 层", func(t *testing.T) {
 		repo := &accountRepoStubForAdminList{
@@ -192,7 +212,7 @@ func TestAdminService_ListAccounts_WithPrivacyMode(t *testing.T) {
 		}
 		svc := &adminServiceImpl{accountRepo: repo}
 
-		accounts, total, err := svc.ListAccounts(context.Background(), 1, 20, PlatformOpenAI, AccountTypeOAuth, StatusActive, "acc2", 0, PrivacyModeCFBlocked, "", "")
+		accounts, total, err := svc.ListAccounts(context.Background(), 1, 20, PlatformOpenAI, AccountTypeOAuth, "", StatusActive, "acc2", 0, PrivacyModeCFBlocked, "", "")
 		require.NoError(t, err)
 		require.Equal(t, int64(1), total)
 		require.Equal(t, []Account{{ID: 2, Name: "acc2"}}, accounts)

@@ -50,3 +50,30 @@ func TestAccountHandlerListIncludesCreatedAt(t *testing.T) {
 	_, offset := parsed.Zone()
 	require.Equal(t, 0, offset)
 }
+
+func TestAccountHandlerListPassesPlanTypeFilter(t *testing.T) {
+	router, adminSvc := setupAccountListRouter()
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/admin/accounts?page=1&page_size=20&plan_type=pro", nil)
+	router.ServeHTTP(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, "pro", adminSvc.lastListAccounts.planType)
+}
+
+func TestAccountHandlerListRejectsInvalidPlanTypeFilter(t *testing.T) {
+	router, _ := setupAccountListRouter()
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/admin/accounts?plan_type=enterprise", nil)
+	router.ServeHTTP(rec, req)
+
+	require.Equal(t, http.StatusBadRequest, rec.Code)
+
+	var payload struct {
+		Reason string `json:"reason"`
+	}
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &payload))
+	require.Equal(t, "INVALID_PLAN_TYPE_FILTER", payload.Reason)
+}

@@ -322,6 +322,7 @@ describe('BulkEditAccountModal', () => {
         filters: {
           platform: 'openai',
           type: 'oauth',
+          plan_type: 'pro',
           status: 'active',
           group: '12',
           search: 'bulk-target',
@@ -342,6 +343,7 @@ describe('BulkEditAccountModal', () => {
       filters: {
         platform: 'openai',
         type: 'oauth',
+        plan_type: 'pro',
         status: 'active',
         group: '12',
         search: 'bulk-target',

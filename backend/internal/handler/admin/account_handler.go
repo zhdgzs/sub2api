@@ -153,6 +153,7 @@ type BulkUpdateAccountsRequest struct {
 type BulkUpdateAccountFilters struct {
 	Platform    string `json:"platform"`
 	Type        string `json:"type"`
+	PlanType    string `json:"plan_type"`
 	Status      string `json:"status"`
 	Group       string `json:"group"`
 	Search      string `json:"search"`
@@ -177,6 +178,18 @@ type AccountWithConcurrency struct {
 }
 
 const accountListGroupUngroupedQueryValue = "ungrouped"
+
+func normalizeOpenAIPlanTypeFilter(raw string) (string, error) {
+	planType := strings.ToLower(strings.TrimSpace(raw))
+	switch planType {
+	case "":
+		return "", nil
+	case "free", "plus", "team", "pro":
+		return planType, nil
+	default:
+		return "", infraerrors.BadRequest("INVALID_PLAN_TYPE_FILTER", "invalid plan_type filter")
+	}
+}
 
 func (h *AccountHandler) buildAccountResponseWithRuntime(ctx context.Context, account *service.Account) AccountWithConcurrency {
 	item := AccountWithConcurrency{
@@ -228,6 +241,11 @@ func (h *AccountHandler) List(c *gin.Context) {
 	page, pageSize := response.ParsePagination(c)
 	platform := c.Query("platform")
 	accountType := c.Query("type")
+	planType, planTypeErr := normalizeOpenAIPlanTypeFilter(c.Query("plan_type"))
+	if planTypeErr != nil {
+		response.ErrorFrom(c, planTypeErr)
+		return
+	}
 	status := c.Query("status")
 	search := c.Query("search")
 	privacyMode := strings.TrimSpace(c.Query("privacy_mode"))
@@ -258,7 +276,7 @@ func (h *AccountHandler) List(c *gin.Context) {
 		}
 	}
 
-	accounts, total, err := h.adminService.ListAccounts(c.Request.Context(), page, pageSize, platform, accountType, status, search, groupID, privacyMode, sortBy, sortOrder)
+	accounts, total, err := h.adminService.ListAccounts(c.Request.Context(), page, pageSize, platform, accountType, planType, status, search, groupID, privacyMode, sortBy, sortOrder)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
@@ -380,7 +398,7 @@ func (h *AccountHandler) List(c *gin.Context) {
 		result[i] = item
 	}
 
-	etag := buildAccountsListETag(result, total, page, pageSize, platform, accountType, status, search, lite)
+	etag := buildAccountsListETag(result, total, page, pageSize, platform, accountType, planType, status, search, lite)
 	if etag != "" {
 		c.Header("ETag", etag)
 		c.Header("Vary", "If-None-Match")
@@ -397,7 +415,7 @@ func buildAccountsListETag(
 	items []AccountWithConcurrency,
 	total int64,
 	page, pageSize int,
-	platform, accountType, status, search string,
+	platform, accountType, planType, status, search string,
 	lite bool,
 ) string {
 	payload := struct {
@@ -406,6 +424,7 @@ func buildAccountsListETag(
 		PageSize    int                      `json:"page_size"`
 		Platform    string                   `json:"platform"`
 		AccountType string                   `json:"type"`
+		PlanType    string                   `json:"plan_type"`
 		Status      string                   `json:"status"`
 		Search      string                   `json:"search"`
 		Lite        bool                     `json:"lite"`
@@ -416,6 +435,7 @@ func buildAccountsListETag(
 		PageSize:    pageSize,
 		Platform:    platform,
 		AccountType: accountType,
+		PlanType:    planType,
 		Status:      status,
 		Search:      search,
 		Lite:        lite,
@@ -1517,6 +1537,14 @@ func (h *AccountHandler) BulkUpdate(c *gin.Context) {
 		response.BadRequest(c, "account_ids or filters is required")
 		return
 	}
+	if req.Filters != nil {
+		planType, err := normalizeOpenAIPlanTypeFilter(req.Filters.PlanType)
+		if err != nil {
+			response.ErrorFrom(c, err)
+			return
+		}
+		req.Filters.PlanType = planType
+	}
 	// base_rpm 输入校验：负值归零，超过 10000 截断
 	sanitizeExtraBaseRPM(req.Extra)
 
@@ -1585,6 +1613,7 @@ func toServiceBulkUpdateAccountFilters(filters *BulkUpdateAccountFilters) *servi
 	return &service.BulkUpdateAccountFilters{
 		Platform:    filters.Platform,
 		Type:        filters.Type,
+		PlanType:    filters.PlanType,
 		Status:      filters.Status,
 		Group:       filters.Group,
 		Search:      filters.Search,
@@ -2294,7 +2323,7 @@ func (h *AccountHandler) BatchRefreshTier(c *gin.Context) {
 	accounts := make([]*service.Account, 0)
 
 	if len(req.AccountIDs) == 0 {
-		allAccounts, _, err := h.adminService.ListAccounts(ctx, 1, 10000, "gemini", "oauth", "", "", 0, "", "name", "asc")
+		allAccounts, _, err := h.adminService.ListAccounts(ctx, 1, 10000, "gemini", "oauth", "", "", "", 0, "", "name", "asc")
 		if err != nil {
 			response.ErrorFrom(c, err)
 			return

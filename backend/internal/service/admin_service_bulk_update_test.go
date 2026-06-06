@@ -35,6 +35,7 @@ type accountRepoStubForBulkUpdate struct {
 	lastListFilters  struct {
 		platform    string
 		accountType string
+		planType    string
 		status      string
 		search      string
 		groupID     int64
@@ -88,11 +89,12 @@ func (s *accountRepoStubForBulkUpdate) ListByGroup(_ context.Context, groupID in
 	return nil, nil
 }
 
-func (s *accountRepoStubForBulkUpdate) ListWithFilters(_ context.Context, params pagination.PaginationParams, platform, accountType, status, search string, groupID int64, privacyMode string) ([]Account, *pagination.PaginationResult, error) {
+func (s *accountRepoStubForBulkUpdate) ListWithFilters(_ context.Context, params pagination.PaginationParams, platform, accountType, planType, status, search string, groupID int64, privacyMode string) ([]Account, *pagination.PaginationResult, error) {
 	s.listCalled = true
 	s.lastListParams = params
 	s.lastListFilters.platform = platform
 	s.lastListFilters.accountType = accountType
+	s.lastListFilters.planType = planType
 	s.lastListFilters.status = status
 	s.lastListFilters.search = search
 	s.lastListFilters.groupID = groupID
@@ -226,6 +228,7 @@ func TestAdminServiceBulkUpdateAccounts_ResolvesIDsFromFilters(t *testing.T) {
 	filtersValue := reflect.New(filtersField.Type().Elem())
 	filtersValue.Elem().FieldByName("Platform").SetString(PlatformOpenAI)
 	filtersValue.Elem().FieldByName("Type").SetString(AccountTypeOAuth)
+	filtersValue.Elem().FieldByName("PlanType").SetString("pro")
 	filtersValue.Elem().FieldByName("Status").SetString(StatusActive)
 	filtersValue.Elem().FieldByName("Group").SetString("12")
 	filtersValue.Elem().FieldByName("PrivacyMode").SetString(PrivacyModeCFBlocked)
@@ -237,6 +240,7 @@ func TestAdminServiceBulkUpdateAccounts_ResolvesIDsFromFilters(t *testing.T) {
 	require.True(t, repo.listCalled, "expected filter-target bulk update to resolve matching IDs via account list filters")
 	require.Equal(t, PlatformOpenAI, repo.lastListFilters.platform)
 	require.Equal(t, AccountTypeOAuth, repo.lastListFilters.accountType)
+	require.Equal(t, "pro", repo.lastListFilters.planType)
 	require.Equal(t, StatusActive, repo.lastListFilters.status)
 	require.Equal(t, "bulk-target", repo.lastListFilters.search)
 	require.Equal(t, int64(12), repo.lastListFilters.groupID)
