@@ -35,6 +35,7 @@ export async function list(
   filters?: {
     platform?: string
     type?: string
+    plan_type?: string
     status?: string
     group?: string
     search?: string
@@ -70,6 +71,7 @@ export async function listWithEtag(
   filters?: {
     platform?: string
     type?: string
+    plan_type?: string
     status?: string
     group?: string
     search?: string
