@@ -1,13 +1,20 @@
 ---
 name: sync-upstream
-description: "同步 Wei-Shaw/sub2api 上游更新到当前 fork 的 origin/main，随后用 git pull 更新本地 main；当调用时所在分支不是 main 时，只做 main 合入当前分支的冲突预检并输出简短更新摘要。用于用户要求同步上游、更新 fork、pull main、检查 custom 或 feature 分支是否会与新 main 冲突的场景。"
+description: "同步 Wei-Shaw/sub2api 上游 main 到当前 fork 的 origin/main，随后更新本地 main；不合并 custom、不创建 sync/*，当调用时所在分支不是 main 时只做 main 合入当前分支的冲突预检并输出简短更新摘要。用于用户要求同步上游、更新 fork、pull main，或检查当前分支是否会与新 main 冲突的场景。"
 ---
 
 # Sync Upstream
 
 ## Overview
 
-Use this skill to keep this fork aligned with `Wei-Shaw/sub2api` while preserving the project rule that `main` is only an upstream mirror and custom work stays outside `main`.
+Use this skill to keep this fork's `main` aligned with `Wei-Shaw/sub2api` while preserving the project rule that `main` is only an upstream mirror and custom work stays outside `main`.
+
+This skill only performs the upstream mirror sync:
+
+- `upstream/main` -> `origin/main`
+- `origin/main` -> local `main`
+
+It does not merge `main` into `custom`, does not create `sync/*` branches, and does not prepare releases. Merging `main` into `custom` is a separate workflow.
 
 ## Safety Gate
 
@@ -18,13 +25,13 @@ Use this confirmation format:
 ```text
 ⚠️ 危险操作检测！
 操作类型：同步 Wei-Shaw/sub2api 到 origin/main，并用 git pull 更新本地 main
-影响范围：会 fetch upstream/origin，推送 origin/main，更新本地 main；不会合并当前 custom/feature 分支
+影响范围：会 fetch upstream/origin，推送 origin/main，更新本地 main；不会合并 custom，不会创建 sync/*，不会修改当前非 main 分支
 风险评估：如果远端配置错误或 main 偏离上游，可能导致推送失败；未提交工作区会中止以避免覆盖改动
 
 请确认是否继续？[需要明确的"是"、"确认"、"继续"]
 ```
 
-Do not run `git commit`, `git reset --hard`, force-push, or merge the current branch as part of this skill.
+Do not run `git commit`, `git reset --hard`, force-push, create/delete branches, create/delete tags, or merge `main` into `custom` as part of this skill.
 
 ## Workflow
 
@@ -44,7 +51,8 @@ Do not run `git commit`, `git reset --hard`, force-push, or merge the current br
 4. Report the script result in Chinese, including:
    - whether `origin/main` and local `main` changed;
    - the short upstream update summary;
-   - if the original branch was not `main`, whether a virtual merge of updated `main` into that branch would conflict.
+   - if the original branch was not `main`, whether a virtual merge of updated `main` into that branch would conflict;
+   - remind that updating `custom` is a separate explicit step if the user asks about Docker/release readiness.
 
 ## Script Contract
 
