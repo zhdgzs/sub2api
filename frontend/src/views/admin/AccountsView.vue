@@ -443,6 +443,7 @@ type AccountBulkEditTarget =
       filters: {
         platform?: string
         type?: string
+        plan_type?: string
         status?: string
         group?: string
         search?: string
@@ -735,6 +736,7 @@ const {
   initialParams: {
     platform: '',
     type: '',
+    plan_type: '',
     status: '',
     privacy_mode: '',
     group: '',
@@ -939,6 +941,7 @@ const refreshAccountsIncrementally = async () => {
       toRaw(params) as {
         platform?: string
         type?: string
+        plan_type?: string
         status?: string
         privacy_mode?: string
         group?: string
@@ -1355,6 +1358,7 @@ const buildBulkEditFilterSnapshot = () => {
   return {
     platform: typeof rawParams.platform === 'string' ? rawParams.platform : '',
     type: typeof rawParams.type === 'string' ? rawParams.type : '',
+    plan_type: typeof rawParams.plan_type === 'string' ? rawParams.plan_type : '',
     status: typeof rawParams.status === 'string' ? rawParams.status : '',
     group: typeof rawParams.group === 'string' ? rawParams.group : '',
     search: typeof rawParams.search === 'string' ? rawParams.search : '',
@@ -1406,6 +1410,7 @@ const ACCOUNT_PRIVACY_MODE_UNSET_QUERY_VALUE = '__unset__'
 const buildAccountQueryFilters = () => ({
   platform: params.platform || '',
   type: params.type || '',
+  plan_type: params.plan_type || '',
   status: params.status || '',
   group: params.group || '',
   privacy_mode: params.privacy_mode || '',
@@ -1413,10 +1418,22 @@ const buildAccountQueryFilters = () => ({
   sort_by: sortState.sort_by,
   sort_order: sortState.sort_order
 })
+
+const accountMatchesPlanType = (account: Account, planType: string) => {
+  const normalizedPlanType = planType.trim().toLowerCase()
+  if (!normalizedPlanType) return true
+  if (account.platform !== 'openai') return false
+  const accountPlanType = String(account.credentials?.plan_type || '').trim().toLowerCase()
+  return normalizedPlanType === 'pro'
+    ? accountPlanType === 'pro' || accountPlanType === 'chatgptpro'
+    : accountPlanType === normalizedPlanType
+}
+
 const accountMatchesCurrentFilters = (account: Account) => {
   const filters = buildAccountQueryFilters()
   if (filters.platform && account.platform !== filters.platform) return false
   if (filters.type && account.type !== filters.type) return false
+  if (!accountMatchesPlanType(account, filters.plan_type)) return false
   if (filters.status) {
     const now = Date.now()
     const rateLimitResetAt = account.rate_limit_reset_at ? new Date(account.rate_limit_reset_at).getTime() : Number.NaN
