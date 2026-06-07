@@ -148,7 +148,7 @@
                 </button>
               </div>
 
-              <!-- Priority 2: Update success - need restart -->
+              <!-- Priority 2: Update success - restart required -->
               <div v-else-if="updateSuccess && needRestart" class="space-y-2">
                 <div
                   class="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-800/50 dark:bg-green-900/20"
@@ -175,55 +175,6 @@
                     </p>
                   </div>
                 </div>
-
-                <!-- Restart button with countdown -->
-                <button
-                  @click="handleRestart"
-                  :disabled="restarting"
-                  class="flex w-full items-center justify-center gap-2 rounded-lg bg-green-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-600 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <svg
-                    v-if="restarting"
-                    class="h-4 w-4 animate-spin"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      class="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      stroke-width="4"
-                    ></circle>
-                    <path
-                      class="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  <svg
-                    v-else
-                    class="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                    />
-                  </svg>
-                  <template v-if="restarting">
-                    <span>{{ t('version.restarting') }}</span>
-                    <span v-if="restartCountdown > 0" class="tabular-nums"
-                      >({{ restartCountdown }}s)</span
-                    >
-                  </template>
-                  <span v-else>{{ t('version.restartNow') }}</span>
-                </button>
               </div>
 
               <!-- Priority 3: Update available for source build - show git pull hint -->
@@ -384,7 +335,7 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore, useAppStore } from '@/stores'
-import { performUpdate, restartService } from '@/api/admin/system'
+import { performUpdate } from '@/api/admin/system'
 import Icon from '@/components/icons/Icon.vue'
 
 const { t } = useI18n()
@@ -411,11 +362,9 @@ const buildType = computed(() => appStore.buildType)
 
 // Update process states (local to this component)
 const updating = ref(false)
-const restarting = ref(false)
 const needRestart = ref(false)
 const updateError = ref('')
 const updateSuccess = ref(false)
-const restartCountdown = ref(0)
 
 // Only show update check for release builds (binary/docker deployment)
 const isReleaseBuild = computed(() => buildType.value === 'release')
@@ -458,59 +407,6 @@ async function handleUpdate() {
   } finally {
     updating.value = false
   }
-}
-
-async function handleRestart() {
-  if (restarting.value) return
-
-  restarting.value = true
-  restartCountdown.value = 8
-
-  try {
-    await restartService()
-    // Service will restart, page will reload automatically or show disconnected
-  } catch (error) {
-    // Expected - connection will be lost during restart
-    console.log('Service restarting...')
-  }
-
-  // Start countdown
-  const countdownInterval = setInterval(() => {
-    restartCountdown.value--
-    if (restartCountdown.value <= 0) {
-      clearInterval(countdownInterval)
-      // Try to check if service is back before reload
-      checkServiceAndReload()
-    }
-  }, 1000)
-}
-
-async function checkServiceAndReload() {
-  const maxRetries = 5
-  const retryDelay = 1000
-
-  for (let i = 0; i < maxRetries; i++) {
-    try {
-      const response = await fetch('/health', {
-        method: 'GET',
-        cache: 'no-cache'
-      })
-      if (response.ok) {
-        // Service is back, reload page
-        window.location.reload()
-        return
-      }
-    } catch {
-      // Service not ready yet
-    }
-
-    if (i < maxRetries - 1) {
-      await new Promise((resolve) => setTimeout(resolve, retryDelay))
-    }
-  }
-
-  // After retries, reload anyway
-  window.location.reload()
 }
 
 function handleClickOutside(event: MouseEvent) {

@@ -6704,8 +6704,6 @@ export default {
     updateComplete: '更新完成',
     updateFailed: '更新失败',
     restartRequired: '请重启服务以应用更新',
-    restartNow: '立即重启',
-    restarting: '正在重启...',
     retry: '重试'
   },
 

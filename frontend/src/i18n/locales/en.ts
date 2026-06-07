@@ -6549,8 +6549,6 @@ export default {
     updateComplete: 'Update Complete',
     updateFailed: 'Update Failed',
     restartRequired: 'Please restart the service to apply the update',
-    restartNow: 'Restart Now',
-    restarting: 'Restarting...',
     retry: 'Retry'
   },
 
