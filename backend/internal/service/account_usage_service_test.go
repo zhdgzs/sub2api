@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 )
@@ -11,9 +12,15 @@ type accountUsageCodexProbeRepo struct {
 	stubOpenAIAccountRepo
 	updateExtraCh chan map[string]any
 	rateLimitCh   chan time.Time
+	updatedExtra  map[string]any
+	clearCalls    int
 }
 
 func (r *accountUsageCodexProbeRepo) UpdateExtra(_ context.Context, _ int64, updates map[string]any) error {
+	r.updatedExtra = make(map[string]any, len(updates))
+	for k, v := range updates {
+		r.updatedExtra[k] = v
+	}
 	if r.updateExtraCh != nil {
 		copied := make(map[string]any, len(updates))
 		for k, v := range updates {
@@ -21,6 +28,11 @@ func (r *accountUsageCodexProbeRepo) UpdateExtra(_ context.Context, _ int64, upd
 		}
 		r.updateExtraCh <- copied
 	}
+	return nil
+}
+
+func (r *accountUsageCodexProbeRepo) ClearCodexUsageSnapshot(_ context.Context, _ int64) error {
+	r.clearCalls++
 	return nil
 }
 
@@ -63,6 +75,126 @@ func TestShouldRefreshOpenAICodexSnapshot(t *testing.T) {
 		},
 	}, usage, now) {
 		t.Fatal("expected stale ws snapshot to trigger refresh")
+	}
+}
+
+func TestAccountUsageService_SyncOpenAIRefreshMetadata_UpdatesCodexSnapshot(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer access-token" {
+			t.Fatalf("Authorization = %q", r.Header.Get("Authorization"))
+		}
+		w.Header().Set("x-codex-primary-used-percent", "12")
+		w.Header().Set("x-codex-primary-reset-after-seconds", "600")
+		w.Header().Set("x-codex-primary-window-minutes", "300")
+		w.Header().Set("x-codex-secondary-used-percent", "34")
+		w.Header().Set("x-codex-secondary-reset-after-seconds", "86400")
+		w.Header().Set("x-codex-secondary-window-minutes", "10080")
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	oldURL := chatgptCodexURL
+	chatgptCodexURL = server.URL
+	t.Cleanup(func() { chatgptCodexURL = oldURL })
+
+	repo := &accountUsageCodexProbeRepo{}
+	svc := &AccountUsageService{accountRepo: repo}
+	before := &Account{ID: 1, Platform: PlatformOpenAI, Type: AccountTypeOAuth, Credentials: map[string]any{"plan_type": "free"}}
+	after := &Account{
+		ID:          1,
+		Platform:    PlatformOpenAI,
+		Type:        AccountTypeOAuth,
+		Credentials: map[string]any{"access_token": "access-token", "plan_type": "plus"},
+		Extra:       map[string]any{"privacy_mode": "training_off"},
+	}
+
+	result := svc.SyncOpenAIRefreshMetadata(context.Background(), before, after)
+
+	if result.Warning != "" {
+		t.Fatalf("Warning = %q, want empty", result.Warning)
+	}
+	if !result.QuotaUpdated {
+		t.Fatal("expected quota update")
+	}
+	if repo.clearCalls != 0 {
+		t.Fatalf("clearCalls = %d, want 0", repo.clearCalls)
+	}
+	if got := repo.updatedExtra["codex_5h_used_percent"]; got != 12.0 {
+		t.Fatalf("codex_5h_used_percent = %v, want 12", got)
+	}
+	if got := repo.updatedExtra["codex_7d_used_percent"]; got != 34.0 {
+		t.Fatalf("codex_7d_used_percent = %v, want 34", got)
+	}
+	if got := after.Extra["codex_5h_used_percent"]; got != 12.0 {
+		t.Fatalf("after extra codex_5h_used_percent = %v, want 12", got)
+	}
+}
+
+func TestAccountUsageService_SyncOpenAIRefreshMetadata_ClearsStaleSnapshotWhenPlanChangesAndProbeFails(t *testing.T) {
+	repo := &accountUsageCodexProbeRepo{}
+	svc := &AccountUsageService{accountRepo: repo}
+	before := &Account{ID: 2, Platform: PlatformOpenAI, Type: AccountTypeOAuth, Credentials: map[string]any{"plan_type": "free"}}
+	after := &Account{
+		ID:          2,
+		Platform:    PlatformOpenAI,
+		Type:        AccountTypeOAuth,
+		Credentials: map[string]any{"plan_type": "plus"},
+		Extra: map[string]any{
+			"codex_5h_used_percent":              99.0,
+			"codex_7d_reset_at":                  "2099-01-01T00:00:00Z",
+			"codex_primary_over_secondary_percent": 2.0,
+			"privacy_mode":                       "training_off",
+			"quota_daily_limit":                  10.0,
+		},
+	}
+
+	result := svc.SyncOpenAIRefreshMetadata(context.Background(), before, after)
+
+	if result.Warning == "" {
+		t.Fatal("expected warning")
+	}
+	if !result.SnapshotCleared {
+		t.Fatal("expected snapshot cleared")
+	}
+	if repo.clearCalls != 1 {
+		t.Fatalf("clearCalls = %d, want 1", repo.clearCalls)
+	}
+	if _, ok := after.Extra["codex_5h_used_percent"]; ok {
+		t.Fatalf("codex_5h_used_percent should be removed: %#v", after.Extra)
+	}
+	if _, ok := after.Extra["codex_7d_reset_at"]; ok {
+		t.Fatalf("codex_7d_reset_at should be removed: %#v", after.Extra)
+	}
+	if got := after.Extra["privacy_mode"]; got != "training_off" {
+		t.Fatalf("privacy_mode = %v, want training_off", got)
+	}
+	if got := after.Extra["quota_daily_limit"]; got != 10.0 {
+		t.Fatalf("quota_daily_limit = %v, want 10", got)
+	}
+}
+
+func TestAccountUsageService_SyncOpenAIRefreshMetadata_KeepsSnapshotForProAlias(t *testing.T) {
+	repo := &accountUsageCodexProbeRepo{}
+	svc := &AccountUsageService{accountRepo: repo}
+	before := &Account{ID: 3, Platform: PlatformOpenAI, Type: AccountTypeOAuth, Credentials: map[string]any{"plan_type": "chatgptpro"}}
+	after := &Account{
+		ID:          3,
+		Platform:    PlatformOpenAI,
+		Type:        AccountTypeOAuth,
+		Credentials: map[string]any{"plan_type": "pro"},
+		Extra:       map[string]any{"codex_5h_used_percent": 88.0},
+	}
+
+	result := svc.SyncOpenAIRefreshMetadata(context.Background(), before, after)
+
+	if result.SnapshotCleared {
+		t.Fatal("did not expect snapshot clear for pro alias")
+	}
+	if repo.clearCalls != 0 {
+		t.Fatalf("clearCalls = %d, want 0", repo.clearCalls)
+	}
+	if got := after.Extra["codex_5h_used_percent"]; got != 88.0 {
+		t.Fatalf("codex_5h_used_percent = %v, want 88", got)
 	}
 }
 

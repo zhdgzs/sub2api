@@ -16,6 +16,7 @@ import (
 type OpenAIOAuthHandler struct {
 	openaiOAuthService *service.OpenAIOAuthService
 	adminService       service.AdminService
+	accountUsageService *service.AccountUsageService
 }
 
 func oauthPlatformFromPath(c *gin.Context) string {
@@ -23,10 +24,11 @@ func oauthPlatformFromPath(c *gin.Context) string {
 }
 
 // NewOpenAIOAuthHandler creates a new OpenAI OAuth handler
-func NewOpenAIOAuthHandler(openaiOAuthService *service.OpenAIOAuthService, adminService service.AdminService) *OpenAIOAuthHandler {
+func NewOpenAIOAuthHandler(openaiOAuthService *service.OpenAIOAuthService, adminService service.AdminService, accountUsageService *service.AccountUsageService) *OpenAIOAuthHandler {
 	return &OpenAIOAuthHandler{
-		openaiOAuthService: openaiOAuthService,
-		adminService:       adminService,
+		openaiOAuthService:  openaiOAuthService,
+		adminService:        adminService,
+		accountUsageService: accountUsageService,
 	}
 }
 
@@ -192,6 +194,10 @@ func (h *OpenAIOAuthHandler) RefreshAccountToken(c *gin.Context) {
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
+	}
+
+	if h.accountUsageService != nil {
+		h.accountUsageService.SyncOpenAIRefreshMetadata(c.Request.Context(), account, updatedAccount)
 	}
 
 	response.Success(c, dto.AccountFromService(updatedAccount))

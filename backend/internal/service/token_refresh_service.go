@@ -28,6 +28,7 @@ type TokenRefreshService struct {
 	tempUnschedCache TempUnschedCache // 用于清除 Redis 中的临时不可调度缓存
 	refreshAPI       *OAuthRefreshAPI // 统一刷新 API
 	runtimeBlocker   AccountRuntimeBlocker
+	accountUsageSvc  *AccountUsageService
 
 	// OpenAI privacy: 刷新成功后检查并设置 training opt-out
 	privacyClientFactory PrivacyClientFactory
@@ -103,6 +104,10 @@ func (s *TokenRefreshService) SetRefreshPolicy(policy BackgroundRefreshPolicy) {
 
 func (s *TokenRefreshService) SetAccountRuntimeBlocker(blocker AccountRuntimeBlocker) {
 	s.runtimeBlocker = blocker
+}
+
+func (s *TokenRefreshService) SetAccountUsageService(accountUsageSvc *AccountUsageService) {
+	s.accountUsageSvc = accountUsageSvc
 }
 
 func (s *TokenRefreshService) notifyAccountSchedulingBlocked(account *Account, until time.Time, reason string) {
@@ -261,6 +266,21 @@ func (s *TokenRefreshService) listActiveAccounts(ctx context.Context) ([]Account
 	return s.accountRepo.ListActive(ctx)
 }
 
+func cloneAccountForRefreshMetadata(account *Account) *Account {
+	if account == nil {
+		return nil
+	}
+	cloned := *account
+	cloned.Credentials = cloneCredentials(account.Credentials)
+	if account.Extra != nil {
+		cloned.Extra = make(map[string]any, len(account.Extra))
+		for k, v := range account.Extra {
+			cloned.Extra[k] = v
+		}
+	}
+	return &cloned
+}
+
 // refreshWithRetry 带重试的刷新
 func (s *TokenRefreshService) refreshWithRetry(ctx context.Context, account *Account, refresher TokenRefresher, executor OAuthRefreshExecutor, refreshWindow time.Duration) error {
 	var lastErr error
@@ -268,6 +288,7 @@ func (s *TokenRefreshService) refreshWithRetry(ctx context.Context, account *Acc
 	for attempt := 1; attempt <= s.cfg.MaxRetries; attempt++ {
 		var newCredentials map[string]any
 		var err error
+		beforeRefresh := cloneAccountForRefreshMetadata(account)
 
 		// 优先使用统一 API（带分布式锁 + DB 重读保护）
 		if s.refreshAPI != nil && executor != nil {
@@ -296,7 +317,7 @@ func (s *TokenRefreshService) refreshWithRetry(ctx context.Context, account *Acc
 		}
 
 		if err == nil {
-			s.postRefreshActions(ctx, account)
+			s.postRefreshActions(ctx, beforeRefresh, account)
 			return nil
 		}
 
@@ -364,7 +385,7 @@ func (s *TokenRefreshService) refreshWithRetry(ctx context.Context, account *Acc
 }
 
 // postRefreshActions 刷新成功后的后续动作（清除错误状态、缓存失效、调度器同步等）
-func (s *TokenRefreshService) postRefreshActions(ctx context.Context, account *Account) {
+func (s *TokenRefreshService) postRefreshActions(ctx context.Context, beforeRefresh, account *Account) {
 	// Antigravity 账户：如果之前是因为缺少 project_id 而标记为 error，现在成功获取到了，清除错误状态
 	if account.Platform == PlatformAntigravity &&
 		account.Status == StatusError &&
@@ -410,6 +431,9 @@ func (s *TokenRefreshService) postRefreshActions(ctx context.Context, account *A
 		} else {
 			slog.Debug("token_refresh.token_cache_invalidated", "account_id", account.ID)
 		}
+	}
+	if s.accountUsageSvc != nil && account.Platform == PlatformOpenAI && account.Type == AccountTypeOAuth {
+		s.accountUsageSvc.SyncOpenAIRefreshMetadata(ctx, beforeRefresh, account)
 	}
 	// 同步更新调度器缓存，确保调度获取的 Account 对象包含最新的 credentials
 	if s.schedulerCache != nil {

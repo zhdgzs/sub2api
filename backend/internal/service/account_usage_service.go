@@ -110,6 +110,8 @@ const (
 	apiQueryMaxJitter       = 800 * time.Millisecond // 用量查询最大随机延迟
 	windowStatsCacheTTL     = 1 * time.Minute
 	openAIProbeCacheTTL     = 10 * time.Minute
+	openAIUsageProbeTimeout = 15 * time.Second
+	openAIRefreshMetadataProbeTimeout = 30 * time.Second
 	openAICodexProbeVersion = "0.125.0"
 )
 
@@ -266,6 +268,17 @@ type AccountUsageService struct {
 	cache                   *UsageCache
 	identityCache           IdentityCache
 	tlsFPProfileService     *TLSFingerprintProfileService
+}
+
+type accountCodexUsageSnapshotClearer interface {
+	ClearCodexUsageSnapshot(ctx context.Context, id int64) error
+}
+
+// OpenAIRefreshMetadataSyncResult describes best-effort metadata work after an OpenAI token refresh.
+type OpenAIRefreshMetadataSyncResult struct {
+	QuotaUpdated    bool
+	SnapshotCleared bool
+	Warning         string
 }
 
 // NewAccountUsageService 创建AccountUsageService实例
@@ -596,6 +609,18 @@ func (s *AccountUsageService) shouldProbeOpenAICodexSnapshot(accountID int64, no
 }
 
 func (s *AccountUsageService) probeOpenAICodexSnapshot(ctx context.Context, account *Account) (map[string]any, error) {
+	updates, err := s.probeOpenAICodexSnapshotUpdates(ctx, account, openAIUsageProbeTimeout)
+	if err != nil {
+		return nil, err
+	}
+	if len(updates) > 0 {
+		s.persistOpenAICodexProbeSnapshot(account.ID, updates)
+		return updates, nil
+	}
+	return nil, nil
+}
+
+func (s *AccountUsageService) probeOpenAICodexSnapshotUpdates(ctx context.Context, account *Account, timeout time.Duration) (map[string]any, error) {
 	if account == nil || !account.IsOAuth() {
 		return nil, nil
 	}
@@ -610,7 +635,10 @@ func (s *AccountUsageService) probeOpenAICodexSnapshot(ctx context.Context, acco
 		return nil, fmt.Errorf("marshal openai probe payload: %w", err)
 	}
 
-	reqCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	if timeout <= 0 {
+		timeout = openAIUsageProbeTimeout
+	}
+	reqCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	req, err := http.NewRequestWithContext(reqCtx, http.MethodPost, chatgptCodexURL, bytes.NewReader(payloadBytes))
 	if err != nil {
@@ -639,8 +667,8 @@ func (s *AccountUsageService) probeOpenAICodexSnapshot(ctx context.Context, acco
 	}
 	client, err := httppool.GetClient(httppool.Options{
 		ProxyURL:              proxyURL,
-		Timeout:               15 * time.Second,
-		ResponseHeaderTimeout: 10 * time.Second,
+		Timeout:               timeout,
+		ResponseHeaderTimeout: timeout,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("build openai probe client: %w", err)
@@ -655,11 +683,7 @@ func (s *AccountUsageService) probeOpenAICodexSnapshot(ctx context.Context, acco
 	if err != nil {
 		return nil, err
 	}
-	if len(updates) > 0 {
-		s.persistOpenAICodexProbeSnapshot(account.ID, updates)
-		return updates, nil
-	}
-	return nil, nil
+	return updates, nil
 }
 
 func (s *AccountUsageService) persistOpenAICodexProbeSnapshot(accountID int64, updates map[string]any) {
@@ -700,6 +724,110 @@ func mergeAccountExtra(account *Account, updates map[string]any) {
 	for k, v := range updates {
 		account.Extra[k] = v
 	}
+}
+
+// SyncOpenAIRefreshMetadata synchronizes Codex quota metadata after a successful OpenAI token refresh.
+// It is best-effort: token refresh success must not be converted into failure by quota probing.
+func (s *AccountUsageService) SyncOpenAIRefreshMetadata(ctx context.Context, before, after *Account) OpenAIRefreshMetadataSyncResult {
+	var result OpenAIRefreshMetadataSyncResult
+	if s == nil || after == nil || after.Platform != PlatformOpenAI || after.Type != AccountTypeOAuth {
+		return result
+	}
+	if s.accountRepo == nil {
+		return result
+	}
+
+	planChanged := openAIPlanTypeChanged(beforeOpenAIPlanType(before), beforeOpenAIPlanType(after))
+	probeCtx, cancel := context.WithTimeout(ctx, openAIRefreshMetadataProbeTimeout)
+	defer cancel()
+
+	updates, err := s.probeOpenAICodexSnapshotUpdates(probeCtx, after, openAIRefreshMetadataProbeTimeout)
+	if err == nil && len(updates) > 0 {
+		if updateErr := s.accountRepo.UpdateExtra(ctx, after.ID, updates); updateErr != nil {
+			result.Warning = "codex_quota_update_failed"
+			slog.Warn("openai_refresh_metadata_update_extra_failed", "account_id", after.ID, "error", updateErr)
+			if planChanged {
+				result.SnapshotCleared = s.clearOpenAICodexSnapshot(ctx, after)
+			}
+			return result
+		}
+		mergeAccountExtra(after, updates)
+		result.QuotaUpdated = true
+		return result
+	}
+
+	switch {
+	case err != nil:
+		result.Warning = "codex_quota_probe_failed"
+		slog.Warn("openai_refresh_metadata_probe_failed", "account_id", after.ID, "error", err)
+	default:
+		result.Warning = "codex_quota_probe_no_snapshot"
+		slog.Warn("openai_refresh_metadata_probe_no_snapshot", "account_id", after.ID)
+	}
+	if planChanged {
+		result.SnapshotCleared = s.clearOpenAICodexSnapshot(ctx, after)
+	}
+	return result
+}
+
+func (s *AccountUsageService) clearOpenAICodexSnapshot(ctx context.Context, account *Account) bool {
+	if s == nil || account == nil || s.accountRepo == nil {
+		return false
+	}
+	clearer, ok := any(s.accountRepo).(accountCodexUsageSnapshotClearer)
+	if !ok {
+		slog.Warn("openai_refresh_metadata_clear_snapshot_unsupported", "account_id", account.ID)
+		return false
+	}
+	if err := clearer.ClearCodexUsageSnapshot(ctx, account.ID); err != nil {
+		slog.Warn("openai_refresh_metadata_clear_snapshot_failed", "account_id", account.ID, "error", err)
+		return false
+	}
+	removeOpenAICodexSnapshotExtra(account.Extra)
+	return true
+}
+
+func beforeOpenAIPlanType(account *Account) string {
+	if account == nil {
+		return ""
+	}
+	return account.GetCredential("plan_type")
+}
+
+func openAIPlanTypeChanged(before, after string) bool {
+	normalizedBefore := normalizeOpenAIPlanTypeForChange(before)
+	normalizedAfter := normalizeOpenAIPlanTypeForChange(after)
+	return normalizedBefore != "" && normalizedAfter != "" && normalizedBefore != normalizedAfter
+}
+
+func normalizeOpenAIPlanTypeForChange(planType string) string {
+	normalized := strings.ToLower(strings.TrimSpace(planType))
+	if normalized == "chatgptpro" {
+		return "pro"
+	}
+	return normalized
+}
+
+func removeOpenAICodexSnapshotExtra(extra map[string]any) {
+	if len(extra) == 0 {
+		return
+	}
+	for key := range extra {
+		if isOpenAICodexSnapshotExtraKey(key) {
+			delete(extra, key)
+		}
+	}
+}
+
+func isOpenAICodexSnapshotExtraKey(key string) bool {
+	key = strings.TrimSpace(key)
+	if key == "codex_usage_updated_at" || key == "codex_primary_over_secondary_percent" {
+		return true
+	}
+	return strings.HasPrefix(key, "codex_5h_") ||
+		strings.HasPrefix(key, "codex_7d_") ||
+		strings.HasPrefix(key, "codex_primary_") ||
+		strings.HasPrefix(key, "codex_secondary_")
 }
 
 func (s *AccountUsageService) getGeminiUsage(ctx context.Context, account *Account) (*UsageInfo, error) {

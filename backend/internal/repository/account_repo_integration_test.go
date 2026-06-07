@@ -838,6 +838,45 @@ func (s *AccountRepoSuite) TestClearModelRateLimits_SyncsSchedulerSnapshot() {
 	s.Require().NotContains(cacheRecorder.setAccounts[0].Extra, "model_rate_limits")
 }
 
+func (s *AccountRepoSuite) TestClearCodexUsageSnapshot_RemovesOnlyRuntimeSnapshotKeys() {
+	wsEnabledKey := "openai_oauth_responses_websockets_v2_enabled"
+	account := mustCreateAccount(s.T(), s.client, &service.Account{
+		Name: "acc-clear-codex-snapshot",
+		Extra: map[string]any{
+			"codex_5h_used_percent":                99.0,
+			"codex_7d_reset_at":                    "2099-01-01T00:00:00Z",
+			"codex_primary_used_percent":           70.0,
+			"codex_secondary_reset_after_seconds":  600.0,
+			"codex_primary_over_secondary_percent": 2.0,
+			"codex_usage_updated_at":               "2099-01-01T00:00:00Z",
+			"privacy_mode":                         "training_off",
+			"quota_daily_limit":                    10.0,
+			wsEnabledKey:                           true,
+		},
+	})
+	cacheRecorder := &schedulerCacheRecorder{}
+	s.repo.schedulerCache = cacheRecorder
+
+	s.Require().NoError(s.repo.ClearCodexUsageSnapshot(s.ctx, account.ID))
+
+	got, err := s.repo.GetByID(s.ctx, account.ID)
+	s.Require().NoError(err)
+	s.Require().NotContains(got.Extra, "codex_5h_used_percent")
+	s.Require().NotContains(got.Extra, "codex_7d_reset_at")
+	s.Require().NotContains(got.Extra, "codex_primary_used_percent")
+	s.Require().NotContains(got.Extra, "codex_secondary_reset_after_seconds")
+	s.Require().NotContains(got.Extra, "codex_primary_over_secondary_percent")
+	s.Require().NotContains(got.Extra, "codex_usage_updated_at")
+	s.Require().Equal("training_off", got.Extra["privacy_mode"])
+	s.Require().Equal(10.0, got.Extra["quota_daily_limit"])
+	s.Require().Equal(true, got.Extra[wsEnabledKey])
+
+	s.Require().Len(cacheRecorder.setAccounts, 1)
+	s.Require().Equal(account.ID, cacheRecorder.setAccounts[0].ID)
+	s.Require().NotContains(cacheRecorder.setAccounts[0].Extra, "codex_5h_used_percent")
+	s.Require().Equal("training_off", cacheRecorder.setAccounts[0].Extra["privacy_mode"])
+}
+
 // --- UpdateLastUsed ---
 
 func (s *AccountRepoSuite) TestUpdateLastUsed() {

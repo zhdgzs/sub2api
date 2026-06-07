@@ -70,6 +70,7 @@ func ProvideTokenRefreshService(
 	privacyClientFactory PrivacyClientFactory,
 	proxyRepo ProxyRepository,
 	refreshAPI *OAuthRefreshAPI,
+	accountUsageSvc *AccountUsageService,
 	runtimeBlocker AccountRuntimeBlocker,
 ) *TokenRefreshService {
 	svc := NewTokenRefreshService(accountRepo, oauthService, openaiOAuthService, geminiOAuthService, antigravityOAuthService, cacheInvalidator, schedulerCache, cfg, tempUnschedCache)
@@ -80,6 +81,7 @@ func ProvideTokenRefreshService(
 	// 调用侧显式注入后台刷新策略，避免策略漂移
 	svc.SetRefreshPolicy(DefaultBackgroundRefreshPolicy())
 	svc.SetAccountRuntimeBlocker(runtimeBlocker)
+	svc.SetAccountUsageService(accountUsageSvc)
 	svc.Start()
 	return svc
 }

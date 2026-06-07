@@ -854,6 +854,7 @@ func (h *AccountHandler) refreshSingleAccount(ctx context.Context, account *serv
 	}
 
 	var newCredentials map[string]any
+	var refreshWarning string
 
 	if account.IsOpenAI() {
 		tokenInfo, err := h.openaiOAuthService.RefreshAccountToken(ctx, account)
@@ -965,7 +966,14 @@ func (h *AccountHandler) refreshSingleAccount(ctx context.Context, account *serv
 	// Antigravity OAuth: 刷新成功后检查并设置 privacy_mode
 	h.adminService.EnsureAntigravityPrivacy(ctx, updatedAccount)
 
-	return updatedAccount, "", nil
+	if account.IsOpenAI() && h.accountUsageService != nil {
+		syncResult := h.accountUsageService.SyncOpenAIRefreshMetadata(ctx, account, updatedAccount)
+		if syncResult.Warning != "" {
+			refreshWarning = syncResult.Warning
+		}
+	}
+
+	return updatedAccount, refreshWarning, nil
 }
 
 // Refresh handles refreshing account credentials

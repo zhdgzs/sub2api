@@ -1265,6 +1265,39 @@ func (r *accountRepository) ClearModelRateLimits(ctx context.Context, id int64) 
 	return nil
 }
 
+func (r *accountRepository) ClearCodexUsageSnapshot(ctx context.Context, id int64) error {
+	client := clientFromContext(ctx, r.client)
+	result, err := client.ExecContext(
+		ctx,
+		`UPDATE accounts
+		SET extra = (
+			SELECT COALESCE(jsonb_object_agg(key, value), '{}'::jsonb)
+			FROM jsonb_each(COALESCE(accounts.extra, '{}'::jsonb)) AS item(key, value)
+			WHERE key <> 'codex_usage_updated_at'
+				AND key <> 'codex_primary_over_secondary_percent'
+				AND key NOT LIKE 'codex_5h_%'
+				AND key NOT LIKE 'codex_7d_%'
+				AND key NOT LIKE 'codex_primary_%'
+				AND key NOT LIKE 'codex_secondary_%'
+		), updated_at = NOW()
+		WHERE id = $1 AND deleted_at IS NULL`,
+		id,
+	)
+	if err != nil {
+		return err
+	}
+
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return service.ErrAccountNotFound
+	}
+	r.syncSchedulerAccountSnapshot(ctx, id)
+	return nil
+}
+
 func (r *accountRepository) UpdateSessionWindow(ctx context.Context, id int64, start, end *time.Time, status string) error {
 	builder := r.client.Account.Update().
 		Where(dbaccount.IDEQ(id)).
