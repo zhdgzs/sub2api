@@ -12,6 +12,7 @@
 - 如果当前分支是 `main`，只允许上游同步类提交；其他改动应切到 `custom` 或 `feature/<name>`。
 - 检查 `git status --short --branch`，确认没有混入无关改动。
 - 涉及数据库 schema 或迁移的改动应单独提交。
+- 提交信息必须使用简体中文描述变更；如沿用 Conventional Commits，`type(scope):` 可保留英文，例如 `fix(admin): 修复 OpenAI 重新授权套餐同步`。
 
 执行 `git pull` 前：
 

@@ -1055,9 +1055,10 @@ func (h *AccountHandler) ApplyOAuthCredentials(c *gin.Context) {
 		return
 	}
 
+	credentialsToApply := preserveOpenAIReauthMetadataCredentials(existing, req.Credentials)
 	updatedAccount, err := h.adminService.UpdateAccount(ctx, accountID, &service.UpdateAccountInput{
 		Type:        req.Type,
-		Credentials: req.Credentials,
+		Credentials: credentialsToApply,
 	})
 	if err != nil {
 		response.ErrorFrom(c, err)
@@ -1091,6 +1092,8 @@ func (h *AccountHandler) ApplyOAuthCredentials(c *gin.Context) {
 		updatedAccount = cleared
 	}
 
+	updatedAccount = h.syncOpenAIReauthorizedAccount(ctx, existing, updatedAccount, credentialsToApply)
+
 	if h.tokenCacheInvalidator != nil && updatedAccount.IsOAuth() {
 		if invalidateErr := h.tokenCacheInvalidator.InvalidateToken(ctx, updatedAccount); invalidateErr != nil {
 			slog.Warn("apply_oauth_credentials.invalidate_token_failed",
@@ -1101,6 +1104,105 @@ func (h *AccountHandler) ApplyOAuthCredentials(c *gin.Context) {
 	}
 
 	response.Success(c, h.buildAccountResponseWithRuntime(ctx, updatedAccount))
+}
+
+func (h *AccountHandler) syncOpenAIReauthorizedAccount(ctx context.Context, before, account *service.Account, incomingCredentials map[string]any) *service.Account {
+	if account == nil || !account.IsOpenAI() || account.Type != service.AccountTypeOAuth {
+		return account
+	}
+
+	updatedAccount := account
+	if h.openaiOAuthService != nil {
+		refreshSource := account
+		if !hasNonEmptyCredential(incomingCredentials, "refresh_token") && strings.TrimSpace(account.GetCredential("access_token")) != "" {
+			refreshSource = cloneAccountWithoutCredential(account, "refresh_token")
+		}
+
+		tokenInfo, err := h.openaiOAuthService.RefreshAccountToken(ctx, refreshSource)
+		if err != nil {
+			slog.Warn("apply_oauth_credentials.openai_metadata_refresh_failed",
+				"account_id", account.ID,
+				"err", err,
+			)
+		} else if tokenInfo != nil {
+			enrichedCredentials := h.openaiOAuthService.BuildAccountCredentials(tokenInfo)
+			for key, value := range account.Credentials {
+				if _, exists := enrichedCredentials[key]; !exists {
+					enrichedCredentials[key] = value
+				}
+			}
+			if refreshedAccount, updateErr := h.adminService.UpdateAccount(ctx, account.ID, &service.UpdateAccountInput{
+				Credentials: enrichedCredentials,
+			}); updateErr != nil {
+				slog.Warn("apply_oauth_credentials.openai_metadata_update_failed",
+					"account_id", account.ID,
+					"err", updateErr,
+				)
+			} else if refreshedAccount != nil {
+				updatedAccount = refreshedAccount
+			}
+		}
+	}
+
+	h.adminService.EnsureOpenAIPrivacy(ctx, updatedAccount)
+	if h.accountUsageService != nil {
+		h.accountUsageService.SyncOpenAIRefreshMetadata(ctx, before, updatedAccount)
+	}
+	return updatedAccount
+}
+
+func preserveOpenAIReauthMetadataCredentials(account *service.Account, incoming map[string]any) map[string]any {
+	if account == nil || !account.IsOpenAI() || account.Type != service.AccountTypeOAuth || incoming == nil {
+		return incoming
+	}
+	out := make(map[string]any, len(incoming)+2)
+	for key, value := range incoming {
+		out[key] = value
+	}
+	for _, key := range []string{"plan_type", "subscription_expires_at"} {
+		if hasNonEmptyCredential(out, key) {
+			continue
+		}
+		if existingValue := strings.TrimSpace(account.GetCredential(key)); existingValue != "" {
+			out[key] = existingValue
+		}
+	}
+	return out
+}
+
+func hasNonEmptyCredential(credentials map[string]any, key string) bool {
+	if credentials == nil {
+		return false
+	}
+	value, ok := credentials[key]
+	if !ok {
+		return false
+	}
+	switch typed := value.(type) {
+	case nil:
+		return false
+	case string:
+		return strings.TrimSpace(typed) != ""
+	default:
+		return true
+	}
+}
+
+func cloneAccountWithoutCredential(account *service.Account, key string) *service.Account {
+	if account == nil {
+		return nil
+	}
+	cloned := *account
+	if account.Credentials != nil {
+		cloned.Credentials = make(map[string]any, len(account.Credentials))
+		for k, v := range account.Credentials {
+			if k == key {
+				continue
+			}
+			cloned.Credentials[k] = v
+		}
+	}
+	return &cloned
 }
 
 // GetStats handles getting account statistics
