@@ -356,7 +356,7 @@
     <AccountTestModal :show="showTest" :account="testingAcc" @close="closeTestModal" />
     <AccountStatsModal :show="showStats" :account="statsAcc" @close="closeStatsModal" />
     <ScheduledTestsPanel :show="showSchedulePanel" :account-id="scheduleAcc?.id ?? null" :model-options="scheduleModelOptions" @close="closeSchedulePanel" />
-    <AccountActionMenu :show="menu.show" :account="menu.acc" :position="menu.pos" @close="menu.show = false" @test="handleTest" @stats="handleViewStats" @schedule="handleSchedule" @reauth="handleReAuth" @refresh-token="handleRefresh" @recover-state="handleRecoverState" @reset-quota="handleResetQuota" @set-privacy="handleSetPrivacy" />
+    <AccountActionMenu :show="menu.show" :account="menu.acc" :position="menu.pos" @close="menu.show = false" @test="handleTest" @stats="handleViewStats" @copy-access-token="handleCopyAccessToken" @export-account="openExportDataDialogForAccount" @schedule="handleSchedule" @reauth="handleReAuth" @refresh-token="handleRefresh" @recover-state="handleRecoverState" @reset-quota="handleResetQuota" @set-privacy="handleSetPrivacy" />
     <SyncFromCrsModal :show="showSync" @close="showSync = false" @synced="reload" />
     <ImportDataModal :show="showImportData" @close="showImportData = false" @imported="handleDataImported" />
     <BulkEditAccountModal
@@ -372,7 +372,7 @@
     />
     <TempUnschedStatusModal :show="showTempUnsched" :account="tempUnschedAcc" @close="showTempUnsched = false" @reset="handleTempUnschedReset" />
     <ConfirmDialog :show="showDeleteDialog" :title="t('admin.accounts.deleteAccount')" :message="t('admin.accounts.deleteConfirm', { name: deletingAcc?.name })" :confirm-text="t('common.delete')" :cancel-text="t('common.cancel')" :danger="true" @confirm="confirmDelete" @cancel="showDeleteDialog = false" />
-    <ConfirmDialog :show="showExportDataDialog" :title="t('admin.accounts.dataExport')" :message="t('admin.accounts.dataExportConfirmMessage')" :confirm-text="t('admin.accounts.dataExportConfirm')" :cancel-text="t('common.cancel')" @confirm="handleExportData" @cancel="showExportDataDialog = false">
+    <ConfirmDialog :show="showExportDataDialog" :title="t('admin.accounts.dataExport')" :message="t('admin.accounts.dataExportConfirmMessage')" :confirm-text="t('admin.accounts.dataExportConfirm')" :cancel-text="t('common.cancel')" @confirm="handleExportData" @cancel="closeExportDataDialog">
       <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
         <input type="checkbox" class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500" v-model="includeProxyOnExport" />
         <span>{{ t('admin.accounts.dataExportIncludeProxies') }}</span>
@@ -393,6 +393,7 @@ import { adminAPI } from '@/api/admin'
 import { useTableLoader } from '@/composables/useTableLoader'
 import { useSwipeSelect, type SwipeSelectVirtualContext } from '@/composables/useSwipeSelect'
 import { useTableSelection } from '@/composables/useTableSelection'
+import { useClipboard } from '@/composables/useClipboard'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import TablePageLayout from '@/components/layout/TablePageLayout.vue'
 import DataTable from '@/components/common/DataTable.vue'
@@ -421,11 +422,12 @@ import ErrorPassthroughRulesModal from '@/components/admin/ErrorPassthroughRules
 import TLSFingerprintProfilesModal from '@/components/admin/TLSFingerprintProfilesModal.vue'
 import { buildOpenAIUsageRefreshKey } from '@/utils/accountUsageRefresh'
 import { formatDateTime, formatRelativeTime } from '@/utils/format'
-import type { Account, AccountPlatform, AccountType, Proxy as AccountProxy, AdminGroup, WindowStats, ClaudeModel } from '@/types'
+import type { Account, AccountPlatform, AccountType, Proxy as AccountProxy, AdminGroup, WindowStats, ClaudeModel, AdminDataPayload } from '@/types'
 
 const { t } = useI18n()
 const appStore = useAppStore()
 const authStore = useAuthStore()
+const { copyToClipboard } = useClipboard()
 
 const proxies = ref<AccountProxy[]>([])
 const groups = ref<AdminGroup[]>([])
@@ -477,6 +479,7 @@ const showSync = ref(false)
 const showImportData = ref(false)
 const showExportDataDialog = ref(false)
 const includeProxyOnExport = ref(true)
+const exportAccountIds = ref<number[] | null>(null)
 const showBulkEdit = ref(false)
 const bulkEditTarget = ref<AccountBulkEditTarget | null>(null)
 const showTempUnsched = ref(false)
@@ -1169,7 +1172,7 @@ const openMenu = (a: Account, e: MouseEvent) => {
   if (target) {
     const rect = target.getBoundingClientRect()
     const menuWidth = 200
-    const menuHeight = 240
+    const menuHeight = 340
     const padding = 8
     const viewportWidth = window.innerWidth
     const viewportHeight = window.innerHeight
@@ -1522,37 +1525,66 @@ const formatExportTimestamp = () => {
   const pad2 = (value: number) => String(value).padStart(2, '0')
   return `${now.getFullYear()}${pad2(now.getMonth() + 1)}${pad2(now.getDate())}${pad2(now.getHours())}${pad2(now.getMinutes())}${pad2(now.getSeconds())}`
 }
-const openExportDataDialog = () => {
+const openExportDataDialog = (accountIds?: number[]) => {
+  exportAccountIds.value = accountIds && accountIds.length > 0 ? [...accountIds] : null
   includeProxyOnExport.value = true
   showExportDataDialog.value = true
+}
+const openExportDataDialogForAccount = (a: Account) => {
+  openExportDataDialog([a.id])
+}
+const closeExportDataDialog = () => {
+  showExportDataDialog.value = false
+  exportAccountIds.value = null
+}
+const downloadAccountData = (dataPayload: AdminDataPayload) => {
+  const timestamp = formatExportTimestamp()
+  const filename = `sub2api-account-${timestamp}.json`
+  const blob = new Blob([JSON.stringify(dataPayload, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  link.click()
+  URL.revokeObjectURL(url)
 }
 const handleExportData = async () => {
   if (exportingData.value) return
   exportingData.value = true
   try {
+    const targetIds = exportAccountIds.value ?? selIds.value
     const dataPayload = await adminAPI.accounts.exportData(
-      selIds.value.length > 0
-        ? { ids: selIds.value, includeProxies: includeProxyOnExport.value }
+      targetIds.length > 0
+        ? { ids: targetIds, includeProxies: includeProxyOnExport.value }
         : {
             includeProxies: includeProxyOnExport.value,
             filters: buildAccountQueryFilters()
           }
     )
-    const timestamp = formatExportTimestamp()
-    const filename = `sub2api-account-${timestamp}.json`
-    const blob = new Blob([JSON.stringify(dataPayload, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = filename
-    link.click()
-    URL.revokeObjectURL(url)
+    downloadAccountData(dataPayload)
     appStore.showSuccess(t('admin.accounts.dataExported'))
   } catch (error: any) {
     appStore.showError(error?.message || t('admin.accounts.dataExportFailed'))
   } finally {
     exportingData.value = false
-    showExportDataDialog.value = false
+    closeExportDataDialog()
+  }
+}
+const getStringCredential = (credentials: Record<string, unknown> | undefined, key: string) => {
+  const value = credentials?.[key]
+  return typeof value === 'string' ? value : ''
+}
+const handleCopyAccessToken = async (a: Account) => {
+  try {
+    const dataPayload = await adminAPI.accounts.exportData({ ids: [a.id], includeProxies: false })
+    const accessToken = getStringCredential(dataPayload.accounts[0]?.credentials, 'access_token')
+    if (!accessToken) {
+      appStore.showError(t('admin.accounts.accessTokenNotFound'))
+      return
+    }
+    await copyToClipboard(accessToken, t('admin.accounts.accessTokenCopied'))
+  } catch (error: any) {
+    appStore.showError(error?.message || t('admin.accounts.copyAccessTokenFailed'))
   }
 }
 const closeTestModal = () => { showTest.value = false; testingAcc.value = null }
