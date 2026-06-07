@@ -75,18 +75,24 @@ describe('AccountActionMenu', () => {
     expect(wrapper.emitted('close')).toHaveLength(1)
   })
 
-  it('hides the access_token copy action when no access_token is present and keeps row export available', async () => {
+  it('keeps access_token copy and row export actions visible without credentials status', async () => {
     const account = buildAccount()
     const wrapper = mountMenu(account)
 
-    expect(wrapper.find('[data-test="copy-access-token-action"]').exists()).toBe(false)
+    const copyAction = wrapper.get('[data-test="copy-access-token-action"]')
+    expect(copyAction.text()).toContain('admin.accounts.copyAccessToken')
 
     const exportAction = wrapper.get('[data-test="export-account-action"]')
     expect(exportAction.text()).toContain('admin.accounts.dataExportAccount')
 
+    await copyAction.trigger('click')
+
+    expect(wrapper.emitted('copy-access-token')?.[0]).toEqual([account])
+    expect(wrapper.emitted('close')).toHaveLength(1)
+
     await exportAction.trigger('click')
 
     expect(wrapper.emitted('export-account')?.[0]).toEqual([account])
-    expect(wrapper.emitted('close')).toHaveLength(1)
+    expect(wrapper.emitted('close')).toHaveLength(2)
   })
 })

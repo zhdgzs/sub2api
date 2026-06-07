@@ -18,7 +18,7 @@
               <Icon name="chart" size="sm" class="text-indigo-500" />
               {{ t('admin.accounts.viewStats') }}
             </button>
-            <button v-if="hasAccessToken" data-test="copy-access-token-action" @click="$emit('copy-access-token', account); $emit('close')" class="flex w-full items-center gap-2 px-4 py-2 text-sm text-sky-600 hover:bg-gray-100 dark:hover:bg-dark-700">
+            <button data-test="copy-access-token-action" @click="$emit('copy-access-token', account); $emit('close')" class="flex w-full items-center gap-2 px-4 py-2 text-sm text-sky-600 hover:bg-gray-100 dark:hover:bg-dark-700">
               <Icon name="copy" size="sm" />
               {{ t('admin.accounts.copyAccessToken') }}
             </button>
@@ -69,7 +69,6 @@ import type { Account } from '@/types'
 const props = defineProps<{ show: boolean; account: Account | null; position: { top: number; left: number } | null }>()
 const emit = defineEmits(['close', 'test', 'stats', 'copy-access-token', 'export-account', 'schedule', 'reauth', 'refresh-token', 'recover-state', 'reset-quota', 'set-privacy'])
 const { t } = useI18n()
-const hasAccessToken = computed(() => props.account?.credentials_status?.has_access_token === true)
 const isRateLimited = computed(() => {
   if (props.account?.rate_limit_reset_at && new Date(props.account.rate_limit_reset_at) > new Date()) {
     return true
