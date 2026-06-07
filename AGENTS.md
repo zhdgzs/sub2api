@@ -1,6 +1,7 @@
 # Repository Agent Instructions
 
 任何 agent 在执行或建议 `git commit`、`git push`、`git pull`，或处理上游同步、分支合并、发布、长期定制维护前，必须先读取 `docs/SYNC_UPSTREAM_CN.md` 并遵守其中规则。
+git commit -m '信息', 提交的注释必须是中文
 
 
 <!-- TRELLIS:START -->
