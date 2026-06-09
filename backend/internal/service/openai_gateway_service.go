@@ -6495,6 +6495,13 @@ func normalizeOpenAIPassthroughOAuthBody(body []byte, compact bool) ([]byte, boo
 		changed = true
 	}
 
+	if next, inputChanged, err := normalizeOpenAIPassthroughInputContent(normalized); err != nil {
+		return body, false, err
+	} else if inputChanged {
+		normalized = next
+		changed = true
+	}
+
 	if compact {
 		if store := gjson.GetBytes(normalized, "store"); store.Exists() {
 			next, err := sjson.DeleteBytes(normalized, "store")
@@ -6531,6 +6538,32 @@ func normalizeOpenAIPassthroughOAuthBody(body []byte, compact bool) ([]byte, boo
 		}
 	}
 
+	return normalized, changed, nil
+}
+
+func normalizeOpenAIPassthroughInputContent(body []byte) ([]byte, bool, error) {
+	input := gjson.GetBytes(body, "input")
+	if !input.IsArray() {
+		return body, false, nil
+	}
+
+	normalized := body
+	changed := false
+	for idx, item := range input.Array() {
+		if !codexInputItemDisallowsContent(item.Get("type").String()) {
+			continue
+		}
+		if !item.Get("content").Exists() {
+			continue
+		}
+		path := fmt.Sprintf("input.%d.content", idx)
+		next, err := sjson.DeleteBytes(normalized, path)
+		if err != nil {
+			return body, false, fmt.Errorf("normalize passthrough body delete %s: %w", path, err)
+		}
+		normalized = next
+		changed = true
+	}
 	return normalized, changed, nil
 }
 

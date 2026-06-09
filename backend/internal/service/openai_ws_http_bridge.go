@@ -14,6 +14,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/gin-gonic/gin"
 	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
 )
 
 const (
@@ -98,7 +99,8 @@ func (c *openAIWSToolCallReplayCollector) addItem(item gjson.Result) {
 	if raw == "" || !strings.HasPrefix(raw, "{") {
 		return
 	}
-	if !isCodexToolCallContextItemType(item.Get("type").String()) {
+	itemType := item.Get("type").String()
+	if !isCodexToolCallContextItemType(itemType) {
 		return
 	}
 	key := strings.TrimSpace(item.Get("id").String())
@@ -115,6 +117,11 @@ func (c *openAIWSToolCallReplayCollector) addItem(item gjson.Result) {
 		return
 	}
 	c.seen[key] = struct{}{}
+	if codexInputItemDisallowsContent(itemType) && item.Get("content").Exists() {
+		if next, err := sjson.DeleteBytes([]byte(raw), "content"); err == nil {
+			raw = strings.TrimSpace(string(next))
+		}
+	}
 	c.items = append(c.items, json.RawMessage(raw))
 }
 

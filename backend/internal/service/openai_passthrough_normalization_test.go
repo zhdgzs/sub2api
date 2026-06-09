@@ -31,3 +31,19 @@ func TestNormalizeOpenAIPassthroughOAuthBody_CompactRemovesUnsupportedUser(t *te
 	require.False(t, gjson.GetBytes(normalized, "stream").Exists())
 	require.False(t, gjson.GetBytes(normalized, "store").Exists())
 }
+
+func TestNormalizeOpenAIPassthroughOAuthBody_RemovesDisallowedInputContent(t *testing.T) {
+	body := []byte(`{"model":"gpt-5.5","input":[{"type":"message","role":"user","content":[{"type":"input_text","text":"keep"}]},{"type":"function_call","id":"fc_1","call_id":"call_1","name":"shell","arguments":"{}","content":[{"type":"output_text","text":"drop"}]},{"type":"item_reference","id":"fc_1","content":[{"type":"output_text","text":"drop reference"}]},{"type":"function_call_output","call_id":"call_1","output":"keep output"}]}`)
+
+	normalized, changed, err := normalizeOpenAIPassthroughOAuthBody(body, false)
+	require.NoError(t, err)
+	require.True(t, changed)
+
+	require.True(t, gjson.GetBytes(normalized, "input.0.content").Exists())
+	require.Equal(t, "keep", gjson.GetBytes(normalized, "input.0.content.0.text").String())
+	require.False(t, gjson.GetBytes(normalized, "input.1.content").Exists())
+	require.False(t, gjson.GetBytes(normalized, "input.2.content").Exists())
+	require.Equal(t, "keep output", gjson.GetBytes(normalized, "input.3.output").String())
+	require.True(t, gjson.GetBytes(normalized, "stream").Bool())
+	require.False(t, gjson.GetBytes(normalized, "store").Bool())
+}

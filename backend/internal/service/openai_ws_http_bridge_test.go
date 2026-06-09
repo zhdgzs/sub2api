@@ -47,6 +47,19 @@ func TestOpenAIWSHTTPBridgeDecisionKeepsSmallFramesOnWS(t *testing.T) {
 	require.False(t, svc.shouldBridgeOpenAIWSHTTP(1000, ""))
 }
 
+func TestOpenAIWSToolCallReplayCollector_RemovesDisallowedInputContent(t *testing.T) {
+	collector := &openAIWSToolCallReplayCollector{}
+	collector.AddEvent("response.output_item.done", []byte(`{"type":"response.output_item.done","item":{"type":"function_call","id":"fc_1","call_id":"call_1","name":"shell","arguments":"{}","content":[{"type":"output_text","text":"drop"}]}}`))
+
+	items := collector.Items()
+	require.Len(t, items, 1)
+	require.Equal(t, "function_call", gjson.GetBytes(items[0], "type").String())
+	require.Equal(t, "call_1", gjson.GetBytes(items[0], "call_id").String())
+	require.Equal(t, "shell", gjson.GetBytes(items[0], "name").String())
+	require.Equal(t, "{}", gjson.GetBytes(items[0], "arguments").String())
+	require.False(t, gjson.GetBytes(items[0], "content").Exists())
+}
+
 func TestOpenAIWSHTTPBridgeRelaysSSEFramesAsWebSocketMessages(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 

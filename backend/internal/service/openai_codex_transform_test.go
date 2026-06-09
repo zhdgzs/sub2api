@@ -199,6 +199,90 @@ func TestApplyCodexOAuthTransform_ImageAndWebSearchCallsDoNotGainCallID(t *testi
 	require.False(t, hasCallID)
 }
 
+func TestCodexInputItemDisallowsContentTypes(t *testing.T) {
+	for _, typ := range []string{
+		"function_call",
+		"tool_call",
+		"local_shell_call",
+		"tool_search_call",
+		"custom_tool_call",
+		"mcp_tool_call",
+		"item_reference",
+	} {
+		require.True(t, codexInputItemDisallowsContent(typ), typ)
+	}
+
+	for _, typ := range []string{
+		"message",
+		"function_call_output",
+		"custom_tool_call_output",
+		"mcp_tool_call_output",
+		"tool_search_output",
+	} {
+		require.False(t, codexInputItemDisallowsContent(typ), typ)
+	}
+}
+
+func TestApplyCodexOAuthTransform_RemovesDisallowedInputContent(t *testing.T) {
+	reqBody := map[string]any{
+		"model": "gpt-5.5",
+		"input": []any{
+			map[string]any{
+				"type":    "message",
+				"role":    "user",
+				"content": "keep",
+			},
+			map[string]any{
+				"type":      "function_call",
+				"id":        "call_1",
+				"call_id":   "call_1",
+				"name":      "shell",
+				"arguments": "{}",
+				"content":   []any{map[string]any{"type": "output_text", "text": "drop"}},
+			},
+			map[string]any{
+				"type":    "item_reference",
+				"id":      "call_1",
+				"content": []any{map[string]any{"type": "output_text", "text": "drop reference"}},
+			},
+			map[string]any{
+				"type":    "function_call_output",
+				"call_id": "call_1",
+				"output":  "keep output",
+			},
+		},
+	}
+
+	applyCodexOAuthTransformWithOptions(reqBody, codexOAuthTransformOptions{
+		PreserveToolCallIDs: true,
+	})
+
+	input, ok := reqBody["input"].([]any)
+	require.True(t, ok)
+	require.Len(t, input, 4)
+
+	message, ok := input[0].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "keep", message["content"])
+
+	call, ok := input[1].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "function_call", call["type"])
+	require.NotContains(t, call, "content")
+	require.Equal(t, "call_1", call["call_id"])
+
+	reference, ok := input[2].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "item_reference", reference["type"])
+	require.NotContains(t, reference, "content")
+	require.Equal(t, "call_1", reference["id"])
+
+	output, ok := input[3].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "function_call_output", output["type"])
+	require.Equal(t, "keep output", output["output"])
+}
+
 func TestApplyCodexOAuthTransform_ConvertsToolRoleMessageToFunctionCallOutput(t *testing.T) {
 	reqBody := map[string]any{
 		"model": "gpt-5.4",

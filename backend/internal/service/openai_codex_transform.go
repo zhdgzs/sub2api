@@ -1134,6 +1134,9 @@ func filterCodexInputWithOptions(input []any, opts codexInputFilterOptions) []an
 			for key, value := range m {
 				newItem[key] = value
 			}
+			if codexInputItemDisallowsContent(typ) {
+				delete(newItem, "content")
+			}
 			if id, ok := newItem["id"].(string); ok && strings.HasPrefix(id, "call_") {
 				newItem["id"] = fixCallIDPrefix(id)
 			}
@@ -1174,6 +1177,13 @@ func filterCodexInputWithOptions(input []any, opts codexInputFilterOptions) []an
 			}
 		}
 
+		if codexInputItemDisallowsContent(typ) {
+			if _, ok := m["content"]; ok {
+				ensureCopy()
+				delete(newItem, "content")
+			}
+		}
+
 		if !isCodexToolCallItemType(typ) {
 			ensureCopy()
 			delete(newItem, "call_id")
@@ -1203,6 +1213,11 @@ func filterCodexInputWithOptions(input []any, opts codexInputFilterOptions) []an
 		filtered = append(filtered, newItem)
 	}
 	return filtered
+}
+
+func codexInputItemDisallowsContent(typ string) bool {
+	typ = strings.TrimSpace(typ)
+	return typ == "item_reference" || isCodexToolCallContextItemType(typ)
 }
 
 func isCodexToolCallItemType(typ string) bool {
