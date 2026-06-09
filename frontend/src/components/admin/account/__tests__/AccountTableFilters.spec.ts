@@ -15,7 +15,7 @@ vi.mock('vue-i18n', async () => {
 })
 
 const SelectStub = defineComponent({
-  name: 'Select',
+  name: 'SelectFieldStub',
   props: {
     modelValue: {
       type: [String, Number, Boolean, null],
