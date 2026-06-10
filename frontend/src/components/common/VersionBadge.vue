@@ -113,72 +113,8 @@
                 </p>
               </div>
 
-              <!-- Priority 1: Update error (must check before hasUpdate) -->
-              <div v-if="updateError" class="space-y-2">
-                <div
-                  class="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-800/50 dark:bg-red-900/20"
-                >
-                  <div
-                    class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/50"
-                  >
-                    <Icon
-                      name="x"
-                      size="sm"
-                      :stroke-width="2"
-                      class="text-red-600 dark:text-red-400"
-                    />
-                  </div>
-                  <div class="min-w-0 flex-1">
-                    <p class="text-sm font-medium text-red-700 dark:text-red-300">
-                      {{ t('version.updateFailed') }}
-                    </p>
-                    <p class="truncate text-xs text-red-600/70 dark:text-red-400/70">
-                      {{ updateError }}
-                    </p>
-                  </div>
-                </div>
-
-                <!-- Retry button -->
-                <button
-                  @click="handleUpdate"
-                  :disabled="updating"
-                  class="flex w-full items-center justify-center gap-2 rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {{ t('version.retry') }}
-                </button>
-              </div>
-
-              <!-- Priority 2: Update success - restart required -->
-              <div v-else-if="updateSuccess && needRestart" class="space-y-2">
-                <div
-                  class="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-800/50 dark:bg-green-900/20"
-                >
-                  <div
-                    class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/50"
-                  >
-                    <svg
-                      class="h-4 w-4 text-green-600 dark:text-green-400"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      stroke-width="2"
-                    >
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                  <div class="min-w-0 flex-1">
-                    <p class="text-sm font-medium text-green-700 dark:text-green-300">
-                      {{ t('version.updateComplete') }}
-                    </p>
-                    <p class="text-xs text-green-600/70 dark:text-green-400/70">
-                      {{ t('version.restartRequired') }}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Priority 3: Update available for source build - show git pull hint -->
-              <div v-else-if="hasUpdate && !isReleaseBuild" class="space-y-2">
+              <!-- Priority 1: Update available for source build - show git pull hint -->
+              <div v-if="hasUpdate && !isReleaseBuild" class="space-y-2">
                 <a
                   v-if="releaseInfo?.html_url && releaseInfo.html_url !== '#'"
                   :href="releaseInfo.html_url"
@@ -237,22 +173,22 @@
                 </div>
               </div>
 
-              <!-- Priority 4: Update available for release build - show update button -->
+              <!-- Priority 2: Update available for release build - show release info only -->
               <div v-else-if="hasUpdate && isReleaseBuild" class="space-y-2">
                 <!-- Update info card -->
                 <div
                   class="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800/50 dark:bg-amber-900/20"
                 >
-                <div
-                  class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/50"
-                >
-                  <Icon
-                    name="download"
-                    size="sm"
-                    :stroke-width="2"
-                    class="text-amber-600 dark:text-amber-400"
-                  />
-                </div>
+                  <div
+                    class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/50"
+                  >
+                    <Icon
+                      name="download"
+                      size="sm"
+                      :stroke-width="2"
+                      class="text-amber-600 dark:text-amber-400"
+                    />
+                  </div>
                   <div class="min-w-0 flex-1">
                     <p class="text-sm font-medium text-amber-700 dark:text-amber-300">
                       {{ t('version.updateAvailable') }}
@@ -262,31 +198,6 @@
                     </p>
                   </div>
                 </div>
-
-                <!-- Update button -->
-                <button
-                  @click="handleUpdate"
-                  :disabled="updating"
-                  class="flex w-full items-center justify-center gap-2 rounded-lg bg-primary-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-600 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <svg v-if="updating" class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle
-                      class="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      stroke-width="4"
-                    ></circle>
-                    <path
-                      class="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  <Icon v-else name="download" size="sm" :stroke-width="2" />
-                  {{ updating ? t('version.updating') : t('version.updateNow') }}
-                </button>
 
                 <!-- View release link -->
                 <a
@@ -301,7 +212,7 @@
                 </a>
               </div>
 
-              <!-- Priority 5: Up to date - show GitHub link -->
+              <!-- Priority 3: Up to date - show GitHub link -->
               <a
                 v-else-if="releaseInfo?.html_url && releaseInfo.html_url !== '#'"
                 :href="releaseInfo.html_url"
@@ -335,7 +246,6 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore, useAppStore } from '@/stores'
-import { performUpdate } from '@/api/admin/system'
 import Icon from '@/components/icons/Icon.vue'
 
 const { t } = useI18n()
@@ -360,12 +270,6 @@ const hasUpdate = computed(() => appStore.hasUpdate)
 const releaseInfo = computed(() => appStore.releaseInfo)
 const buildType = computed(() => appStore.buildType)
 
-// Update process states (local to this component)
-const updating = ref(false)
-const needRestart = ref(false)
-const updateError = ref('')
-const updateSuccess = ref(false)
-
 // Only show update check for release builds (binary/docker deployment)
 const isReleaseBuild = computed(() => buildType.value === 'release')
 
@@ -380,33 +284,7 @@ function closeDropdown() {
 async function refreshVersion(force = true) {
   if (!isAdmin.value) return
 
-  // Reset update states when refreshing
-  updateError.value = ''
-  updateSuccess.value = false
-  needRestart.value = false
-
   await appStore.fetchVersion(force)
-}
-
-async function handleUpdate() {
-  if (updating.value) return
-
-  updating.value = true
-  updateError.value = ''
-  updateSuccess.value = false
-
-  try {
-    const result = await performUpdate()
-    updateSuccess.value = true
-    needRestart.value = result.need_restart
-    // Clear version cache to reflect update completed
-    appStore.clearVersionCache()
-  } catch (error: unknown) {
-    const err = error as { response?: { data?: { message?: string } }; message?: string }
-    updateError.value = err.response?.data?.message || err.message || t('version.updateFailed')
-  } finally {
-    updating.value = false
-  }
 }
 
 function handleClickOutside(event: MouseEvent) {
