@@ -36,9 +36,10 @@ import (
 	"go.uber.org/zap"
 )
 
+// ChatGPT internal API for OAuth accounts.
+var chatgptCodexURL = "https://chatgpt.com/backend-api/codex/responses"
+
 const (
-	// ChatGPT internal API for OAuth accounts
-	chatgptCodexURL = "https://chatgpt.com/backend-api/codex/responses"
 	// OpenAI Platform API for API Key accounts (fallback)
 	openaiPlatformAPIURL   = "https://api.openai.com/v1/responses"
 	openaiStickySessionTTL = time.Hour // 粘性会话TTL

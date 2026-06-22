@@ -35,6 +35,9 @@ func RegisterAdminRoutes(
 		// 账号管理
 		registerAccountRoutes(admin, h)
 
+		// Codex 账号巡检
+		registerCodexInspectionRoutes(admin, h)
+
 		// 公告管理
 		registerAnnouncementRoutes(admin, h)
 
@@ -103,6 +106,24 @@ func RegisterAdminRoutes(
 
 		// 邀请返利（专属用户管理）
 		registerAffiliateRoutes(admin, h)
+	}
+}
+
+func registerCodexInspectionRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+	codexInspection := admin.Group("/codex-inspection")
+	{
+		codexInspection.GET("/overview", h.Admin.CodexInspection.Overview)
+		codexInspection.GET("/settings", h.Admin.CodexInspection.GetSettings)
+		codexInspection.PUT("/settings", h.Admin.CodexInspection.UpdateSettings)
+		codexInspection.POST("/runs", h.Admin.CodexInspection.CreateRun)
+		codexInspection.GET("/runs", h.Admin.CodexInspection.ListRuns)
+		codexInspection.GET("/runs/:id", h.Admin.CodexInspection.GetRun)
+		codexInspection.GET("/runs/:id/results", h.Admin.CodexInspection.ListRunResults)
+		codexInspection.POST("/runs/:id/cancel", h.Admin.CodexInspection.CancelRun)
+		codexInspection.POST("/runs/:id/actions", h.Admin.CodexInspection.ApplyRunActions)
+		codexInspection.POST("/accounts/:account_id/probe", h.Admin.CodexInspection.ProbeAccount)
+		codexInspection.GET("/accounts/latest", h.Admin.CodexInspection.LatestAccounts)
+		codexInspection.GET("/logs", h.Admin.CodexInspection.ListLogs)
 	}
 }
 

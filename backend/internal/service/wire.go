@@ -540,6 +540,9 @@ var ProviderSet = wire.NewSet(
 	ProvideRateLimitService,
 	NewAccountUsageService,
 	NewAccountTestService,
+	NewOpenAICodexUsageProbe,
+	NewCodexInspectionDecisionEngine,
+	NewCodexInspectionService,
 	ProvideSettingService,
 	NewDataManagementService,
 	ProvideBackupService,
@@ -594,6 +597,7 @@ var ProviderSet = wire.NewSet(
 	ProvideBalanceNotifyService,
 	ProvideChannelMonitorService,
 	ProvideChannelMonitorRunner,
+	ProvideCodexInspectionRunner,
 	NewChannelMonitorRequestTemplateService,
 	ProvideUserPlatformQuotaUsageFlusher,
 )

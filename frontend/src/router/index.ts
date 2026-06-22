@@ -490,6 +490,18 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/admin/codex-inspection',
+    name: 'AdminCodexInspection',
+    component: () => import('@/views/admin/CodexInspectionView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: 'Codex Inspection',
+      titleKey: 'admin.codexInspection.title',
+      descriptionKey: 'admin.codexInspection.description'
+    }
+  },
+  {
     path: '/admin/announcements',
     name: 'AdminAnnouncements',
     component: () => import('@/views/admin/AnnouncementsView.vue'),
