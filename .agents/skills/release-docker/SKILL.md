@@ -34,6 +34,16 @@ Before any mutating execution, show this confirmation:
 
 Do not auto-stash, auto-resolve conflicts, delete branches, delete tags, force-push, or push to `upstream`.
 
+## Docker Cache Rules
+
+Release Docker builds must preserve the local Docker build cache by default.
+
+- Do not run `docker system prune`, `docker builder prune`, `docker image prune`, `docker rmi`, or equivalent cache/image cleanup as part of this workflow.
+- Do not add `--no-cache` to release builds unless the user explicitly asks for a no-cache rebuild.
+- Do not create and remove a temporary BuildKit builder in a way that discards cache between release builds.
+- If the user asks to clean cache, prune images, or force a no-cache build, treat it as a separate high-risk operation and require explicit confirmation before doing it.
+- When diagnosing a slow release build, first inspect cache hits with `DOCKER_BUILDKIT=1 docker build --progress=plain ...` or equivalent output instead of clearing cache.
+
 ## Standard Workflow
 
 1. Read `docs/SYNC_UPSTREAM_CN.md`.

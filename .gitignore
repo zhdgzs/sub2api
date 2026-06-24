@@ -119,6 +119,9 @@ tests
 CLAUDE.md
 .claude
 scripts
+!.agents/skills/release-docker/scripts/
+!.agents/skills/release-docker/scripts/release_docker.py
+__pycache__/
 .code-review-state
 #openspec/
 code-reviews/
