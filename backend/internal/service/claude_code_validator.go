@@ -338,6 +338,12 @@ func CompareVersions(a, b string) int {
 // parseSemver 解析 semver 版本号为 [major, minor, patch]
 func parseSemver(v string) [3]int {
 	v = strings.TrimPrefix(v, "v")
+	if base, _, ok := strings.Cut(v, "-"); ok {
+		v = base
+	}
+	if base, _, ok := strings.Cut(v, "+"); ok {
+		v = base
+	}
 	parts := strings.Split(v, ".")
 	result := [3]int{0, 0, 0}
 	for i := 0; i < len(parts) && i < 3; i++ {

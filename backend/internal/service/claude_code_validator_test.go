@@ -368,6 +368,10 @@ func TestCompareVersions(t *testing.T) {
 		{"0.0.1", "0.0.0", 1},   // patch 差异
 		{"", "1.0.0", -1},       // 空字符串 vs 正常版本
 		{"v2.1.0", "2.1.0", 0},  // v 前缀处理
+		{"v0.1.138-zhdgzs.1", "v0.1.138", 0}, // 自定义后缀不影响主版本比较
+		{"v0.1.137-zhdgzs.9", "v0.1.138", -1},
+		{"v0.1.139-zhdgzs.1", "v0.1.138", 1},
+		{"v0.1.138+custom.1", "v0.1.138", 0}, // build metadata 不影响主版本比较
 	}
 	for _, tt := range tests {
 		got := CompareVersions(tt.a, tt.b)

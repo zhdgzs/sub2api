@@ -62,3 +62,21 @@ func TestUpdateServicePerformUpdateNoUpdateReturnsSentinel(t *testing.T) {
 	require.True(t, errors.Is(err, ErrNoUpdateAvailable))
 	require.ErrorIs(t, err, ErrNoUpdateAvailable)
 }
+
+func TestUpdateServicePerformUpdateCustomSuffixNoUpdateReturnsSentinel(t *testing.T) {
+	svc := NewUpdateService(
+		&updateServiceCacheStub{},
+		&updateServiceGitHubClientStub{
+			release: &GitHubRelease{
+				TagName: "v0.1.138",
+				Name:    "v0.1.138",
+			},
+		},
+		"v0.1.138-zhdgzs.1",
+		"release",
+	)
+
+	err := svc.PerformUpdate(context.Background())
+
+	require.ErrorIs(t, err, ErrNoUpdateAvailable)
+}
