@@ -2,7 +2,6 @@ package service
 
 import (
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -113,8 +112,5 @@ func mergeExtraUpdates(base map[string]any, more map[string]any) map[string]any 
 }
 
 func compactProbeSessionID(accountID int64) string {
-	if accountID <= 0 {
-		return "probe_compact"
-	}
-	return "probe_compact_" + strconv.FormatInt(accountID, 10)
+	return openAIProbeSessionID("probe_compact", accountID)
 }

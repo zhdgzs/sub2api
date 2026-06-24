@@ -584,7 +584,19 @@ func (s *AccountTestService) testOpenAIAccountConnection(c *gin.Context, account
 
 	// Set common headers
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "text/event-stream")
 	req.Header.Set("Authorization", "Bearer "+authToken)
+	applyOpenAIUpstreamUserAgent(ctx, req, account, openAIUpstreamUserAgentOptions{
+		Config:             s.cfg,
+		DefaultUserAgent:   codexCLIUserAgent,
+		ForceCodexForOAuth: true,
+	})
+	probeSessionID := openAIProbeSessionID("probe_responses", account.ID)
+	if isOAuth {
+		applyOpenAICodexInternalAPIHeaders(req, probeSessionID)
+	} else {
+		applyOpenAICodexClientIdentityHeaders(req, probeSessionID)
+	}
 
 	// Set OAuth-specific headers for ChatGPT internal API
 	if isOAuth {
@@ -746,13 +758,13 @@ func (s *AccountTestService) testOpenAICompactConnection(c *gin.Context, account
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Authorization", "Bearer "+authToken)
-	req.Header.Set("OpenAI-Beta", "responses=experimental")
-	req.Header.Set("Originator", "codex_cli_rs")
-	req.Header.Set("User-Agent", codexCLIUserAgent)
-	req.Header.Set("Version", codexCLIVersion)
 	probeSessionID := compactProbeSessionID(account.ID)
-	req.Header.Set("Session_ID", probeSessionID)
-	req.Header.Set("Conversation_ID", probeSessionID)
+	applyOpenAIUpstreamUserAgent(ctx, req, account, openAIUpstreamUserAgentOptions{
+		Config:             s.cfg,
+		DefaultUserAgent:   codexCLIUserAgent,
+		ForceCodexForOAuth: true,
+	})
+	applyOpenAICodexInternalAPIHeaders(req, probeSessionID)
 
 	if isOAuth {
 		req.Host = "chatgpt.com"
@@ -1604,11 +1616,10 @@ func (s *AccountTestService) testOpenAIImageOAuth(c *gin.Context, ctx context.Co
 	req.Header.Set("Accept", "text/event-stream")
 	req.Header.Set("OpenAI-Beta", "responses=experimental")
 	req.Header.Set("originator", "opencode")
-	if customUA := strings.TrimSpace(account.GetOpenAIUserAgent()); customUA != "" {
-		req.Header.Set("User-Agent", customUA)
-	} else {
-		req.Header.Set("User-Agent", codexCLIUserAgent)
-	}
+	applyOpenAIUpstreamUserAgent(ctx, req, account, openAIUpstreamUserAgentOptions{
+		Config:           s.cfg,
+		DefaultUserAgent: codexCLIUserAgent,
+	})
 	if chatgptAccountID := strings.TrimSpace(account.GetChatGPTAccountID()); chatgptAccountID != "" {
 		req.Header.Set("chatgpt-account-id", chatgptAccountID)
 	}
