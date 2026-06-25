@@ -3354,6 +3354,10 @@ export default {
       schedulableEnabled: '调度已开启',
       schedulableDisabled: '调度已关闭',
       failedToToggleSchedulable: '切换调度状态失败',
+      priorityQuickEditLabel: '修改 {name} 的优先级',
+      priorityQuickEditHint: '回车或失焦保存优先级',
+      priorityInvalid: '请输入大于等于 1 的整数优先级',
+      priorityUpdateFailed: '更新优先级失败',
       groupCountTotal: '共 {count} 个分组',
       columns: {
         name: '名称',

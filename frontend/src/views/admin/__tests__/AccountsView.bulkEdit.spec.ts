@@ -8,13 +8,15 @@ const {
   listWithEtag,
   getBatchTodayStats,
   getAllProxies,
-  getAllGroups
+  getAllGroups,
+  updateAccount
 } = vi.hoisted(() => ({
   listAccounts: vi.fn(),
   listWithEtag: vi.fn(),
   getBatchTodayStats: vi.fn(),
   getAllProxies: vi.fn(),
-  getAllGroups: vi.fn()
+  getAllGroups: vi.fn(),
+  updateAccount: vi.fn()
 }))
 
 vi.mock('@/api/admin', () => ({
@@ -23,6 +25,7 @@ vi.mock('@/api/admin', () => ({
       list: listAccounts,
       listWithEtag,
       getBatchTodayStats,
+      update: updateAccount,
       delete: vi.fn(),
       batchClearError: vi.fn(),
       batchRefresh: vi.fn(),
@@ -51,6 +54,12 @@ vi.mock('@/stores/auth', () => ({
   })
 }))
 
+vi.mock('vue-router', () => ({
+  useRoute: () => ({
+    query: {}
+  })
+}))
+
 vi.mock('vue-i18n', async () => {
   const actual = await vi.importActual<typeof import('vue-i18n')>('vue-i18n')
   return {
@@ -63,11 +72,17 @@ vi.mock('vue-i18n', async () => {
 
 const DataTableStub = {
   props: ['columns', 'data'],
+  methods: {
+    hasColumn(key: string) {
+      return this.columns.some((column: { key: string }) => column.key === key)
+    }
+  },
   template: `
     <div data-test="data-table">
       <span v-for="column in columns" :key="column.key" data-test="column-key">{{ column.key }}</span>
       <div v-for="row in data" :key="row.id">
-        <slot name="cell-created_at" :value="row.created_at" :row="row" />
+        <slot v-if="hasColumn('priority')" name="cell-priority" :value="row.priority" :row="row" />
+        <slot v-if="hasColumn('created_at')" name="cell-created_at" :value="row.created_at" :row="row" />
       </div>
     </div>
   `
@@ -84,6 +99,58 @@ const BulkEditAccountModalStub = {
   template: '<div data-test="bulk-edit-modal" :data-show="String(show)" :data-target-mode="target?.mode ?? \'\'"></div>'
 }
 
+const baseStubs = {
+  AppLayout: { template: '<div><slot /></div>' },
+  TablePageLayout: {
+    template: '<div><slot name="filters" /><slot name="table" /><slot name="pagination" /></div>'
+  },
+  DataTable: DataTableStub,
+  Pagination: true,
+  ConfirmDialog: true,
+  AccountTableActions: { template: '<div><slot name="beforeCreate" /><slot name="after" /></div>' },
+  AccountTableFilters: { template: '<div></div>' },
+  AccountBulkActionsBar: AccountBulkActionsBarStub,
+  AccountActionMenu: true,
+  ImportDataModal: true,
+  ReAuthAccountModal: true,
+  AccountTestModal: true,
+  AccountStatsModal: true,
+  ScheduledTestsPanel: true,
+  SyncFromCrsModal: true,
+  TempUnschedStatusModal: true,
+  ErrorPassthroughRulesModal: true,
+  TLSFingerprintProfilesModal: true,
+  CreateAccountModal: true,
+  EditAccountModal: true,
+  BulkEditAccountModal: BulkEditAccountModalStub,
+  PlatformTypeBadge: true,
+  AccountCapacityCell: true,
+  AccountStatusIndicator: true,
+  AccountTodayStatsCell: true,
+  AccountGroupsCell: true,
+  AccountUsageCell: true,
+  Icon: true
+}
+
+const mountAccountsView = () => mount(AccountsView, {
+  global: {
+    stubs: baseStubs
+  }
+})
+
+const buildAccount = (overrides: Record<string, unknown> = {}) => ({
+  id: 1,
+  name: 'test-account',
+  platform: 'anthropic',
+  type: 'oauth',
+  status: 'active',
+  schedulable: true,
+  priority: 10,
+  created_at: '2026-03-07T10:00:00Z',
+  updated_at: '2026-03-07T10:00:00Z',
+  ...overrides
+})
+
 describe('admin AccountsView bulk edit scope', () => {
   beforeEach(() => {
     localStorage.clear()
@@ -93,6 +160,7 @@ describe('admin AccountsView bulk edit scope', () => {
     getBatchTodayStats.mockReset()
     getAllProxies.mockReset()
     getAllGroups.mockReset()
+    updateAccount.mockReset()
 
     listAccounts.mockResolvedValue({
       items: [],
@@ -109,45 +177,11 @@ describe('admin AccountsView bulk edit scope', () => {
     getBatchTodayStats.mockResolvedValue({ stats: {} })
     getAllProxies.mockResolvedValue([])
     getAllGroups.mockResolvedValue([])
+    updateAccount.mockResolvedValue(buildAccount())
   })
 
   it('opens bulk edit in filtered-results mode from the bulk actions dropdown', async () => {
-    const wrapper = mount(AccountsView, {
-      global: {
-        stubs: {
-          AppLayout: { template: '<div><slot /></div>' },
-          TablePageLayout: {
-            template: '<div><slot name="filters" /><slot name="table" /><slot name="pagination" /></div>'
-          },
-          DataTable: DataTableStub,
-          Pagination: true,
-          ConfirmDialog: true,
-          AccountTableActions: { template: '<div><slot name="beforeCreate" /><slot name="after" /></div>' },
-          AccountTableFilters: { template: '<div></div>' },
-          AccountBulkActionsBar: AccountBulkActionsBarStub,
-          AccountActionMenu: true,
-          ImportDataModal: true,
-          ReAuthAccountModal: true,
-          AccountTestModal: true,
-          AccountStatsModal: true,
-          ScheduledTestsPanel: true,
-          SyncFromCrsModal: true,
-          TempUnschedStatusModal: true,
-          ErrorPassthroughRulesModal: true,
-          TLSFingerprintProfilesModal: true,
-          CreateAccountModal: true,
-          EditAccountModal: true,
-          BulkEditAccountModal: BulkEditAccountModalStub,
-          PlatformTypeBadge: true,
-          AccountCapacityCell: true,
-          AccountStatusIndicator: true,
-          AccountTodayStatsCell: true,
-          AccountGroupsCell: true,
-          AccountUsageCell: true,
-          Icon: true
-        }
-      }
-    })
+    const wrapper = mountAccountsView()
 
     await flushPromises()
     await wrapper.get('[data-test="edit-filtered"]').trigger('click')
@@ -159,60 +193,14 @@ describe('admin AccountsView bulk edit scope', () => {
 
   it('renders the created_at column by default', async () => {
     listAccounts.mockResolvedValue({
-      items: [
-        {
-          id: 1,
-          name: 'test-account',
-          platform: 'anthropic',
-          type: 'oauth',
-          status: 'active',
-          schedulable: true,
-          created_at: '2026-03-07T10:00:00Z',
-          updated_at: '2026-03-07T10:00:00Z'
-        }
-      ],
+      items: [buildAccount()],
       total: 1,
       page: 1,
       page_size: 20,
       pages: 1
     })
 
-    const wrapper = mount(AccountsView, {
-      global: {
-        stubs: {
-          AppLayout: { template: '<div><slot /></div>' },
-          TablePageLayout: {
-            template: '<div><slot name="filters" /><slot name="table" /><slot name="pagination" /></div>'
-          },
-          DataTable: DataTableStub,
-          Pagination: true,
-          ConfirmDialog: true,
-          AccountTableActions: { template: '<div><slot name="beforeCreate" /><slot name="after" /></div>' },
-          AccountTableFilters: { template: '<div></div>' },
-          AccountBulkActionsBar: AccountBulkActionsBarStub,
-          AccountActionMenu: true,
-          ImportDataModal: true,
-          ReAuthAccountModal: true,
-          AccountTestModal: true,
-          AccountStatsModal: true,
-          ScheduledTestsPanel: true,
-          SyncFromCrsModal: true,
-          TempUnschedStatusModal: true,
-          ErrorPassthroughRulesModal: true,
-          TLSFingerprintProfilesModal: true,
-          CreateAccountModal: true,
-          EditAccountModal: true,
-          BulkEditAccountModal: BulkEditAccountModalStub,
-          PlatformTypeBadge: true,
-          AccountCapacityCell: true,
-          AccountStatusIndicator: true,
-          AccountTodayStatsCell: true,
-          AccountGroupsCell: true,
-          AccountUsageCell: true,
-          Icon: true
-        }
-      }
-    })
+    const wrapper = mountAccountsView()
 
     await flushPromises()
 
@@ -223,5 +211,35 @@ describe('admin AccountsView bulk edit scope', () => {
       label: 'admin.accounts.columns.createdAt',
       sortable: true
     })
+  })
+
+  it('updates account priority directly from the list cell', async () => {
+    const initialAccount = buildAccount({ priority: 10 })
+    const updatedAccount = buildAccount({ priority: 3, updated_at: '2026-03-07T10:05:00Z' })
+
+    listAccounts.mockResolvedValue({
+      items: [initialAccount],
+      total: 1,
+      page: 1,
+      page_size: 20,
+      pages: 1
+    })
+    updateAccount.mockResolvedValue(updatedAccount)
+
+    const wrapper = mountAccountsView()
+    await flushPromises()
+
+    const columnKeys = wrapper.findAll('[data-test="column-key"]').map(node => node.text())
+    expect(columnKeys).toContain('priority')
+
+    const priorityInput = wrapper.get('[data-test="account-priority-input"]')
+    expect((priorityInput.element as HTMLInputElement).value).toBe('10')
+
+    await priorityInput.setValue('3')
+    await priorityInput.trigger('blur')
+    await flushPromises()
+
+    expect(updateAccount).toHaveBeenCalledWith(1, { priority: 3 })
+    expect((wrapper.get('[data-test="account-priority-input"]').element as HTMLInputElement).value).toBe('3')
   })
 })

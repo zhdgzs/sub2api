@@ -316,8 +316,31 @@
               {{ (row.rate_multiplier ?? 1).toFixed(2) }}x
             </span>
           </template>
-          <template #cell-priority="{ value }">
-            <span class="text-sm text-gray-700 dark:text-gray-300">{{ value }}</span>
+          <template #cell-priority="{ row }">
+            <div class="inline-flex w-28 items-center gap-1.5" @click.stop>
+              <input
+                :value="getPriorityDraft(row)"
+                type="number"
+                min="1"
+                step="1"
+                inputmode="numeric"
+                class="h-8 w-16 rounded-md border border-gray-300 bg-white px-2 text-sm font-mono text-gray-700 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400 dark:border-dark-600 dark:bg-dark-800 dark:text-gray-200 dark:disabled:bg-dark-700"
+                :disabled="isPrioritySaving(row.id)"
+                :aria-label="t('admin.accounts.priorityQuickEditLabel', { name: row.name })"
+                :title="t('admin.accounts.priorityQuickEditHint')"
+                data-test="account-priority-input"
+                @input="setPriorityDraft(row, ($event.target as HTMLInputElement).value)"
+                @blur="commitPriorityDraft(row)"
+                @keydown.enter.prevent="commitPriorityDraft(row)"
+                @keydown.esc.prevent="resetPriorityDraft(row)"
+              />
+              <Icon
+                v-if="isPrioritySaving(row.id)"
+                name="refresh"
+                size="xs"
+                class="animate-spin text-primary-500"
+              />
+            </div>
           </template>
           <template #cell-last_used_at="{ value }">
             <span class="text-sm text-gray-500 dark:text-dark-400">{{ formatRelativeTime(value) }}</span>
@@ -519,12 +542,14 @@ const scheduleModelOptions = ref<SelectOption[]>([])
 const togglingSchedulable = ref<number | null>(null)
 const menu = reactive<{show:boolean, acc:Account|null, pos:{top:number, left:number}|null}>({ show: false, acc: null, pos: null })
 const exportingData = ref(false)
+const priorityDrafts = reactive<Record<number, string>>({})
+const savingPriorityIds = ref<Set<number>>(new Set())
 
 // Account tools dropdown
 const showAccountToolsDropdown = ref(false)
 const accountToolsDropdownRef = ref<HTMLElement | null>(null)
 const hiddenColumns = reactive<Set<string>>(new Set())
-const DEFAULT_HIDDEN_COLUMNS = ['today_stats', 'proxy', 'notes', 'priority', 'rate_multiplier']
+const DEFAULT_HIDDEN_COLUMNS = ['today_stats', 'proxy', 'notes', 'rate_multiplier']
 const HIDDEN_COLUMNS_KEY = 'account-hidden-columns'
 
 // Sorting settings
@@ -1539,6 +1564,55 @@ const patchAccountInList = (updatedAccount: Account) => {
 const handleAccountUpdated = (updatedAccount: Account) => {
   patchAccountInList(updatedAccount)
   enterAutoRefreshSilentWindow()
+}
+const getPriorityDraft = (account: Account) => priorityDrafts[account.id] ?? String(account.priority)
+const setPriorityDraft = (account: Account, value: string) => {
+  priorityDrafts[account.id] = value
+}
+const resetPriorityDraft = (account: Account) => {
+  delete priorityDrafts[account.id]
+}
+const parsePriorityDraft = (value: string) => {
+  const priority = Number(value.trim())
+  return Number.isInteger(priority) && priority >= 1 ? priority : null
+}
+const setPrioritySaving = (accountId: number, saving: boolean) => {
+  const next = new Set(savingPriorityIds.value)
+  if (saving) next.add(accountId)
+  else next.delete(accountId)
+  savingPriorityIds.value = next
+}
+const isPrioritySaving = (accountId: number) => savingPriorityIds.value.has(accountId)
+const commitPriorityDraft = async (account: Account) => {
+  if (isPrioritySaving(account.id)) return
+
+  const priority = parsePriorityDraft(getPriorityDraft(account))
+  if (priority === null) {
+    resetPriorityDraft(account)
+    appStore.showError(t('admin.accounts.priorityInvalid'))
+    return
+  }
+  if (priority === account.priority) {
+    resetPriorityDraft(account)
+    return
+  }
+
+  setPrioritySaving(account.id, true)
+  try {
+    const updated = await adminAPI.accounts.update(account.id, { priority })
+    patchAccountInList(updated)
+    resetPriorityDraft(updated)
+    enterAutoRefreshSilentWindow()
+  } catch (error: any) {
+    resetPriorityDraft(account)
+    appStore.showError(
+      error?.response?.data?.detail ||
+      error?.response?.data?.message ||
+      t('admin.accounts.priorityUpdateFailed')
+    )
+  } finally {
+    setPrioritySaving(account.id, false)
+  }
 }
 const formatExportTimestamp = () => {
   const now = new Date()
