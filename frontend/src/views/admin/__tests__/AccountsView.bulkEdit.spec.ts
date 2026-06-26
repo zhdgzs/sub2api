@@ -132,9 +132,22 @@ const baseStubs = {
   Icon: true
 }
 
-const mountAccountsView = () => mount(AccountsView, {
+const InteractiveAccountTableFiltersStub = {
+  emits: ['update:filters', 'change', 'update:searchQuery'],
+  template: `
+    <div>
+      <button data-test="set-platform-filter" @click="$emit('update:filters', { platform: 'openai' }); $emit('change')">set platform</button>
+      <button data-test="set-search-filter" @click="$emit('update:searchQuery', 'saved-account')">set search</button>
+    </div>
+  `
+}
+
+const mountAccountsView = (stubs: Record<string, unknown> = {}) => mount(AccountsView, {
   global: {
-    stubs: baseStubs
+    stubs: {
+      ...baseStubs,
+      ...stubs
+    }
   }
 })
 
@@ -241,5 +254,56 @@ describe('admin AccountsView bulk edit scope', () => {
 
     expect(updateAccount).toHaveBeenCalledWith(1, { priority: 3 })
     expect((wrapper.get('[data-test="account-priority-input"]').element as HTMLInputElement).value).toBe('3')
+  })
+
+  it('restores persisted account filters on mount', async () => {
+    localStorage.setItem('account-table-filters', JSON.stringify({
+      platform: 'openai',
+      type: 'oauth',
+      plan_type: 'pro',
+      status: 'active',
+      privacy_mode: 'training_off',
+      group: '12',
+      search: 'saved-account'
+    }))
+
+    mountAccountsView()
+    await flushPromises()
+
+    expect(listAccounts).toHaveBeenCalledWith(
+      1,
+      20,
+      expect.objectContaining({
+        platform: 'openai',
+        type: 'oauth',
+        plan_type: 'pro',
+        status: 'active',
+        privacy_mode: 'training_off',
+        group: '12',
+        search: 'saved-account'
+      }),
+      expect.any(Object)
+    )
+  })
+
+  it('persists account filters when the user changes them', async () => {
+    const wrapper = mountAccountsView({
+      AccountTableFilters: InteractiveAccountTableFiltersStub
+    })
+
+    await flushPromises()
+    await wrapper.get('[data-test="set-platform-filter"]').trigger('click')
+    await wrapper.get('[data-test="set-search-filter"]').trigger('click')
+    await flushPromises()
+
+    expect(JSON.parse(localStorage.getItem('account-table-filters') || 'null')).toMatchObject({
+      platform: 'openai',
+      type: '',
+      plan_type: '',
+      status: '',
+      privacy_mode: '',
+      group: '',
+      search: 'saved-account'
+    })
   })
 })

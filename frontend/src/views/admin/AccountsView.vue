@@ -553,9 +553,24 @@ const DEFAULT_HIDDEN_COLUMNS = ['today_stats', 'proxy', 'notes', 'rate_multiplie
 const HIDDEN_COLUMNS_KEY = 'account-hidden-columns'
 
 // Sorting settings
+const ACCOUNT_FILTERS_STORAGE_KEY = 'account-table-filters'
 const ACCOUNT_SORT_STORAGE_KEY = 'account-table-sort'
 type AccountSortOrder = 'asc' | 'desc'
+type AccountListFilterValues = {
+  platform: string
+  type: string
+  plan_type: string
+  status: string
+  privacy_mode: string
+  group: string
+  search: string
+}
 type AccountSortState = {
+  sort_by: string
+  sort_order: AccountSortOrder
+}
+type AccountListRequestParams = AccountListFilterValues & {
+  lite?: string
   sort_by: string
   sort_order: AccountSortOrder
 }
@@ -570,6 +585,60 @@ const ACCOUNT_SORTABLE_KEYS = new Set([
   'created_at',
   'expires_at'
 ])
+const sanitizePersistedAccountFilter = (value: unknown): string => {
+  return typeof value === 'string' ? value : ''
+}
+
+const getRouteSearchFilter = (): string | null => {
+  return typeof route.query.search === 'string' ? route.query.search : null
+}
+
+const loadInitialAccountFilters = (): AccountListFilterValues => {
+  const routeSearch = getRouteSearchFilter()
+  const fallback: AccountListFilterValues = {
+    platform: '',
+    type: '',
+    plan_type: '',
+    status: '',
+    privacy_mode: '',
+    group: '',
+    search: routeSearch ?? ''
+  }
+
+  if (typeof window === 'undefined') {
+    return fallback
+  }
+
+  try {
+    const raw = window.localStorage.getItem(ACCOUNT_FILTERS_STORAGE_KEY)
+    if (!raw) return fallback
+
+    const parsed = JSON.parse(raw) as Partial<Record<keyof AccountListFilterValues, unknown>>
+    return {
+      platform: sanitizePersistedAccountFilter(parsed.platform),
+      type: sanitizePersistedAccountFilter(parsed.type),
+      plan_type: sanitizePersistedAccountFilter(parsed.plan_type),
+      status: sanitizePersistedAccountFilter(parsed.status),
+      privacy_mode: sanitizePersistedAccountFilter(parsed.privacy_mode),
+      group: sanitizePersistedAccountFilter(parsed.group),
+      search: routeSearch ?? sanitizePersistedAccountFilter(parsed.search)
+    }
+  } catch (error) {
+    console.error('Failed to load saved account filters:', error)
+    return fallback
+  }
+}
+
+const saveAccountFiltersToStorage = (filters: AccountListFilterValues) => {
+  if (typeof window === 'undefined') return
+
+  try {
+    window.localStorage.setItem(ACCOUNT_FILTERS_STORAGE_KEY, JSON.stringify(filters))
+  } catch (error) {
+    console.error('Failed to save account filters:', error)
+  }
+}
+
 const loadInitialAccountSortState = (): AccountSortState => {
   const fallback: AccountSortState = { sort_by: 'name', sort_order: 'asc' }
   try {
@@ -778,16 +847,10 @@ const {
   debouncedReload: baseDebouncedReload,
   handlePageChange: baseHandlePageChange,
   handlePageSizeChange: baseHandlePageSizeChange
-} = useTableLoader<Account, any>({
+} = useTableLoader<Account, AccountListRequestParams>({
   fetchFn: adminAPI.accounts.list,
   initialParams: {
-    platform: '',
-    type: '',
-    plan_type: '',
-    status: '',
-    privacy_mode: '',
-    group: '',
-    search: typeof route.query.search === 'string' ? route.query.search : '',
+    ...loadInitialAccountFilters(),
     sort_by: sortState.sort_by,
     sort_order: sortState.sort_order
   }
@@ -831,7 +894,7 @@ const resetAutoRefreshCache = () => {
 const isFirstLoad = ref(true)
 
 const load = async () => {
-  const requestParams = params as any
+  const requestParams = params
   hasPendingListSync.value = false
   resetAutoRefreshCache()
   pendingTodayStatsRefresh.value = false
@@ -860,6 +923,21 @@ const debouncedReload = () => {
   pendingTodayStatsRefresh.value = true
   baseDebouncedReload()
 }
+
+watch(
+  () => ({
+    platform: params.platform,
+    type: params.type,
+    plan_type: params.plan_type,
+    status: params.status,
+    privacy_mode: params.privacy_mode,
+    group: params.group,
+    search: params.search
+  }),
+  (filters) => {
+    saveAccountFiltersToStorage(filters)
+  }
+)
 
 const handlePageChange = (page: number) => {
   hasPendingListSync.value = false
@@ -985,18 +1063,7 @@ const refreshAccountsIncrementally = async () => {
     const result = await adminAPI.accounts.listWithEtag(
       pagination.page,
       pagination.page_size,
-      toRaw(params) as {
-        platform?: string
-        type?: string
-        plan_type?: string
-        status?: string
-        privacy_mode?: string
-        group?: string
-        search?: string
-        sort_by?: string
-        sort_order?: AccountSortOrder
-
-      },
+      toRaw(params),
       { etag: autoRefreshETag.value }
     )
 
