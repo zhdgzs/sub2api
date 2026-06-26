@@ -218,6 +218,14 @@ git push origin main
 backend/cmd/server/VERSION
 ```
 
+Docker 打包记录文件：
+
+```text
+docs/DOCKER_RELEASE_HISTORY.md
+```
+
+每次正式 Docker 打包都要补一条一句话功能记录，只统计本仓库自定义提交，不统计 `main` / `upstream` 的提交。
+
 版本命名使用上游版本号加 fork 后缀：
 
 ```text
@@ -233,7 +241,10 @@ git checkout custom
 git pull --ff-only origin custom
 
 # 按需更新 backend/cmd/server/VERSION，例如写入 0.1.134-zhdgzs.1
-git add backend/cmd/server/VERSION
+python3 "scripts/update_docker_release_record.py" --repo "$PWD" --version 0.1.134-zhdgzs.1
+
+# 同时提交 docs/DOCKER_RELEASE_HISTORY.md，记录本次打包功能
+git add backend/cmd/server/VERSION docs/DOCKER_RELEASE_HISTORY.md
 git commit -m "chore(release): 0.1.134-zhdgzs.1"
 git push origin custom
 
@@ -285,6 +296,7 @@ docker build \
 - [ ] 工作区干净。
 - [ ] `custom` 已包含本次要发布的上游 `main` 和功能提交。
 - [ ] `backend/cmd/server/VERSION` 已更新为 `x.y.z-zhdgzs.n`。
+- [ ] `docs/DOCKER_RELEASE_HISTORY.md` 已更新，且功能记录只统计自定义提交。
 - [ ] 版本号 commit 已推送到 `origin/custom`。
 - [ ] 已创建 annotated tag：`release/vx.y.z-zhdgzs.n`。
 - [ ] release tag 已推送到 `origin`。

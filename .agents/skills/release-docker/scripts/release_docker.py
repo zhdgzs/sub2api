@@ -9,12 +9,14 @@ from __future__ import annotations
 import argparse
 import re
 import subprocess
-import sys
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 
 
 VERSION_RE = re.compile(r"^(?P<base>\d+\.\d+\.\d+)-zhdgzs\.(?P<num>\d+)$")
+RELEASE_RECORD_RELATIVE = Path("docs/DOCKER_RELEASE_HISTORY.md")
+RELEASE_RECORD_SCRIPT_RELATIVE = Path("scripts/update_docker_release_record.py")
 
 
 @dataclass(frozen=True)
@@ -69,6 +71,8 @@ def require_repo(repo: Path) -> None:
         raise SystemExit("[ERROR] docs/SYNC_UPSTREAM_CN.md not found")
     if not (repo / "backend" / "cmd" / "server" / "VERSION").exists():
         raise SystemExit("[ERROR] backend/cmd/server/VERSION not found")
+    if not (repo / RELEASE_RECORD_SCRIPT_RELATIVE).exists():
+        raise SystemExit(f"[ERROR] {RELEASE_RECORD_SCRIPT_RELATIVE.as_posix()} not found")
 
 
 def require_clean(repo: Path) -> None:
@@ -155,6 +159,7 @@ def print_plan(state: RepoState, version: str | None) -> None:
     chosen = version or state.candidate_version
     print("Release Docker preview")
     print(f"repo: {state.repo}")
+    print(f"release_record: {RELEASE_RECORD_RELATIVE.as_posix()}")
     print(f"source_branch: {state.source_branch} ({state.head})")
     print(f"main: {state.main}")
     print(f"custom: {state.custom or 'missing'}")
@@ -175,10 +180,11 @@ def print_plan(state: RepoState, version: str | None) -> None:
     print("5. merge --no-ff main")
     print("6. merge --no-ff source branch if not already contained")
     print("7. update backend/cmd/server/VERSION")
-    print("8. commit version if needed")
-    print("9. push origin custom")
-    print("10. create and push annotated release tag")
-    print("11. docker build release tags")
+    print(f"8. update {RELEASE_RECORD_RELATIVE.as_posix()} from custom commits only")
+    print("9. commit release metadata if needed")
+    print("10. push origin custom")
+    print("11. create and push annotated release tag")
+    print("12. docker build release tags")
 
 
 def run_sync_upstream(repo: Path) -> None:
@@ -207,6 +213,36 @@ def write_version(repo: Path, version: str) -> bool:
     return True
 
 
+def update_release_record(repo: Path, version: str, release_date: str, rev: str = "HEAD") -> tuple[bool, str]:
+    script = repo / RELEASE_RECORD_SCRIPT_RELATIVE
+    proc = run(
+        [
+            "python3",
+            str(script),
+            "--repo",
+            str(repo),
+            "--version",
+            version,
+            "--rev",
+            rev,
+            "--date",
+            release_date,
+        ],
+        cwd=repo,
+        check=True,
+    )
+
+    info: dict[str, str] = {}
+    for line in proc.stdout.splitlines():
+        key, sep, value = line.partition(":")
+        if sep:
+            info[key.strip()] = value.strip()
+
+    changed = info.get("changed") == "yes"
+    note = info.get("note", "")
+    return changed, note
+
+
 def execute(repo: Path, version: str, allow_version_override: bool) -> None:
     require_clean(repo)
     source_branch = current_branch(repo)
@@ -227,12 +263,14 @@ def execute(repo: Path, version: str, allow_version_override: bool) -> None:
         merge_branch(repo, source_branch, f"chore: merge {source_branch} into custom")
 
     require_clean_or_merge_complete(repo)
-    changed = write_version(repo, version)
-    if changed:
-        git(repo, "add", "backend/cmd/server/VERSION")
+    release_date = date.today().isoformat()
+    version_changed = write_version(repo, version)
+    record_changed, note = update_release_record(repo, version, release_date)
+    if version_changed or record_changed:
+        git(repo, "add", "backend/cmd/server/VERSION", str(RELEASE_RECORD_RELATIVE))
         git(repo, "commit", "-m", f"chore(release): {version}")
     else:
-        print(f"[INFO] VERSION already equals {version}; no version commit needed")
+        print(f"[INFO] Release metadata already up to date for {version}; no release commit needed")
 
     git(repo, "push", "origin", "custom")
     git(repo, "tag", "-a", tag, "-m", tag)
@@ -258,10 +296,12 @@ def execute(repo: Path, version: str, allow_version_override: bool) -> None:
         capture=False,
     )
     print("Release Docker build complete")
+    print(f"record: {RELEASE_RECORD_RELATIVE.as_posix()}")
     print(f"version: {version}")
     print(f"tag: {tag}")
     print(f"commit: {commit}")
     print(f"docker: sub2api:{version}, sub2api:custom")
+    print(f"note: {note}")
 
 
 def require_clean_or_merge_complete(repo: Path) -> None:

@@ -26,7 +26,7 @@ Before any mutating execution, show this confirmation:
 ```text
 ⚠️ 危险操作检测！
 操作类型：release Docker 打包流程
-影响范围：会同步 upstream/main 到 origin/main 和本地 main，切换到 custom，合并 main 和调用时所在开发分支，更新 backend/cmd/server/VERSION，提交版本号，推送 origin/custom，创建并推送 release/* tag，构建正式 Docker 镜像
+影响范围：会同步 upstream/main 到 origin/main 和本地 main，切换到 custom，合并 main 和调用时所在开发分支，更新 backend/cmd/server/VERSION 和 docs/DOCKER_RELEASE_HISTORY.md，提交 release 元数据，推送 origin/custom，创建并推送 release/* tag，构建正式 Docker 镜像
 风险评估：如果分支选择、版本号或 tag 错误，会影响正式发布追溯；如果合并冲突，流程会中止并要求人工解决；不会自动解决冲突，不会自动 stash 或提交未提交改动
 
 请确认是否继续？[需要明确的"是"、"确认"、"继续"]
@@ -57,7 +57,7 @@ Release Docker builds must preserve the local Docker build cache by default.
    python3 ".agents/skills/release-docker/scripts/release_docker.py" --repo "$PWD"
    ```
 
-7. Review the proposed source branch, `main`, `custom`, version candidate, release tag, and Docker tags.
+7. Review the proposed source branch, `main`, `custom`, version candidate, release tag, Docker tags, and release record file.
 8. Ask the user to confirm the version.
 9. Execute after explicit confirmation:
 
@@ -65,7 +65,8 @@ Release Docker builds must preserve the local Docker build cache by default.
    python3 ".agents/skills/release-docker/scripts/release_docker.py" --repo "$PWD" --yes --version <confirmed-version>
    ```
 
-10. Report the commit, tag, Docker tags, and any warnings.
+10. After the build completes, verify that `docs/DOCKER_RELEASE_HISTORY.md` has been updated for this version.
+11. Report the commit, tag, Docker tags, release record, and any warnings.
 
 ## Script Contract
 
@@ -84,7 +85,9 @@ Execution mode:
 - Merges the recorded source branch into `custom` with `--no-ff` unless already contained.
 - Stops on merge conflicts.
 - Writes `backend/cmd/server/VERSION`.
-- Commits `chore(release): <version>` only if the VERSION file changed.
+- Writes/updates `docs/DOCKER_RELEASE_HISTORY.md`.
+- Generates the release record from this fork's custom commits only, excluding `main` / `upstream` commits.
+- Commits `chore(release): <version>` only if release metadata changed.
 - Pushes `origin/custom`.
 - Creates annotated tag `release/v<version>`.
 - Pushes the release tag to `origin`.
@@ -103,3 +106,18 @@ The candidate version is based on `main:backend/cmd/server/VERSION` and existing
 - If the user supplies `--version`, validate it matches `<base>-zhdgzs.<n>` unless the user explicitly confirms an override.
 
 Docker tags do not use `release/` because Docker tags cannot contain `/`.
+
+## Release Record Rules
+
+Formal release build history lives in:
+
+```text
+docs/DOCKER_RELEASE_HISTORY.md
+```
+
+Every successful release Docker build must leave exactly one record row for the built version:
+
+- One sentence describing the functionality included in this build.
+- The sentence must be based on this fork's custom commits only.
+- Do not count upstream/main commits in the functional summary.
+- If the version already has a row, update that row instead of appending a duplicate.

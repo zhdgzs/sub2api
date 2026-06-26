@@ -119,6 +119,9 @@ tests
 CLAUDE.md
 .claude
 scripts
+!/scripts/
+/scripts/*
+!/scripts/update_docker_release_record.py
 !.agents/skills/release-docker/scripts/
 !.agents/skills/release-docker/scripts/release_docker.py
 __pycache__/
@@ -134,6 +137,7 @@ docs/*
 !docs/PAYMENT_CN.md
 !docs/ADMIN_PAYMENT_INTEGRATION_API.md
 !docs/SYNC_UPSTREAM_CN.md
+!docs/DOCKER_RELEASE_HISTORY.md
 !docs/legal/
 !docs/legal/*.md
 .serena/
