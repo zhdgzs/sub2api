@@ -55,9 +55,31 @@
         />
       </div>
 
+      <div v-if="!supportsImageTest" class="space-y-1.5">
+        <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+          {{ t('admin.accounts.selectTestPrompt') }}
+        </label>
+        <Select
+          v-model="selectedPromptPreset"
+          :options="textPromptOptions"
+          :disabled="status === 'connecting'"
+        />
+      </div>
+
+      <div v-if="!supportsImageTest && isCustomTextPrompt" class="space-y-1.5">
+        <TextArea
+          v-model="customTextPrompt"
+          :label="t('admin.accounts.customTestPromptLabel')"
+          :placeholder="t('admin.accounts.customTestPromptPlaceholder')"
+          :error="customTextPromptError"
+          :disabled="status === 'connecting'"
+          rows="3"
+        />
+      </div>
+
       <div v-if="supportsImageTest" class="space-y-1.5">
         <TextArea
-          v-model="testPrompt"
+          v-model="imagePrompt"
           :label="t('admin.accounts.imagePromptLabel')"
           :placeholder="t('admin.accounts.imagePromptPlaceholder')"
           :hint="t('admin.accounts.imageTestHint')"
@@ -178,7 +200,7 @@
           {{
             supportsImageTest
               ? t('admin.accounts.imageTestMode')
-              : t('admin.accounts.testPrompt')
+              : t('admin.accounts.testPrompt', { prompt: textPromptSummary })
           }}
         </span>
       </div>
@@ -194,10 +216,10 @@
         </button>
         <button
           @click="startTest"
-          :disabled="status === 'connecting' || !selectedModelId"
+          :disabled="startDisabled"
           :class="[
             'flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all',
-            status === 'connecting' || !selectedModelId
+            startDisabled
               ? 'cursor-not-allowed bg-primary-400 text-white'
               : status === 'success'
                 ? 'bg-green-500 text-white hover:bg-green-600'
@@ -241,6 +263,7 @@ import { useClipboard } from '@/composables/useClipboard'
 import { buildApiUrl } from '@/api/client'
 import { adminAPI } from '@/api/admin'
 import type { Account, ClaudeModel } from '@/types'
+import type { SelectOption } from '@/components/common/Select.vue'
 
 const { t } = useI18n()
 const { copyToClipboard } = useClipboard()
@@ -271,11 +294,21 @@ const streamingContent = ref('')
 const errorMessage = ref('')
 const availableModels = ref<ClaudeModel[]>([])
 const selectedModelId = ref('')
-const testPrompt = ref('')
+const imagePrompt = ref('')
+const customTextPrompt = ref('')
 const loadingModels = ref(false)
 let abortController: AbortController | null = null
 const generatedImages = ref<PreviewImage[]>([])
 const previewImageUrl = ref('')
+const textTestPrompts = {
+  identity: '你是什么模型',
+  hi: 'hi',
+  bubbleSort: '使用python写一个冒泡排序，只快速输出代码即可。'
+} as const
+type TextPromptPreset = keyof typeof textTestPrompts | 'custom'
+const defaultTextPromptPreset: TextPromptPreset = 'identity'
+const selectedPromptPreset = ref<TextPromptPreset>(defaultTextPromptPreset)
+const activeTextPrompt = ref('')
 const prioritizedGeminiModels = ['gemini-3.1-flash-image', 'gemini-2.5-flash-image', 'gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-3-flash-preview', 'gemini-3-pro-preview', 'gemini-2.0-flash']
 const supportsGeminiImageTest = computed(() => {
   const modelID = selectedModelId.value.toLowerCase()
@@ -291,6 +324,30 @@ const supportsOpenAIImageTest = computed(() => {
 })
 
 const supportsImageTest = computed(() => supportsGeminiImageTest.value || supportsOpenAIImageTest.value)
+const isCustomTextPrompt = computed(() => selectedPromptPreset.value === 'custom')
+const textPromptOptions = computed<SelectOption[]>(() => [
+  { value: 'identity', label: t('admin.accounts.testPromptIdentity') },
+  { value: 'hi', label: t('admin.accounts.testPromptHi') },
+  { value: 'bubbleSort', label: t('admin.accounts.testPromptBubbleSort') },
+  { value: 'custom', label: t('admin.accounts.testPromptCustom') }
+])
+const resolvedTextTestPrompt = computed(() => {
+  const preset = selectedPromptPreset.value
+  if (preset === 'custom') {
+    return customTextPrompt.value.trim()
+  }
+  return textTestPrompts[preset]
+})
+const customTextPromptError = computed(() => {
+  if (!isCustomTextPrompt.value || customTextPrompt.value.trim()) return ''
+  return t('admin.accounts.customTestPromptRequired')
+})
+const textPromptSummary = computed(() => resolvedTextTestPrompt.value)
+const startDisabled = computed(() => (
+  status.value === 'connecting' ||
+  !selectedModelId.value ||
+  (!supportsImageTest.value && isCustomTextPrompt.value && !customTextPrompt.value.trim())
+))
 
 const sortTestModels = (models: ClaudeModel[]) => {
   const priorityMap = new Map(prioritizedGeminiModels.map((id, index) => [id, index]))
@@ -308,7 +365,9 @@ watch(
   () => props.show,
   async (newVal) => {
     if (newVal && props.account) {
-      testPrompt.value = ''
+      imagePrompt.value = ''
+      customTextPrompt.value = ''
+      selectedPromptPreset.value = defaultTextPromptPreset
       resetState()
       await loadAvailableModels()
     } else {
@@ -318,8 +377,8 @@ watch(
 )
 
 watch(selectedModelId, () => {
-  if (supportsImageTest.value && !testPrompt.value.trim()) {
-    testPrompt.value = t('admin.accounts.imagePromptDefault')
+  if (supportsImageTest.value && !imagePrompt.value.trim()) {
+    imagePrompt.value = t('admin.accounts.imagePromptDefault')
   }
 })
 
@@ -360,6 +419,7 @@ const resetState = () => {
   errorMessage.value = ''
   generatedImages.value = []
   previewImageUrl.value = ''
+  activeTextPrompt.value = ''
 }
 
 const handleClose = () => {
@@ -387,10 +447,12 @@ const scrollToBottom = async () => {
 }
 
 const startTest = async () => {
-  if (!props.account || !selectedModelId.value) return
+  if (!props.account || startDisabled.value) return
 
   resetState()
   status.value = 'connecting'
+  const requestPrompt = supportsImageTest.value ? imagePrompt.value.trim() : resolvedTextTestPrompt.value
+  activeTextPrompt.value = supportsImageTest.value ? '' : requestPrompt
   addLine(t('admin.accounts.startingTestForAccount', { name: props.account.name }), 'text-blue-400')
   addLine(t('admin.accounts.testAccountTypeLabel', { type: props.account.type }), 'text-gray-400')
   addLine('', 'text-gray-300')
@@ -411,9 +473,9 @@ const startTest = async () => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-              model_id: selectedModelId.value,
-              prompt: supportsImageTest.value ? testPrompt.value.trim() : ''
-            }),
+        model_id: selectedModelId.value,
+        prompt: requestPrompt
+      }),
       signal: abortController.signal
     })
 
@@ -481,7 +543,7 @@ const handleEvent = (event: {
       addLine(
         supportsImageTest.value
             ? t('admin.accounts.sendingImageRequest')
-            : t('admin.accounts.sendingTestMessage'),
+            : t('admin.accounts.sendingTestMessage', { prompt: activeTextPrompt.value }),
         'text-gray-400'
       )
       addLine('', 'text-gray-300')

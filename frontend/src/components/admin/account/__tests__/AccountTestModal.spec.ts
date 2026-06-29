@@ -33,6 +33,12 @@ vi.mock('vue-i18n', async () => {
         if (key === 'admin.accounts.imageReceived' && params?.count) {
           return `received-${params.count}`
         }
+        if (key === 'admin.accounts.sendingTestMessage') {
+          return `发送测试消息："${params?.prompt ?? ''}"`
+        }
+        if (key === 'admin.accounts.testPrompt') {
+          return `提示词："${params?.prompt ?? ''}"`
+        }
         return messages[key] || key
       }
     })
@@ -59,17 +65,22 @@ function createStreamResponse(lines: string[]) {
   } as Response
 }
 
-function mountModal() {
+function buildAccount(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 42,
+    name: 'Gemini Image Test',
+    platform: 'gemini',
+    type: 'apikey',
+    status: 'active',
+    ...overrides
+  }
+}
+
+function mountModal(account: Record<string, unknown> = buildAccount()) {
   return mount(AccountTestModal, {
     props: {
       show: false,
-      account: {
-        id: 42,
-        name: 'Gemini Image Test',
-        platform: 'gemini',
-        type: 'apikey',
-        status: 'active'
-      }
+      account
     } as any,
     global: {
       stubs: {
@@ -114,6 +125,88 @@ describe('AccountTestModal', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
+  })
+
+  it('文本模型默认发送模型身份提示词并在终端显示', async () => {
+    getAvailableModels.mockResolvedValue([
+      { id: 'gpt-5.4', display_name: 'GPT-5.4' }
+    ])
+    global.fetch = vi.fn().mockResolvedValue(
+      createStreamResponse([
+        'data: {"type":"test_start","model":"gpt-5.4"}\n',
+        'data: {"type":"test_complete","success":true}\n'
+      ])
+    ) as any
+
+    const wrapper = mountModal(buildAccount({
+      name: 'OpenAI Text Test',
+      platform: 'openai',
+      type: 'apikey'
+    }))
+    await wrapper.setProps({ show: true })
+    await flushPromises()
+
+    await (wrapper.vm as any).startTest()
+    await flushPromises()
+    await flushPromises()
+
+    expect(global.fetch).toHaveBeenCalledTimes(1)
+    const [, request] = (global.fetch as any).mock.calls[0]
+    expect(JSON.parse(request.body)).toEqual({
+      model_id: 'gpt-5.4',
+      prompt: '你是什么模型'
+    })
+    expect(wrapper.text()).toContain('发送测试消息："你是什么模型"')
+  })
+
+  it('自定义提示词为空时禁用开始测试', async () => {
+    getAvailableModels.mockResolvedValue([
+      { id: 'gpt-5.4', display_name: 'GPT-5.4' }
+    ])
+
+    const wrapper = mountModal(buildAccount({
+      name: 'OpenAI Text Test',
+      platform: 'openai',
+      type: 'apikey'
+    }))
+    await wrapper.setProps({ show: true })
+    await flushPromises()
+
+    ;(wrapper.vm as any).selectedPromptPreset = 'custom'
+    ;(wrapper.vm as any).customTextPrompt = ''
+    await wrapper.vm.$nextTick()
+
+    const startButton = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('admin.accounts.startTest'))
+    expect(startButton).toBeTruthy()
+    expect(startButton!.attributes('disabled')).toBeDefined()
+  })
+
+  it('文本模型发送自定义提示词', async () => {
+    getAvailableModels.mockResolvedValue([
+      { id: 'gpt-5.4', display_name: 'GPT-5.4' }
+    ])
+
+    const wrapper = mountModal(buildAccount({
+      name: 'OpenAI Text Test',
+      platform: 'openai',
+      type: 'apikey'
+    }))
+    await wrapper.setProps({ show: true })
+    await flushPromises()
+
+    ;(wrapper.vm as any).selectedPromptPreset = 'custom'
+    ;(wrapper.vm as any).customTextPrompt = '只返回 pong'
+    await (wrapper.vm as any).startTest()
+    await flushPromises()
+
+    expect(global.fetch).toHaveBeenCalledTimes(1)
+    const [, request] = (global.fetch as any).mock.calls[0]
+    expect(JSON.parse(request.body)).toEqual({
+      model_id: 'gpt-5.4',
+      prompt: '只返回 pong'
+    })
   })
 
   it('gemini 图片模型测试会携带提示词并渲染图片预览', async () => {
