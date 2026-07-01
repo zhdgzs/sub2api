@@ -99,7 +99,7 @@ func (r *contentModerationTestRepo) CountFlaggedByUserSince(ctx context.Context,
 	defer r.mu.Unlock()
 	count := 0
 	for _, log := range r.logs {
-		if log.UserID == nil || *log.UserID != userID || !log.Flagged || log.Action == ContentModerationActionHashBlock {
+		if log.UserID == nil || *log.UserID != userID || !log.Flagged || log.Action == ContentModerationActionHashBlock || log.ExcludeFromAutoBanCount {
 			continue
 		}
 		if excludeCyberPolicy && log.Action == ContentModerationActionCyberPolicy {
@@ -1513,7 +1513,7 @@ func TestContentModerationAutoBanSkipsAdminAccount(t *testing.T) {
 	invalidator := &contentModerationTestAuthCacheInvalidator{}
 	svc := NewContentModerationService(nil, repo, nil, nil, userRepo, invalidator, nil)
 
-	svc.persistContentModerationLog(context.Background(), cfg, newContentModerationFlaggedLog(userID), "", false, true)
+	svc.persistContentModerationLog(context.Background(), cfg, newContentModerationFlaggedLog(userID), "", contentModerationDefaultSideEffectPolicy(true))
 
 	logs := requireContentModerationLogCount(t, repo, 2)
 	require.Equal(t, 2, logs[1].ViolationCount)
@@ -1540,7 +1540,7 @@ func TestContentModerationAutoBanDisablesRegularUserAtThreshold(t *testing.T) {
 	invalidator := &contentModerationTestAuthCacheInvalidator{}
 	svc := NewContentModerationService(nil, repo, nil, nil, userRepo, invalidator, nil)
 
-	svc.persistContentModerationLog(context.Background(), cfg, newContentModerationFlaggedLog(userID), "", false, true)
+	svc.persistContentModerationLog(context.Background(), cfg, newContentModerationFlaggedLog(userID), "", contentModerationDefaultSideEffectPolicy(true))
 
 	logs := requireContentModerationLogCount(t, repo, 2)
 	require.Equal(t, 2, logs[1].ViolationCount)
@@ -1561,7 +1561,7 @@ func TestContentModerationAdminBelowBanThresholdRecordsViolationOnly(t *testing.
 	invalidator := &contentModerationTestAuthCacheInvalidator{}
 	svc := NewContentModerationService(nil, repo, nil, nil, userRepo, invalidator, nil)
 
-	svc.persistContentModerationLog(context.Background(), cfg, newContentModerationFlaggedLog(userID), "", false, true)
+	svc.persistContentModerationLog(context.Background(), cfg, newContentModerationFlaggedLog(userID), "", contentModerationDefaultSideEffectPolicy(true))
 
 	logs := requireContentModerationLogCount(t, repo, 1)
 	require.Equal(t, 1, logs[0].ViolationCount)

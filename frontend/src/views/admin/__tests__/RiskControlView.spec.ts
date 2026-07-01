@@ -12,6 +12,7 @@ const {
   getStatus,
   listLogs,
   getGroups,
+  testLocalRules,
   showError,
   showSuccess,
 } = vi.hoisted(() => ({
@@ -20,6 +21,7 @@ const {
   getStatus: vi.fn(),
   listLogs: vi.fn(),
   getGroups: vi.fn(),
+  testLocalRules: vi.fn(),
   showError: vi.fn(),
   showSuccess: vi.fn(),
 }))
@@ -32,6 +34,7 @@ vi.mock('@/api/admin', () => ({
       getStatus,
       listLogs,
       testAPIKeys: vi.fn(),
+      testLocalRules,
       deleteFlaggedHash: vi.fn(),
       clearFlaggedHashes: vi.fn(),
       unbanUser: vi.fn(),
@@ -97,6 +100,29 @@ const baseConfig = (): ContentModerationConfig => ({
   pre_hash_check_enabled: false,
   blocked_keywords: [],
   keyword_blocking_mode: 'keyword_and_api',
+  local_rules: {
+    enabled: false,
+    action: 'record',
+    scan_scope: 'latest_user_input',
+    threshold: 50,
+    strict_threshold: 90,
+    max_text_length: 81920,
+    skip_api_after_hit: false,
+    count_for_auto_ban: false,
+    record_hash: false,
+    email_on_hit: false,
+    disabled_builtin_rules: [],
+    custom_rules: [],
+    builtin_rules: [
+      {
+        name: 'credential_theft',
+        pattern: 'steal credentials',
+        weight: 100,
+        category: 'malicious',
+        strict: true,
+      },
+    ],
+  },
   thresholds: {
     harassment: 0.98,
     sexual: 0.65,
@@ -105,6 +131,7 @@ const baseConfig = (): ContentModerationConfig => ({
     type: 'all',
     models: [],
   },
+  cyber_policy_exclude_from_ban_count: false,
 })
 
 const runtimeStatus = () => ({
@@ -191,6 +218,7 @@ describe('admin RiskControlView', () => {
     getStatus.mockReset()
     listLogs.mockReset()
     getGroups.mockReset()
+    testLocalRules.mockReset()
     showError.mockReset()
     showSuccess.mockReset()
 
@@ -271,6 +299,58 @@ describe('admin RiskControlView', () => {
       thresholds: expect.objectContaining({
         sexual: 0.72,
         harassment: 0.99,
+      }),
+    }))
+    expect(showError).not.toHaveBeenCalled()
+  })
+
+  it('saves local prompt rule configuration', async () => {
+    const wrapper = mount(RiskControlView, {
+      global: {
+        stubs: {
+          AppLayout: AppLayoutStub,
+          BaseDialog: BaseDialogStub,
+          Icon: true,
+          Select: true,
+          Toggle: true,
+          Pagination: true,
+          ModelWhitelistSelector: ModelWhitelistSelectorStub,
+        },
+      },
+    })
+
+    await flushPromises()
+
+    await findButtonByText(wrapper, 'admin.riskControl.openSettings').trigger('click')
+    await findButtonByText(wrapper, 'admin.riskControl.tabs.promptRules').trigger('click')
+    await findButtonByText(wrapper, 'admin.riskControl.localRules.addCustomRule').trigger('click')
+
+    const ruleNameInput = wrapper.get<HTMLInputElement>('input[placeholder="admin.riskControl.localRules.ruleName"]')
+    const patternInput = wrapper.get<HTMLInputElement>('input[placeholder="admin.riskControl.localRules.pattern"]')
+    const weightInput = wrapper.get<HTMLInputElement>('input[placeholder="admin.riskControl.localRules.weight"]')
+    const categoryInput = wrapper.get<HTMLInputElement>('input[placeholder="admin.riskControl.localRules.category"]')
+    await ruleNameInput.setValue('custom_sensitive')
+    await patternInput.setValue('custombad')
+    await weightInput.setValue('77')
+    await categoryInput.setValue('custom')
+
+    await findButtonByText(wrapper, 'admin.riskControl.saveConfig').trigger('click')
+    await flushPromises()
+
+    expect(updateConfig).toHaveBeenCalledWith(expect.objectContaining({
+      local_rules: expect.objectContaining({
+        action: 'record',
+        scan_scope: 'latest_user_input',
+        disabled_builtin_rules: [],
+        custom_rules: [
+          expect.objectContaining({
+            name: 'custom_sensitive',
+            pattern: 'custombad',
+            weight: 77,
+            category: 'custom',
+            enabled: true,
+          }),
+        ],
       }),
     }))
     expect(showError).not.toHaveBeenCalled()

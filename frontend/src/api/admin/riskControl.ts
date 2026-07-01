@@ -3,10 +3,59 @@ import { apiClient } from '../client'
 export type ModerationMode = 'off' | 'observe' | 'pre_block'
 export type KeywordBlockingMode = 'keyword_only' | 'keyword_and_api' | 'api_only'
 export type ContentModerationModelFilterType = 'all' | 'include' | 'exclude'
+export type ContentModerationLocalRuleAction = 'record' | 'block'
+export type ContentModerationLocalRuleScanScope = 'latest_user_input' | 'full_text_context'
 
 export interface ContentModerationModelFilter {
   type: ContentModerationModelFilterType
   models: string[]
+}
+
+export interface ContentModerationLocalRulePattern {
+  name: string
+  pattern: string
+  weight: number
+  category?: string
+  strict?: boolean
+  enabled?: boolean
+}
+
+export interface ContentModerationLocalRulesConfig {
+  enabled: boolean
+  action: ContentModerationLocalRuleAction
+  scan_scope: ContentModerationLocalRuleScanScope
+  threshold: number
+  strict_threshold: number
+  max_text_length: number
+  skip_api_after_hit: boolean
+  count_for_auto_ban: boolean
+  record_hash: boolean
+  email_on_hit: boolean
+  disabled_builtin_rules: string[]
+  custom_rules: ContentModerationLocalRulePattern[]
+  builtin_rules?: ContentModerationLocalRulePattern[]
+}
+
+export interface ContentModerationLocalRuleMatch {
+  name: string
+  weight: number
+  category?: string
+  strict?: boolean
+}
+
+export interface ContentModerationLocalRuleLogDetail {
+  source?: string
+  scan_scope?: ContentModerationLocalRuleScanScope
+  score: number
+  raw_score: number
+  strict_score: number
+  threshold: number
+  strict_threshold: number
+  strict_hit: boolean
+  highest_category?: string
+  matches?: ContentModerationLocalRuleMatch[]
+  context_preview?: string
+  extracted_chars: number
 }
 
 export interface ContentModerationConfig {
@@ -39,6 +88,7 @@ export interface ContentModerationConfig {
   pre_hash_check_enabled: boolean
   blocked_keywords: string[]
   keyword_blocking_mode: KeywordBlockingMode
+  local_rules: ContentModerationLocalRulesConfig
   model_filter: ContentModerationModelFilter
   cyber_policy_exclude_from_ban_count: boolean
 }
@@ -74,6 +124,27 @@ export interface TestContentModerationAPIKeysResponse {
   items: ContentModerationAPIKeyStatus[]
   audit_result?: ContentModerationTestAuditResult
   image_count: number
+}
+
+export interface TestContentModerationLocalRulesPayload {
+  text: string
+  config?: ContentModerationLocalRulesConfig
+}
+
+export interface TestContentModerationLocalRulesResponse {
+  hit: boolean
+  action: ContentModerationLocalRuleAction
+  score: number
+  raw_score: number
+  strict_score: number
+  strict_hit: boolean
+  threshold: number
+  strict_threshold: number
+  highest_category: string
+  matches: ContentModerationLocalRuleMatch[]
+  text_preview: string
+  context_preview: string
+  extracted_chars: number
 }
 
 export interface ContentModerationTestAuditResult {
@@ -115,6 +186,7 @@ export interface UpdateContentModerationConfig {
   pre_hash_check_enabled?: boolean
   blocked_keywords?: string[]
   keyword_blocking_mode?: KeywordBlockingMode
+  local_rules?: ContentModerationLocalRulesConfig
   model_filter?: ContentModerationModelFilter
   cyber_policy_exclude_from_ban_count?: boolean
 }
@@ -183,6 +255,7 @@ export interface ContentModerationLog {
   highest_category: string
   highest_score: number
   matched_keyword: string
+  local_rule_detail?: ContentModerationLocalRuleLogDetail
   category_scores: Record<string, number>
   threshold_snapshot: Record<string, number>
   input_excerpt: string
@@ -193,6 +266,7 @@ export interface ContentModerationLog {
   email_sent: boolean
   user_status: string
   queue_delay_ms: number | null
+  exclude_from_auto_ban_count: boolean
   created_at: string
 }
 
@@ -253,6 +327,13 @@ export async function testAPIKeys(
   return data
 }
 
+export async function testLocalRules(
+  payload: TestContentModerationLocalRulesPayload
+): Promise<TestContentModerationLocalRulesResponse> {
+  const { data } = await apiClient.post<TestContentModerationLocalRulesResponse>('/admin/risk-control/local-rules/test', payload)
+  return data
+}
+
 export async function listLogs(
   params: ListContentModerationLogsParams = {}
 ): Promise<ContentModerationLogsResponse> {
@@ -286,6 +367,7 @@ export const riskControlAPI = {
   updateConfig,
   getStatus,
   testAPIKeys,
+  testLocalRules,
   listLogs,
   unbanUser,
   deleteFlaggedHash,

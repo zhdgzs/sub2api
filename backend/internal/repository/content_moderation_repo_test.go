@@ -17,7 +17,7 @@ func TestBuildContentModerationLogWhere_BlockedIncludesAllBlockActions(t *testin
 
 	require.Empty(t, args)
 	sql := strings.Join(where, " AND ")
-	require.Contains(t, sql, "l.action IN ('block', 'keyword_block', 'hash_block')")
+	require.Contains(t, sql, "l.action IN ('block', 'keyword_block', 'hash_block', 'local_rule_block')")
 	require.NotContains(t, sql, "l.action = 'block'")
 }
 
@@ -36,6 +36,24 @@ func TestContentModerationRepositoryCountFlaggedByUserSince_ExcludesHashBlock(t 
 
 	require.NoError(t, err)
 	require.Equal(t, 2, count)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestContentModerationRepositoryCountFlaggedByUserSince_ExcludesOptOutLogs(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer func() { _ = db.Close() }()
+
+	repo := NewContentModerationRepository(db)
+	since := time.Now().Add(-time.Hour)
+	mock.ExpectQuery(regexp.QuoteMeta("AND exclude_from_auto_ban_count = FALSE")).
+		WithArgs(int64(1001), since, false).
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
+
+	count, err := repo.CountFlaggedByUserSince(context.Background(), 1001, since, false)
+
+	require.NoError(t, err)
+	require.Equal(t, 1, count)
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 
