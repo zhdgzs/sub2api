@@ -1,6 +1,6 @@
 # Git 操作规范与 Fork 维护流程
 
-本仓库是 `Wei-Shaw/sub2api` 的 fork。长期维护目标是：`main` 只作为上游镜像，`custom` 是唯一日常部署和 Docker 打包分支，单个功能在 `feature/<name>` 中开发，发布版本用 `release/*` tag 固定。
+本仓库是 `Wei-Shaw/sub2api` 的 fork。长期维护目标是：`main` 只作为上游镜像，`custom` 是唯一日常部署和 Docker 打包分支，单个功能在 `feature/<name>` 中开发，正式 Docker 发布以 `custom` 上的 release commit 和 `docs/DOCKER_RELEASE_HISTORY.md` 固定追溯。
 
 本文件集中维护本仓库的 Git 操作约束、分支模型、上游同步流程、发布流程和长期定制维护规则。任何 agent 在执行或建议 `git commit`、`git push`、`git pull`，或处理上游同步、分支合并、发布、长期定制维护前，必须先阅读本文件。
 
@@ -27,7 +27,7 @@
 - 不要推送到 `upstream`。
 - `main` 只推送上游镜像更新。
 - 自定义功能只能推送到 `custom` 或 `feature/*`。
-- 发布 tag 只推送到 `origin` 的 `release/*` tag，不能推送到 `upstream`。
+- 默认发布流程不创建 release tag；如果特殊排障需要临时 tag，只能推送到 `origin`，不能推送到 `upstream`。
 
 通用变更卫生：
 
@@ -43,12 +43,12 @@
 - `main`: 上游镜像分支，永远尽量接近 `upstream/main`，不提交自己的功能、配置、文档或部署改动。
 - `custom`: 长期定制和唯一日常部署分支，所有正式 Docker 镜像都从这里构建，所有自定义功能最终合并到这里。
 - `feature/<name>`: 单个功能开发分支，从 `custom` 拉出，完成后合并回 `custom`。
-- `release/v<version>-zhdgzs.<n>`: 发布 tag，不是常规分支。tag 必须指向 `custom` 上已验证、已更新版本号的 commit。
+- `release/v<version>-zhdgzs.<n>`: 历史兼容或特殊排障 tag，不是常规分支。默认 Docker 发布不再创建 release tag。
 
 可选临时分支：
 
 - `feature/upstream-v<version>`: 仅在上游更新很大、涉及迁移、或冲突风险高时，用于预演 `main` 合并进 `custom`；验证后合并回 `custom` 并删除。
-- `release/<version>` 分支：默认不创建。只有需要长期冻结、灰度或回滚排查时，才从对应 `release/*` tag 临时创建。
+- `release/<version>` 分支：默认不创建。只有需要长期冻结、灰度或回滚排查时，才从对应 release commit 或历史 tag 临时创建。
 - `sync/*`: 不再作为常规分支类型。只有历史兼容、复现旧同步流程、或特殊救援场景才临时使用；不能作为 Docker 或 release 来源。
 
 核心规则：`main` 只负责接收上游，`custom` 才是自己的产品线和 Docker 打包来源。
@@ -201,7 +201,7 @@ git push origin main
 
 ## 发布、版本号和 Docker 打包
 
-正式 Docker 镜像只从 `custom` 构建。`main`、`feature/*`、`sync/*` 都不能作为正式 Docker 或 release 来源。
+正式 Docker 镜像只从 `custom` 构建。`main`、`feature/*`、`sync/*` 都不能作为正式 Docker 或 release 来源。远端 Docker 发布通过推送 `custom` 分支触发 GitHub Actions 构建，不再默认创建或推送 release tag。
 
 发布前要求：
 
@@ -209,8 +209,8 @@ git push origin main
 - `git status --short --branch` 必须干净。
 - `custom` 必须包含最新需要发布的 `main`。
 - 版本号只在 `custom` 上更新。
-- 版本号 commit 必须紧贴 release tag。
-- 正式发布前，当前 commit 必须已推送到 `origin/custom`。
+- 版本号 commit 必须是触发构建的 `custom` HEAD。
+- 正式发布通过推送 `origin/custom` 触发 GitHub Actions 构建。
 
 版本号文件：
 
@@ -234,7 +234,7 @@ docs/DOCKER_RELEASE_HISTORY.md
 0.1.134-zhdgzs.1
 ```
 
-发布流程：
+远端 Docker 发布流程：
 
 ```bash
 git checkout custom
@@ -247,12 +247,9 @@ python3 "scripts/update_docker_release_record.py" --repo "$PWD" --version 0.1.13
 git add backend/cmd/server/VERSION docs/DOCKER_RELEASE_HISTORY.md
 git commit -m "chore(release): 0.1.134-zhdgzs.1"
 git push origin custom
-
-git tag -a release/v0.1.134-zhdgzs.1 -m "release/v0.1.134-zhdgzs.1"
-git push origin release/v0.1.134-zhdgzs.1
 ```
 
-Docker tag 不使用 `release/*`，因为 Docker tag 不能包含 `/`。正式镜像 tag 与 release tag 去掉 `release/v` 后的版本号对齐：
+Docker tag 不使用 `release/*`，因为 Docker tag 不能包含 `/`。正式镜像 tag 与 `backend/cmd/server/VERSION` 的版本号对齐：
 
 ```bash
 docker build \
@@ -265,7 +262,7 @@ docker build \
 
 本地测试镜像例外：可以在未推送前构建，但只能使用 `sub2api:local` 或 `sub2api:dev`，不能使用正式版本号 tag。
 
-如果 release tag 打错，不默认 force 修改。应先明确记录错误，必要时删除本地和远端 tag 后重打；删除/重打 tag 属于高风险操作，必须单独确认。
+如果版本号或发布记录写错，不默认 force 修改历史。应先明确记录错误，再用新的 release commit 修正；删除/重打历史 tag 属于高风险操作，必须单独确认。
 
 ## 冲突控制原则
 
@@ -297,8 +294,6 @@ docker build \
 - [ ] `custom` 已包含本次要发布的上游 `main` 和功能提交。
 - [ ] `backend/cmd/server/VERSION` 已更新为 `x.y.z-zhdgzs.n`。
 - [ ] `docs/DOCKER_RELEASE_HISTORY.md` 已更新，且功能记录只统计自定义提交。
-- [ ] 版本号 commit 已推送到 `origin/custom`。
-- [ ] 已创建 annotated tag：`release/vx.y.z-zhdgzs.n`。
-- [ ] release tag 已推送到 `origin`。
-- [ ] Docker 镜像从同一个 `custom` commit 构建。
+- [ ] 版本号 commit 已推送到 `origin/custom` 并触发远端 Docker workflow。
+- [ ] Docker 镜像从同一个 `custom` HEAD 构建。
 - [ ] Docker 镜像包含版本 tag 和 `custom` tag。

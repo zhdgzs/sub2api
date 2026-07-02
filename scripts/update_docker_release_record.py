@@ -12,6 +12,8 @@ from pathlib import Path
 
 
 CONVENTIONAL_SUBJECT_RE = re.compile(r"^(?P<type>[a-z]+)(?:\([^)]+\))?!?:\s*")
+RELEASE_COMMIT_SUBJECT_RE = re.compile(r"^chore\(release\):\s+[0-9]+\.[0-9]+\.[0-9]+-zhdgzs\.[0-9]+$")
+RELEASE_COMMIT_GREP_RE = r"^chore\(release\):[[:space:]]+[0-9]+\.[0-9]+\.[0-9]+-zhdgzs\.[0-9]+$"
 RELEASE_RECORD_RELATIVE = Path("docs/DOCKER_RELEASE_HISTORY.md")
 RELEASE_RECORD_HEADER = """# Docker 打包记录
 
@@ -73,14 +75,44 @@ def nearest_release_tag(repo: Path, rev: str) -> str | None:
     return proc.stdout.strip() or None
 
 
-def previous_release_tag(repo: Path, rev: str) -> str | None:
+def is_release_commit(repo: Path, rev: str) -> bool:
+    proc = run(["git", "log", "-1", "--format=%s", rev], cwd=repo, check=False)
+    if proc.returncode != 0:
+        return False
+    return RELEASE_COMMIT_SUBJECT_RE.match(proc.stdout.strip()) is not None
+
+
+def nearest_release_commit(repo: Path, rev: str) -> str | None:
+    proc = run(
+        [
+            "git",
+            "log",
+            "--format=%H",
+            "--max-count=1",
+            "--grep",
+            RELEASE_COMMIT_GREP_RE,
+            "--extended-regexp",
+            rev,
+        ],
+        cwd=repo,
+        check=False,
+    )
+    if proc.returncode != 0:
+        return None
+    return proc.stdout.strip() or None
+
+
+def previous_release_ref(repo: Path, rev: str) -> str | None:
     exact = exact_release_tag(repo, rev)
-    lookup_rev = f"{rev}^" if exact else rev
+    lookup_rev = f"{rev}^" if exact or is_release_commit(repo, rev) else rev
+    commit = nearest_release_commit(repo, lookup_rev)
+    if commit:
+        return commit
     return nearest_release_tag(repo, lookup_rev)
 
 
 def custom_release_changes(repo: Path, rev: str) -> list[ReleaseChange]:
-    previous = previous_release_tag(repo, rev)
+    previous = previous_release_ref(repo, rev)
     range_expr = f"{previous}..{rev}" if previous else rev
     output = git(
         repo,

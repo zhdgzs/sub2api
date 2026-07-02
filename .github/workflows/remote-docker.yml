@@ -2,55 +2,41 @@ name: Remote Docker Release
 
 on:
   push:
-    tags:
-      - 'release/v*'
+    branches:
+      - custom
   workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Release tag to rebuild, e.g. release/v0.1.142-zhdgzs.2'
-        required: true
-        type: string
 
 permissions:
   contents: read
   packages: write
 
 concurrency:
-  group: remote-docker-${{ github.event.inputs.tag || github.ref }}
+  group: remote-docker-custom
   cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout release tag
+      - name: Checkout custom
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          ref: ${{ github.event.inputs.tag || github.ref }}
+          ref: custom
 
       - name: Resolve release metadata
         id: meta
         shell: bash
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            TAG_NAME="${{ github.event.inputs.tag }}"
-          else
-            TAG_NAME="${GITHUB_REF#refs/tags/}"
+          VERSION="$(tr -d '\r\n' < backend/cmd/server/VERSION)"
+          if ! printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+-zhdgzs\.[0-9]+$'; then
+            echo "Unsupported VERSION value: $VERSION" >&2
+            exit 1
           fi
 
-          case "$TAG_NAME" in
-            release/v*) ;;
-            *)
-              echo "Unsupported release tag: $TAG_NAME" >&2
-              exit 1
-              ;;
-          esac
-
-          VERSION="${TAG_NAME#release/v}"
           FILE_VERSION="$(tr -d '\r\n' < backend/cmd/server/VERSION)"
           if [ "$FILE_VERSION" != "$VERSION" ]; then
-            echo "VERSION mismatch: tag=$VERSION file=$FILE_VERSION" >&2
+            echo "VERSION mismatch: version=$VERSION file=$FILE_VERSION" >&2
             exit 1
           fi
 
@@ -59,17 +45,16 @@ jobs:
           COMMIT="$(git rev-parse --short HEAD)"
           BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
-          echo "tag=$TAG_NAME" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
           echo "commit=$COMMIT" >> "$GITHUB_OUTPUT"
           echo "date=$BUILD_DATE" >> "$GITHUB_OUTPUT"
 
-      - name: Validate tag is on custom
+      - name: Validate custom branch
         shell: bash
         run: |
           git fetch origin custom:refs/remotes/origin/custom
-          git merge-base --is-ancestor HEAD origin/custom
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/custom)"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3

@@ -68,8 +68,39 @@ def actions_url(release: ModuleType, repo: Path) -> str | None:
     return f"https://github.com/{slug}/actions/workflows/{WORKFLOW_NAME}"
 
 
+def record_versions(release: ModuleType, repo: Path, base_version: str) -> list[str]:
+    record_file = repo / release.RELEASE_RECORD_RELATIVE
+    if not record_file.exists():
+        return []
+    pattern = re.compile(rf"`v({re.escape(base_version)}-zhdgzs\.\d+)`")
+    return pattern.findall(record_file.read_text(encoding="utf-8"))
+
+
+def current_file_version(repo: Path) -> str | None:
+    version_file = repo / "backend" / "cmd" / "server" / "VERSION"
+    if not version_file.exists():
+        return None
+    return version_file.read_text(encoding="utf-8").strip() or None
+
+
+def remote_candidate_version(release: ModuleType, repo: Path, base_version: str) -> str:
+    highest = 0
+    versions = [tag.removeprefix("release/v") for tag in release.release_tags(repo, base_version)]
+    versions.extend(record_versions(release, repo, base_version))
+    current = current_file_version(repo)
+    if current:
+        versions.append(current)
+
+    for raw in versions:
+        match = release.VERSION_RE.match(raw)
+        if match and match.group("base") == base_version:
+            highest = max(highest, int(match.group("num")))
+    return f"{base_version}-zhdgzs.{highest + 1}"
+
+
 def print_plan(release: ModuleType, state: object, version: str | None) -> None:
-    chosen = version or state.candidate_version
+    candidate = remote_candidate_version(release, state.repo, state.main_base_version)
+    chosen = version or candidate
     image = image_name(release, state.repo)
     url = actions_url(release, state.repo)
     workflow_status = "present" if (state.repo / REMOTE_WORKFLOW_RELATIVE).exists() else "missing"
@@ -83,9 +114,8 @@ def print_plan(release: ModuleType, state: object, version: str | None) -> None:
     print(f"custom: {state.custom or 'missing'}")
     print(f"origin/custom: {state.origin_custom or 'missing'}")
     print(f"main_base_version: {state.main_base_version}")
-    print(f"candidate_version: {state.candidate_version}")
+    print(f"candidate_version: {candidate}")
     print(f"chosen_version: {chosen}")
-    print(f"release_tag: release/v{chosen}")
     print("remote_docker_tags:")
     print(f"- {image}:{chosen}")
     print(f"- {image}:custom")
@@ -103,8 +133,7 @@ def print_plan(release: ModuleType, state: object, version: str | None) -> None:
     print(f"8. update {release.RELEASE_RECORD_RELATIVE.as_posix()} from custom commits only")
     print("9. commit release metadata if needed")
     print("10. push origin custom")
-    print("11. create and push annotated release tag")
-    print("12. GitHub Actions builds and pushes the Docker image from the tag")
+    print("11. GitHub Actions builds and pushes the Docker image from custom")
 
 
 def execute(release: ModuleType, repo: Path, version: str, allow_version_override: bool) -> None:
@@ -113,9 +142,6 @@ def execute(release: ModuleType, repo: Path, version: str, allow_version_overrid
     release.run_sync_upstream(repo)
     base = release.main_version(repo)
     release.validate_version(version, base, allow_override=allow_version_override)
-    tag = f"release/v{version}"
-    if release.tag_exists(repo, tag):
-        raise SystemExit(f"[ERROR] Tag already exists: {tag}")
 
     release.git(repo, "checkout", "custom")
     release.git(repo, "pull", "--ff-only", "origin", "custom")
@@ -138,8 +164,6 @@ def execute(release: ModuleType, repo: Path, version: str, allow_version_overrid
         print(f"[INFO] Release metadata already up to date for {version}; no release commit needed")
 
     release.git(repo, "push", "origin", "custom")
-    release.git(repo, "tag", "-a", tag, "-m", tag)
-    release.git(repo, "push", "origin", tag)
 
     commit = release.short(repo, "HEAD")
     image = image_name(release, repo)
@@ -147,7 +171,6 @@ def execute(release: ModuleType, repo: Path, version: str, allow_version_overrid
     print("Remote Docker release trigger complete")
     print(f"record: {release.RELEASE_RECORD_RELATIVE.as_posix()}")
     print(f"version: {version}")
-    print(f"tag: {tag}")
     print(f"commit: {commit}")
     print(f"docker: {image}:{version}, {image}:custom")
     if url:
