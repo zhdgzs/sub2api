@@ -8,7 +8,9 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import os
 import re
+import subprocess
 import sys
 from datetime import date
 from pathlib import Path
@@ -17,6 +19,8 @@ from types import ModuleType
 
 REMOTE_WORKFLOW_RELATIVE = Path(".github/workflows/remote-docker.yml")
 WORKFLOW_NAME = "remote-docker.yml"
+DEPLOY_WATCHER = Path("/root/sub2api-deploy/watch_remote_docker_deploy.sh")
+DEPLOY_WATCHER_LOG = Path("/root/sub2api-deploy/watch_remote_docker_deploy.log")
 
 
 def load_release_module(repo: Path) -> ModuleType:
@@ -68,6 +72,10 @@ def actions_url(release: ModuleType, repo: Path) -> str | None:
     return f"https://github.com/{slug}/actions/workflows/{WORKFLOW_NAME}"
 
 
+def full_head(release: ModuleType, repo: Path) -> str:
+    return release.git(repo, "rev-parse", "HEAD").strip()
+
+
 def record_versions(release: ModuleType, repo: Path, base_version: str) -> list[str]:
     record_file = repo / release.RELEASE_RECORD_RELATIVE
     if not record_file.exists():
@@ -116,6 +124,8 @@ def print_plan(release: ModuleType, state: object, version: str | None) -> None:
     print(f"main_base_version: {state.main_base_version}")
     print(f"candidate_version: {candidate}")
     print(f"chosen_version: {chosen}")
+    print(f"deploy_watcher: {DEPLOY_WATCHER}")
+    print(f"deploy_watcher_log: {DEPLOY_WATCHER_LOG}")
     print("remote_docker_tags:")
     print(f"- {image}:{chosen}")
     print(f"- {image}:custom")
@@ -134,6 +144,35 @@ def print_plan(release: ModuleType, state: object, version: str | None) -> None:
     print("9. commit release metadata if needed")
     print("10. push origin custom")
     print("11. GitHub Actions builds and pushes the Docker image from custom")
+    print("12. start deploy watcher script in background and do not wait for it")
+
+
+def start_deploy_watcher(release: ModuleType, repo: Path, head_sha: str) -> int:
+    if not DEPLOY_WATCHER.exists():
+        raise SystemExit(f"[ERROR] Deploy watcher script not found: {DEPLOY_WATCHER}")
+    if not os.access(DEPLOY_WATCHER, os.R_OK):
+        raise SystemExit(f"[ERROR] Deploy watcher script is not readable: {DEPLOY_WATCHER}")
+
+    DEPLOY_WATCHER_LOG.parent.mkdir(parents=True, exist_ok=True)
+    env = os.environ.copy()
+    slug = origin_slug(release, repo)
+    if slug:
+        env.setdefault("REPO", slug)
+    env.setdefault("WORKFLOW", WORKFLOW_NAME)
+    env.setdefault("BRANCH", "custom")
+    env["EXPECTED_HEAD_SHA"] = head_sha
+
+    with DEPLOY_WATCHER_LOG.open("ab") as output:
+        proc = subprocess.Popen(
+            ["bash", str(DEPLOY_WATCHER)],
+            cwd=repo,
+            env=env,
+            stdin=subprocess.DEVNULL,
+            stdout=output,
+            stderr=subprocess.STDOUT,
+            start_new_session=True,
+        )
+    return proc.pid
 
 
 def execute(release: ModuleType, repo: Path, version: str, allow_version_override: bool) -> None:
@@ -163,7 +202,9 @@ def execute(release: ModuleType, repo: Path, version: str, allow_version_overrid
     else:
         print(f"[INFO] Release metadata already up to date for {version}; no release commit needed")
 
+    head_sha = full_head(release, repo)
     release.git(repo, "push", "origin", "custom")
+    watcher_pid = start_deploy_watcher(release, repo, head_sha)
 
     commit = release.short(repo, "HEAD")
     image = image_name(release, repo)
@@ -175,6 +216,8 @@ def execute(release: ModuleType, repo: Path, version: str, allow_version_overrid
     print(f"docker: {image}:{version}, {image}:custom")
     if url:
         print(f"workflow: {url}")
+    print(f"deploy_watcher_pid: {watcher_pid}")
+    print(f"deploy_watcher_log: {DEPLOY_WATCHER_LOG}")
     print(f"note: {note}")
 
 

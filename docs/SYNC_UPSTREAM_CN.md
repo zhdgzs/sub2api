@@ -249,6 +249,8 @@ git commit -m "chore(release): 0.1.134-zhdgzs.1"
 git push origin custom
 ```
 
+推送 `origin/custom` 后只需要确认 GitHub Actions build 已被触发，不需要 agent 持续等待构建完成。`$remote-docker` 会在后台调用 `/root/sub2api-deploy/watch_remote_docker_deploy.sh`；该脚本负责轮询构建结果、拉取 `ghcr.io/zhdgzs/sub2api:custom`、标记 `sub2api:custom`、在 `/root/sub2api-deploy` 执行 `docker compose up -d`，并通过外部配置的飞书 hook 发送成功或失败通知。
+
 Docker tag 不使用 `release/*`，因为 Docker tag 不能包含 `/`。正式镜像 tag 与 `backend/cmd/server/VERSION` 的版本号对齐：
 
 ```bash
