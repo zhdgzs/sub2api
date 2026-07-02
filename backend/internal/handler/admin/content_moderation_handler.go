@@ -45,14 +45,15 @@ type contentModerationConfigRequest struct {
 	ViolationWindowHours *int                `json:"violation_window_hours"`
 	// cyber_policy 命中是否排除出自动封号计数；前端 RiskControlView 已发送该字段，
 	// service.UpdateContentModerationConfigInput 已支持，此前 handler 层缺透传导致开关静默失效。
-	CyberPolicyExcludeFromBanCount *bool                                 `json:"cyber_policy_exclude_from_ban_count"`
-	RetryCount                     *int                                  `json:"retry_count"`
-	HitRetentionDays               *int                                  `json:"hit_retention_days"`
-	NonHitRetentionDays            *int                                  `json:"non_hit_retention_days"`
-	PreHashCheckEnabled            *bool                                 `json:"pre_hash_check_enabled"`
-	BlockedKeywords                *[]string                             `json:"blocked_keywords"`
-	KeywordBlockingMode            *string                               `json:"keyword_blocking_mode"`
-	ModelFilter                    *service.ContentModerationModelFilter `json:"model_filter"`
+	CyberPolicyExcludeFromBanCount *bool                                      `json:"cyber_policy_exclude_from_ban_count"`
+	RetryCount                     *int                                       `json:"retry_count"`
+	HitRetentionDays               *int                                       `json:"hit_retention_days"`
+	NonHitRetentionDays            *int                                       `json:"non_hit_retention_days"`
+	PreHashCheckEnabled            *bool                                      `json:"pre_hash_check_enabled"`
+	BlockedKeywords                *[]string                                  `json:"blocked_keywords"`
+	KeywordBlockingMode            *string                                    `json:"keyword_blocking_mode"`
+	LocalRules                     *service.ContentModerationLocalRulesConfig `json:"local_rules"`
+	ModelFilter                    *service.ContentModerationModelFilter      `json:"model_filter"`
 }
 
 type contentModerationAPIKeyTestRequest struct {
@@ -62,6 +63,11 @@ type contentModerationAPIKeyTestRequest struct {
 	TimeoutMS int      `json:"timeout_ms"`
 	Prompt    string   `json:"prompt"`
 	Images    []string `json:"images"`
+}
+
+type contentModerationLocalRulesTestRequest struct {
+	Text   string                                     `json:"text"`
+	Config *service.ContentModerationLocalRulesConfig `json:"config"`
 }
 
 type contentModerationHashRequest struct {
@@ -114,6 +120,7 @@ func (h *ContentModerationHandler) UpdateConfig(c *gin.Context) {
 		PreHashCheckEnabled:            req.PreHashCheckEnabled,
 		BlockedKeywords:                req.BlockedKeywords,
 		KeywordBlockingMode:            req.KeywordBlockingMode,
+		LocalRules:                     req.LocalRules,
 		ModelFilter:                    req.ModelFilter,
 	})
 	if err != nil {
@@ -136,6 +143,23 @@ func (h *ContentModerationHandler) TestAPIKeys(c *gin.Context) {
 		TimeoutMS: req.TimeoutMS,
 		Prompt:    req.Prompt,
 		Images:    req.Images,
+	})
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, result)
+}
+
+func (h *ContentModerationHandler) TestLocalRules(c *gin.Context) {
+	var req contentModerationLocalRulesTestRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	result, err := h.service.TestLocalRules(c.Request.Context(), service.TestContentModerationLocalRulesInput{
+		Text:   req.Text,
+		Config: req.Config,
 	})
 	if err != nil {
 		response.ErrorFrom(c, err)

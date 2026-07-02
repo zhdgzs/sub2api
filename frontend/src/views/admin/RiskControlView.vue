@@ -320,6 +320,9 @@
                       <div v-if="row.matched_keyword" class="mt-0.5 text-xs font-medium text-red-600 dark:text-red-300" :title="t('admin.riskControl.matchedKeyword') + ': ' + row.matched_keyword">
                         {{ t('admin.riskControl.matchedKeyword') }}: {{ row.matched_keyword }}
                       </div>
+                      <div v-if="localRuleSummary(row)" class="mt-0.5 text-xs font-medium text-fuchsia-600 dark:text-fuchsia-300" :title="localRuleSummary(row)">
+                        {{ localRuleSummary(row) }}
+                      </div>
                     </td>
                     <td class="whitespace-nowrap px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
                       <div>{{ violationCountText(row) }}</div>
@@ -1023,6 +1026,224 @@
             </div>
           </div>
 
+          <div v-else-if="activeSettingsTab === 'promptRules'" class="space-y-5">
+            <div class="flex items-center justify-between rounded-lg border border-gray-100 p-4 dark:border-dark-700">
+              <div>
+                <p class="text-sm font-medium text-gray-900 dark:text-white">{{ t('admin.riskControl.localRules.enabled') }}</p>
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ t('admin.riskControl.localRules.enabledHint') }}</p>
+              </div>
+              <Toggle v-model="configForm.local_rules.enabled" />
+            </div>
+
+            <div
+              v-if="localRulesKeywordModeNotice"
+              class="flex items-start gap-3 rounded-lg border border-primary-100 bg-primary-50/60 p-4 text-sm dark:border-primary-900/40 dark:bg-primary-900/10"
+            >
+              <Icon name="infoCircle" size="md" class="mt-0.5 flex-shrink-0 text-primary-500 dark:text-primary-300" />
+              <p class="text-xs leading-5 text-primary-700 dark:text-primary-200">{{ localRulesKeywordModeNotice }}</p>
+            </div>
+
+            <div class="grid grid-cols-1 gap-5 xl:grid-cols-2">
+              <div class="space-y-2">
+                <label class="input-label">{{ t('admin.riskControl.localRules.action') }}</label>
+                <div class="grid grid-cols-2 gap-2">
+                  <button
+                    v-for="option in localRuleActionOptions"
+                    :key="option.value"
+                    type="button"
+                    class="rounded-lg border p-3 text-left transition-colors"
+                    :class="configForm.local_rules.action === option.value
+                      ? 'border-primary-300 bg-primary-50 text-primary-900 shadow-sm dark:border-primary-700 dark:bg-primary-900/20 dark:text-primary-100'
+                      : 'border-gray-100 hover:bg-gray-50 dark:border-dark-700 dark:hover:bg-dark-700/60'"
+                    @click="configForm.local_rules.action = option.value"
+                  >
+                    <span class="text-sm font-semibold">{{ option.label }}</span>
+                    <p class="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">{{ option.description }}</p>
+                  </button>
+                </div>
+              </div>
+
+              <div class="space-y-2">
+                <label class="input-label">{{ t('admin.riskControl.localRules.scanScope') }}</label>
+                <div class="grid grid-cols-2 gap-2">
+                  <button
+                    v-for="option in localRuleScanScopeOptions"
+                    :key="option.value"
+                    type="button"
+                    class="rounded-lg border p-3 text-left transition-colors"
+                    :class="configForm.local_rules.scan_scope === option.value
+                      ? 'border-primary-300 bg-primary-50 text-primary-900 shadow-sm dark:border-primary-700 dark:bg-primary-900/20 dark:text-primary-100'
+                      : 'border-gray-100 hover:bg-gray-50 dark:border-dark-700 dark:hover:bg-dark-700/60'"
+                    @click="configForm.local_rules.scan_scope = option.value"
+                  >
+                    <span class="text-sm font-semibold">{{ option.label }}</span>
+                    <p class="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">{{ option.description }}</p>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div>
+                <label class="input-label">{{ t('admin.riskControl.localRules.threshold') }}</label>
+                <input v-model.number="configForm.local_rules.threshold" type="number" min="1" max="500" class="input" />
+              </div>
+              <div>
+                <label class="input-label">{{ t('admin.riskControl.localRules.strictThreshold') }}</label>
+                <input v-model.number="configForm.local_rules.strict_threshold" type="number" min="1" max="1000" class="input" />
+              </div>
+              <div>
+                <label class="input-label">{{ t('admin.riskControl.localRules.maxTextLength') }}</label>
+                <input v-model.number="configForm.local_rules.max_text_length" type="number" min="1024" max="1048576" step="1024" class="input" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <label class="flex items-center justify-between rounded-lg border border-gray-100 p-4 dark:border-dark-700">
+                <span>
+                  <span class="block text-sm font-medium text-gray-900 dark:text-white">{{ t('admin.riskControl.localRules.skipApiAfterHit') }}</span>
+                  <span class="mt-1 block text-xs text-gray-500 dark:text-gray-400">{{ t('admin.riskControl.localRules.skipApiAfterHitHint') }}</span>
+                </span>
+                <Toggle v-model="configForm.local_rules.skip_api_after_hit" />
+              </label>
+              <label class="flex items-center justify-between rounded-lg border border-gray-100 p-4 dark:border-dark-700">
+                <span>
+                  <span class="block text-sm font-medium text-gray-900 dark:text-white">{{ t('admin.riskControl.localRules.countForAutoBan') }}</span>
+                  <span class="mt-1 block text-xs text-gray-500 dark:text-gray-400">{{ t('admin.riskControl.localRules.countForAutoBanHint') }}</span>
+                </span>
+                <Toggle v-model="configForm.local_rules.count_for_auto_ban" />
+              </label>
+              <label class="flex items-center justify-between rounded-lg border border-gray-100 p-4 dark:border-dark-700">
+                <span>
+                  <span class="block text-sm font-medium text-gray-900 dark:text-white">{{ t('admin.riskControl.localRules.recordHash') }}</span>
+                  <span class="mt-1 block text-xs text-gray-500 dark:text-gray-400">{{ t('admin.riskControl.localRules.recordHashHint') }}</span>
+                </span>
+                <Toggle v-model="configForm.local_rules.record_hash" />
+              </label>
+              <label class="flex items-center justify-between rounded-lg border border-gray-100 p-4 dark:border-dark-700">
+                <span>
+                  <span class="block text-sm font-medium text-gray-900 dark:text-white">{{ t('admin.riskControl.localRules.emailOnHit') }}</span>
+                  <span class="mt-1 block text-xs text-gray-500 dark:text-gray-400">{{ t('admin.riskControl.localRules.emailOnHitHint') }}</span>
+                </span>
+                <Toggle v-model="configForm.local_rules.email_on_hit" />
+              </label>
+            </div>
+
+            <div class="rounded-lg border border-gray-100 p-4 dark:border-dark-700">
+              <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('admin.riskControl.localRules.builtinRules') }}</h3>
+                  <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ t('admin.riskControl.localRules.builtinRulesHint') }}</p>
+                </div>
+                <span class="rounded-md bg-gray-100 px-2 py-1 text-xs text-gray-500 dark:bg-dark-700 dark:text-gray-300">
+                  {{ t('admin.riskControl.localRules.builtinRuleCount', { count: localRuleBuiltinRows.length }) }}
+                </span>
+              </div>
+              <div class="max-h-72 overflow-y-auto rounded-lg border border-gray-100 dark:border-dark-700">
+                <table class="min-w-full divide-y divide-gray-100 dark:divide-dark-700">
+                  <thead class="bg-gray-50 dark:bg-dark-800">
+                    <tr>
+                      <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('admin.riskControl.localRules.ruleName') }}</th>
+                      <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('admin.riskControl.localRules.category') }}</th>
+                      <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('admin.riskControl.localRules.weight') }}</th>
+                      <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('admin.riskControl.localRules.enabledColumn') }}</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-100 dark:divide-dark-800">
+                    <tr v-for="rule in localRuleBuiltinRows" :key="rule.name">
+                      <td class="px-3 py-2 font-mono text-xs text-gray-700 dark:text-gray-200">{{ rule.name }}</td>
+                      <td class="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">{{ rule.category || '-' }}</td>
+                      <td class="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
+                        {{ rule.weight }}<span v-if="rule.strict" class="ml-1 text-red-500">strict</span>
+                      </td>
+                      <td class="px-3 py-2">
+                        <Toggle :model-value="isBuiltinLocalRuleEnabled(rule.name)" @update:modelValue="toggleBuiltinLocalRule(rule.name, $event)" />
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="rounded-lg border border-gray-100 p-4 dark:border-dark-700">
+              <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('admin.riskControl.localRules.customRules') }}</h3>
+                  <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ t('admin.riskControl.localRules.customRulesHint') }}</p>
+                </div>
+                <button type="button" class="btn btn-secondary inline-flex items-center gap-2" @click="addCustomLocalRule">
+                  <Icon name="plus" size="sm" />
+                  {{ t('admin.riskControl.localRules.addCustomRule') }}
+                </button>
+              </div>
+              <div v-if="configForm.local_rules.custom_rules.length === 0" class="rounded-lg bg-gray-50 p-4 text-sm text-gray-500 dark:bg-dark-900/30 dark:text-gray-400">
+                {{ t('admin.riskControl.localRules.customRulesEmpty') }}
+              </div>
+              <div v-else class="space-y-3">
+                <div
+                  v-for="(rule, index) in configForm.local_rules.custom_rules"
+                  :key="index"
+                  class="grid grid-cols-1 gap-3 rounded-lg border border-gray-100 p-3 dark:border-dark-700 xl:grid-cols-[1fr_1.4fr_120px_1fr_auto_auto_auto]"
+                >
+                  <input v-model.trim="rule.name" type="text" class="input font-mono text-sm" :placeholder="t('admin.riskControl.localRules.ruleName')" />
+                  <input v-model.trim="rule.pattern" type="text" class="input font-mono text-sm" :placeholder="t('admin.riskControl.localRules.pattern')" />
+                  <input v-model.number="rule.weight" type="number" min="1" max="500" class="input" :placeholder="t('admin.riskControl.localRules.weight')" />
+                  <input v-model.trim="rule.category" type="text" class="input text-sm" :placeholder="t('admin.riskControl.localRules.category')" />
+                  <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                    <input v-model="rule.enabled" type="checkbox" class="rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+                    {{ t('admin.riskControl.localRules.enabledColumn') }}
+                  </label>
+                  <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                    <input v-model="rule.strict" type="checkbox" class="rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+                    strict
+                  </label>
+                  <button type="button" class="inline-flex h-10 items-center justify-center rounded-md text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20" @click="removeCustomLocalRule(index)">
+                    <Icon name="trash" size="sm" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="rounded-lg border border-gray-100 bg-gray-50 p-4 dark:border-dark-700 dark:bg-dark-900/30">
+              <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('admin.riskControl.localRules.testTitle') }}</h3>
+                  <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ t('admin.riskControl.localRules.testHint') }}</p>
+                </div>
+                <button type="button" class="btn btn-secondary inline-flex items-center gap-2" :disabled="localRuleTesting || localRuleTestText.trim() === ''" @click="testLocalRules">
+                  <Icon name="beaker" size="sm" :class="localRuleTesting ? 'animate-pulse' : ''" />
+                  {{ localRuleTesting ? t('admin.riskControl.localRules.testing') : t('admin.riskControl.localRules.testButton') }}
+                </button>
+              </div>
+              <textarea v-model="localRuleTestText" class="input min-h-28 resize-y text-sm" :placeholder="t('admin.riskControl.localRules.testPlaceholder')"></textarea>
+              <div v-if="localRuleTestResult" class="mt-3 rounded-lg border border-gray-100 bg-white p-3 dark:border-dark-700 dark:bg-dark-800">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                      {{ localRuleTestResult.hit ? t('admin.riskControl.localRules.testHit') : t('admin.riskControl.localRules.testPass') }}
+                    </p>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      {{ t('admin.riskControl.localRules.testScore', { score: localRuleTestResult.score, raw: localRuleTestResult.raw_score, strict: localRuleTestResult.strict_score }) }}
+                    </p>
+                  </div>
+                  <span class="rounded-full px-2 py-1 text-xs font-medium" :class="localRuleTestResult.hit ? 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300'">
+                    {{ localRuleTestResult.action }}
+                  </span>
+                </div>
+                <div v-if="localRuleTestResult.matches.length > 0" class="mt-3 flex flex-wrap gap-1.5">
+                  <span
+                    v-for="match in localRuleTestResult.matches.slice(0, 8)"
+                    :key="match.name"
+                    class="rounded-md bg-gray-100 px-2 py-1 font-mono text-xs text-gray-600 dark:bg-dark-700 dark:text-gray-300"
+                  >
+                    {{ match.name }} · {{ match.weight }}
+                  </span>
+                </div>
+                <pre v-if="localRuleTestResult.context_preview" class="mt-3 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-gray-950 p-3 text-xs leading-5 text-gray-100">{{ localRuleTestResult.context_preview }}</pre>
+              </div>
+            </div>
+          </div>
+
           <div v-else class="grid grid-cols-1 gap-5 lg:grid-cols-2">
             <div>
               <label class="input-label">{{ t('admin.riskControl.hitRetentionDays') }}</label>
@@ -1085,6 +1306,10 @@
               <p class="text-xs font-medium text-red-500 dark:text-red-300">{{ t('admin.riskControl.matchedKeyword') }}</p>
               <p class="mt-1 truncate text-sm font-semibold text-red-700 dark:text-red-200" :title="inputDetailRow.matched_keyword">{{ inputDetailRow.matched_keyword }}</p>
             </div>
+            <div v-if="inputDetailRow.local_rule_detail?.matches?.length" class="rounded-lg border border-fuchsia-100 bg-fuchsia-50 p-4 dark:border-fuchsia-900/60 dark:bg-fuchsia-900/20">
+              <p class="text-xs font-medium text-fuchsia-500 dark:text-fuchsia-300">{{ t('admin.riskControl.localRules.logDetail') }}</p>
+              <p class="mt-1 truncate text-sm font-semibold text-fuchsia-700 dark:text-fuchsia-200" :title="localRuleSummary(inputDetailRow)">{{ localRuleSummary(inputDetailRow) }}</p>
+            </div>
           </div>
 
           <div class="rounded-xl border border-gray-100 bg-white p-4 shadow-sm dark:border-dark-700 dark:bg-dark-800">
@@ -1128,6 +1353,10 @@ import type {
   ContentModerationAPIKeyLoad,
   ContentModerationAPIKeyStatus,
   ContentModerationConfig,
+  ContentModerationLocalRuleAction,
+  ContentModerationLocalRulePattern,
+  ContentModerationLocalRuleScanScope,
+  ContentModerationLocalRulesConfig,
   ContentModerationLog,
   ContentModerationModelFilter,
   ContentModerationModelFilterType,
@@ -1135,6 +1364,7 @@ import type {
   ContentModerationTestAuditResult,
   KeywordBlockingMode,
   ModerationMode,
+  TestContentModerationLocalRulesResponse,
   UpdateContentModerationConfig,
 } from '@/api/admin/riskControl'
 import type { AdminGroup, SelectOption } from '@/types'
@@ -1142,7 +1372,7 @@ import { useAppStore } from '@/stores/app'
 import { extractApiErrorMessage } from '@/utils/apiError'
 import { formatDateTime as formatDateTimeValue } from '@/utils/format'
 
-type SettingsTab = 'basic' | 'scope' | 'runtime' | 'response' | 'riskThresholds' | 'retention' | 'keywords'
+type SettingsTab = 'basic' | 'scope' | 'runtime' | 'response' | 'riskThresholds' | 'retention' | 'keywords' | 'promptRules'
 type WorkerSlotState = 'active' | 'idle' | 'disabled'
 type APIKeysWriteMode = 'append' | 'replace'
 type OverviewIcon = 'shield' | 'key' | 'users' | 'document'
@@ -1188,6 +1418,21 @@ const riskThresholdDefaults: Record<string, number> = {
   'violence/graphic': 95,
 }
 const riskThresholdCategories = Object.keys(riskThresholdDefaults)
+const defaultLocalRulesConfig: ContentModerationLocalRulesConfig = {
+  enabled: false,
+  action: 'record',
+  scan_scope: 'latest_user_input',
+  threshold: 50,
+  strict_threshold: 90,
+  max_text_length: 80 * 1024,
+  skip_api_after_hit: false,
+  count_for_auto_ban: false,
+  record_hash: false,
+  email_on_hit: false,
+  disabled_builtin_rules: [],
+  custom_rules: [],
+  builtin_rules: [],
+}
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -1213,6 +1458,9 @@ const apiKeyRowsExpanded = ref<boolean>(false)
 const moderationTestPrompt = ref('')
 const moderationTestImages = ref<string[]>([])
 const moderationTestResult = ref<ContentModerationTestAuditResult | null>(null)
+const localRuleTesting = ref(false)
+const localRuleTestText = ref('')
+const localRuleTestResult = ref<TestContentModerationLocalRulesResponse | null>(null)
 const inputDetailRow = ref<ContentModerationLog | null>(null)
 let statusTimer: number | null = null
 
@@ -1250,6 +1498,7 @@ const configForm = reactive({
   thresholds: { ...riskThresholdDefaults } as Record<string, number>,
   blocked_keywords_text: '',
   keyword_blocking_mode: 'keyword_and_api' as KeywordBlockingMode,
+  local_rules: normalizeLocalRulesConfig(defaultLocalRulesConfig),
   model_filter_type: 'all' as ContentModerationModelFilterType,
   model_filter_models: [] as string[],
 })
@@ -1277,6 +1526,7 @@ const settingsTabs = computed<Array<{ id: SettingsTab; label: string }>>(() => [
   { id: 'response', label: t('admin.riskControl.tabs.response') },
   { id: 'riskThresholds', label: t('admin.riskControl.tabs.riskThresholds') },
   { id: 'keywords', label: t('admin.riskControl.tabs.keywords') },
+  { id: 'promptRules', label: t('admin.riskControl.tabs.promptRules') },
   { id: 'retention', label: t('admin.riskControl.tabs.retention') },
 ])
 
@@ -1321,6 +1571,49 @@ const modelFilterOptions = computed<Array<{ value: ContentModerationModelFilterT
     description: t('admin.riskControl.modelFilterExcludeDesc'),
   },
 ])
+
+const localRuleActionOptions = computed<Array<{ value: ContentModerationLocalRuleAction; label: string; description: string }>>(() => [
+  {
+    value: 'record',
+    label: t('admin.riskControl.localRules.actionRecord'),
+    description: t('admin.riskControl.localRules.actionRecordDesc'),
+  },
+  {
+    value: 'block',
+    label: t('admin.riskControl.localRules.actionBlock'),
+    description: t('admin.riskControl.localRules.actionBlockDesc'),
+  },
+])
+
+const localRuleScanScopeOptions = computed<Array<{ value: ContentModerationLocalRuleScanScope; label: string; description: string }>>(() => [
+  {
+    value: 'latest_user_input',
+    label: t('admin.riskControl.localRules.scanLatestUserInput'),
+    description: t('admin.riskControl.localRules.scanLatestUserInputDesc'),
+  },
+  {
+    value: 'full_text_context',
+    label: t('admin.riskControl.localRules.scanFullTextContext'),
+    description: t('admin.riskControl.localRules.scanFullTextContextDesc'),
+  },
+])
+
+const localRuleBuiltinRows = computed<ContentModerationLocalRulePattern[]>(() => (
+  Array.isArray(configForm.local_rules.builtin_rules)
+    ? configForm.local_rules.builtin_rules
+    : []
+))
+
+const localRulesKeywordModeNotice = computed(() => {
+  if (!configForm.local_rules.enabled) return ''
+  if (configForm.keyword_blocking_mode === 'keyword_only') {
+    return t('admin.riskControl.localRules.keywordOnlyNotice')
+  }
+  if (configForm.keyword_blocking_mode === 'api_only') {
+    return t('admin.riskControl.localRules.apiOnlyNotice')
+  }
+  return ''
+})
 
 type KeywordNoticeView = {
   title: string
@@ -1727,6 +2020,8 @@ function applyConfig(config: ContentModerationConfig) {
   configForm.thresholds = riskThresholdsFromConfig(config.thresholds)
   configForm.blocked_keywords_text = Array.isArray(config.blocked_keywords) ? config.blocked_keywords.join('\n') : ''
   configForm.keyword_blocking_mode = normalizeKeywordBlockingMode(config.keyword_blocking_mode)
+  configForm.local_rules = normalizeLocalRulesConfig(config.local_rules)
+  localRuleTestResult.value = null
   const modelFilter = normalizeModelFilter(config.model_filter)
   configForm.model_filter_type = modelFilter.type
   configForm.model_filter_models = modelFilter.models
@@ -1808,6 +2103,7 @@ async function saveConfig() {
       thresholds: buildRiskThresholdPayload(),
       blocked_keywords: blockedKeywordList.value,
       keyword_blocking_mode: configForm.keyword_blocking_mode,
+      local_rules: buildLocalRulesPayload(),
       model_filter: modelFilterPayload,
     }
     const keys = parseApiKeys(configForm.api_keys_text)
@@ -1876,6 +2172,65 @@ function openInputDetail(row: ContentModerationLog) {
 
 function closeInputDetail() {
   inputDetailRow.value = null
+}
+
+async function testLocalRules() {
+  const text = localRuleTestText.value.trim()
+  if (!text || localRuleTesting.value) return
+  localRuleTesting.value = true
+  try {
+    localRuleTestResult.value = await adminAPI.riskControl.testLocalRules({
+      text,
+      config: buildLocalRulesPayload(),
+    })
+  } catch (err: unknown) {
+    appStore.showError(extractApiErrorMessage(err, t('admin.riskControl.localRules.testFailed')))
+  } finally {
+    localRuleTesting.value = false
+  }
+}
+
+function localRuleSummary(row: ContentModerationLog): string {
+  const detail = row.local_rule_detail
+  if (!detail?.matches?.length) return ''
+  const names = detail.matches.slice(0, 3).map((match) => match.name).join(', ')
+  const extra = detail.matches.length > 3 ? ` +${detail.matches.length - 3}` : ''
+  return t('admin.riskControl.localRules.logSummary', {
+    score: detail.score,
+    category: detail.highest_category || row.highest_category || 'local_rule',
+    matches: `${names}${extra}`,
+  })
+}
+
+function isBuiltinLocalRuleEnabled(name: string): boolean {
+  const key = name.trim().toLowerCase()
+  return key !== '' && !configForm.local_rules.disabled_builtin_rules.some((item) => item.trim().toLowerCase() === key)
+}
+
+function toggleBuiltinLocalRule(name: string, enabled: boolean) {
+  const normalized = name.trim()
+  if (!normalized) return
+  const key = normalized.toLowerCase()
+  const current = configForm.local_rules.disabled_builtin_rules.filter((item) => item.trim().toLowerCase() !== key)
+  if (!enabled) {
+    current.push(normalized)
+  }
+  configForm.local_rules.disabled_builtin_rules = normalizeStringList(current)
+}
+
+function addCustomLocalRule() {
+  configForm.local_rules.custom_rules.push({
+    name: '',
+    pattern: '',
+    weight: 50,
+    category: '',
+    strict: false,
+    enabled: true,
+  })
+}
+
+function removeCustomLocalRule(index: number) {
+  configForm.local_rules.custom_rules.splice(index, 1)
 }
 
 async function unbanUser(row: ContentModerationLog) {
@@ -2115,6 +2470,8 @@ function modeDescription(mode: ModerationMode): string {
 }
 
 function resultLabel(row: ContentModerationLog): string {
+  if (row.action === 'local_rule_block') return t('admin.riskControl.action.localRuleBlock')
+  if (row.action === 'local_rule_hit') return t('admin.riskControl.action.localRuleHit')
   if (row.action === 'cyber_policy') return t('admin.riskControl.action.cyberPolicy')
   if (row.action === 'keyword_block') return t('admin.riskControl.action.keywordBlock')
   if (row.action === 'block') return t('admin.riskControl.action.block')
@@ -2124,7 +2481,7 @@ function resultLabel(row: ContentModerationLog): string {
 }
 
 function resultBadgeClass(row: ContentModerationLog): string {
-  if (row.action === 'block' || row.action === 'keyword_block' || row.action === 'cyber_policy') return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+  if (row.action === 'block' || row.action === 'keyword_block' || row.action === 'cyber_policy' || row.action === 'local_rule_block') return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
   if (row.action === 'error' || row.error) return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
   if (row.flagged) return 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300'
   return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
@@ -2226,6 +2583,102 @@ function normalizeKeywordBlockingMode(value: unknown): KeywordBlockingMode {
     return value
   }
   return 'keyword_and_api'
+}
+
+function normalizeLocalRuleAction(value: unknown): ContentModerationLocalRuleAction {
+  return value === 'block' ? 'block' : 'record'
+}
+
+function normalizeLocalRuleScanScope(value: unknown): ContentModerationLocalRuleScanScope {
+  return value === 'full_text_context' ? 'full_text_context' : 'latest_user_input'
+}
+
+function normalizeLocalRulesConfig(value: unknown): ContentModerationLocalRulesConfig {
+  const raw = value && typeof value === 'object'
+    ? value as Partial<ContentModerationLocalRulesConfig>
+    : {}
+  const threshold = clampInteger(raw.threshold, defaultLocalRulesConfig.threshold, 1, 500)
+  const strictThreshold = clampInteger(raw.strict_threshold, defaultLocalRulesConfig.strict_threshold, threshold, 1000)
+  return {
+    enabled: Boolean(raw.enabled),
+    action: normalizeLocalRuleAction(raw.action),
+    scan_scope: normalizeLocalRuleScanScope(raw.scan_scope),
+    threshold,
+    strict_threshold: strictThreshold,
+    max_text_length: clampInteger(raw.max_text_length, defaultLocalRulesConfig.max_text_length, 1024, 1024 * 1024),
+    skip_api_after_hit: Boolean(raw.skip_api_after_hit),
+    count_for_auto_ban: Boolean(raw.count_for_auto_ban),
+    record_hash: Boolean(raw.record_hash),
+    email_on_hit: Boolean(raw.email_on_hit),
+    disabled_builtin_rules: normalizeStringList(raw.disabled_builtin_rules),
+    custom_rules: normalizeLocalRulePatterns(raw.custom_rules),
+    builtin_rules: normalizeLocalRulePatterns(raw.builtin_rules),
+  }
+}
+
+function normalizeLocalRulePatterns(value: unknown): ContentModerationLocalRulePattern[] {
+  if (!Array.isArray(value)) return []
+  const seen = new Set<string>()
+  const out: ContentModerationLocalRulePattern[] = []
+  for (const item of value) {
+    if (!item || typeof item !== 'object') continue
+    const raw = item as Partial<ContentModerationLocalRulePattern>
+    const name = String(raw.name ?? '').trim()
+    const pattern = String(raw.pattern ?? '').trim()
+    const weight = clampInteger(raw.weight, 0, 0, 500)
+    if (!name || !pattern || weight <= 0) continue
+    const key = name.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push({
+      name,
+      pattern,
+      weight,
+      category: String(raw.category ?? '').trim(),
+      strict: Boolean(raw.strict),
+      enabled: raw.enabled === undefined ? true : Boolean(raw.enabled),
+    })
+  }
+  return out
+}
+
+function normalizeStringList(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const item of value) {
+    const text = String(item ?? '').trim()
+    if (!text) continue
+    const key = text.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(text)
+  }
+  return out.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
+}
+
+function buildLocalRulesPayload(): ContentModerationLocalRulesConfig {
+  const cfg = normalizeLocalRulesConfig(configForm.local_rules)
+  return {
+    enabled: cfg.enabled,
+    action: cfg.action,
+    scan_scope: cfg.scan_scope,
+    threshold: cfg.threshold,
+    strict_threshold: cfg.strict_threshold,
+    max_text_length: cfg.max_text_length,
+    skip_api_after_hit: cfg.skip_api_after_hit,
+    count_for_auto_ban: cfg.count_for_auto_ban,
+    record_hash: cfg.record_hash,
+    email_on_hit: cfg.email_on_hit,
+    disabled_builtin_rules: [...cfg.disabled_builtin_rules],
+    custom_rules: cfg.custom_rules.map((rule) => ({ ...rule })),
+  }
+}
+
+function clampInteger(value: unknown, fallback: number, min: number, max: number): number {
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric)) return fallback
+  return Math.min(max, Math.max(min, Math.trunc(numeric)))
 }
 
 function normalizeModelFilter(value: unknown): ContentModerationModelFilter {
