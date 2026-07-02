@@ -1,0 +1,141 @@
+name: Remote Docker Release
+
+on:
+  push:
+    tags:
+      - 'release/v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to rebuild, e.g. release/v0.1.142-zhdgzs.2'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: remote-docker-${{ github.event.inputs.tag || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Resolve release metadata
+        id: meta
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG_NAME="${{ github.event.inputs.tag }}"
+          else
+            TAG_NAME="${GITHUB_REF#refs/tags/}"
+          fi
+
+          case "$TAG_NAME" in
+            release/v*) ;;
+            *)
+              echo "Unsupported release tag: $TAG_NAME" >&2
+              exit 1
+              ;;
+          esac
+
+          VERSION="${TAG_NAME#release/v}"
+          FILE_VERSION="$(tr -d '\r\n' < backend/cmd/server/VERSION)"
+          if [ "$FILE_VERSION" != "$VERSION" ]; then
+            echo "VERSION mismatch: tag=$VERSION file=$FILE_VERSION" >&2
+            exit 1
+          fi
+
+          OWNER="$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')"
+          IMAGE="ghcr.io/${OWNER}/sub2api"
+          COMMIT="$(git rev-parse --short HEAD)"
+          BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+          echo "tag=$TAG_NAME" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+          echo "commit=$COMMIT" >> "$GITHUB_OUTPUT"
+          echo "date=$BUILD_DATE" >> "$GITHUB_OUTPUT"
+
+      - name: Validate tag is on custom
+        shell: bash
+        run: |
+          git fetch origin custom:refs/remotes/origin/custom
+          git merge-base --is-ancestor HEAD origin/custom
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          platforms: linux/amd64
+          push: true
+          build-args: |
+            VERSION=${{ steps.meta.outputs.version }}
+            COMMIT=${{ steps.meta.outputs.commit }}
+            DATE=${{ steps.meta.outputs.date }}
+          tags: |
+            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}
+            ${{ steps.meta.outputs.image }}:custom
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.version=${{ steps.meta.outputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Trigger deploy webhook
+        if: ${{ success() }}
+        shell: bash
+        env:
+          REMOTE_DOCKER_WEBHOOK_URL: ${{ secrets.REMOTE_DOCKER_WEBHOOK_URL }}
+          REMOTE_DOCKER_WEBHOOK_TOKEN: ${{ secrets.REMOTE_DOCKER_WEBHOOK_TOKEN }}
+        run: |
+          if [ -z "$REMOTE_DOCKER_WEBHOOK_URL" ]; then
+            echo "REMOTE_DOCKER_WEBHOOK_URL is not configured; skipping deploy webhook"
+            exit 0
+          fi
+
+          PAYLOAD="$(jq -n \
+            --arg status "success" \
+            --arg repository "${{ github.repository }}" \
+            --arg tag "${{ steps.meta.outputs.tag }}" \
+            --arg version "${{ steps.meta.outputs.version }}" \
+            --arg image "${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}" \
+            --arg custom_image "${{ steps.meta.outputs.image }}:custom" \
+            --arg commit "${{ steps.meta.outputs.commit }}" \
+            --arg run_url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            '{
+              status: $status,
+              repository: $repository,
+              tag: $tag,
+              version: $version,
+              image: $image,
+              custom_image: $custom_image,
+              commit: $commit,
+              run_url: $run_url
+            }')"
+
+          CURL_ARGS=(-fsS -X POST "$REMOTE_DOCKER_WEBHOOK_URL" -H "Content-Type: application/json" -d "$PAYLOAD")
+          if [ -n "$REMOTE_DOCKER_WEBHOOK_TOKEN" ]; then
+            CURL_ARGS+=(-H "Authorization: Bearer ${REMOTE_DOCKER_WEBHOOK_TOKEN}")
+          fi
+          curl "${CURL_ARGS[@]}"

@@ -124,6 +124,8 @@ scripts
 !/scripts/update_docker_release_record.py
 !.agents/skills/release-docker/scripts/
 !.agents/skills/release-docker/scripts/release_docker.py
+!.agents/skills/remote-docker/scripts/
+!.agents/skills/remote-docker/scripts/remote_docker.py
 __pycache__/
 !backend/scripts/
 !backend/scripts/resolve-version.sh
