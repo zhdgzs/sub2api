@@ -27,7 +27,7 @@ Before any mutating execution, show this confirmation:
 ⚠️ 危险操作检测！
 操作类型：remote Docker 发布流程
 影响范围：会同步 upstream/main 到 origin/main 和本地 main，切换到 custom，合并 main 和调用时所在开发分支，更新 backend/cmd/server/VERSION 和 docs/DOCKER_RELEASE_HISTORY.md，提交 release 元数据，推送 origin/custom，创建并推送 release/* tag，并触发 GitHub Actions 构建/推送正式 Docker 镜像
-风险评估：如果分支选择、版本号或 tag 错误，会影响正式发布追溯；如果合并冲突，流程会中止并要求人工解决；不会自动解决冲突，不会自动 stash 或提交未提交改动；如果部署 webhook 已配置，镜像构建成功后可能触发远端服务重启
+风险评估：如果分支选择、版本号或 tag 错误，会影响正式发布追溯；如果合并冲突，流程会中止并要求人工解决；不会自动解决冲突，不会自动 stash 或提交未提交改动；GitHub Actions 只负责构建和推送镜像，不处理部署或重启
 
 请确认是否继续？[需要明确的"是"、"确认"、"继续"]
 ```
@@ -70,8 +70,8 @@ ghcr.io/<owner>/sub2api:custom
    python3 ".agents/skills/remote-docker/scripts/remote_docker.py" --repo "$PWD" --yes --version <confirmed-version>
    ```
 
-9. Report the release commit, tag, GHCR image tags, workflow URL, and deploy webhook status.
-10. Do not wait for or restart production unless the user explicitly asks and the endpoint is already configured.
+9. Report the release commit, tag, GHCR image tags, and workflow URL.
+10. Do not wait for or restart production; deployment and restart are out of scope for this skill.
 
 ## Script Contract
 
@@ -98,14 +98,8 @@ Execution mode:
 - Does not run local Docker build.
 - Relies on `.github/workflows/remote-docker.yml` to build and push GHCR images from the tag.
 
-## Hook and Restart
+## Restart Policy
 
-GitHub supports repository webhooks and workflow events, but this skill uses a simpler opt-in deploy webhook from the Actions workflow:
-
-- Configure repository secret `REMOTE_DOCKER_WEBHOOK_URL` to receive a POST after a successful image push.
-- Optionally configure `REMOTE_DOCKER_WEBHOOK_TOKEN`; the workflow sends it as `Authorization: Bearer <token>`.
-- The receiving server should verify the token, pull `ghcr.io/<owner>/sub2api:<version>`, and restart with its own deployment script.
-- Do not put restart commands or server credentials directly in the workflow.
-- If no webhook URL secret is configured, the workflow only builds and pushes the image.
+Remote Docker only builds and pushes the image. It must not configure deploy hooks, call restart endpoints, or assume any production deployment topology.
 
 Manual `workflow_dispatch` is present for reruns, but tag push is the primary trigger because this fork keeps `main` as an upstream mirror.

@@ -91,7 +91,6 @@ def print_plan(release: ModuleType, state: object, version: str | None) -> None:
     print(f"- {image}:custom")
     if url:
         print(f"workflow_url: {url}")
-    print("deploy_hook: optional secret REMOTE_DOCKER_WEBHOOK_URL")
     print()
     print("Execution sequence with --yes:")
     print("1. require clean working tree")
@@ -153,7 +152,6 @@ def execute(release: ModuleType, repo: Path, version: str, allow_version_overrid
     print(f"docker: {image}:{version}, {image}:custom")
     if url:
         print(f"workflow: {url}")
-    print("deploy_hook: GitHub Actions will call REMOTE_DOCKER_WEBHOOK_URL after a successful image push if configured")
     print(f"note: {note}")
 
 
