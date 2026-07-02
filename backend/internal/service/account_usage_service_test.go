@@ -140,11 +140,11 @@ func TestAccountUsageService_SyncOpenAIRefreshMetadata_ClearsStaleSnapshotWhenPl
 		Type:        AccountTypeOAuth,
 		Credentials: map[string]any{"plan_type": "plus"},
 		Extra: map[string]any{
-			"codex_5h_used_percent":              99.0,
-			"codex_7d_reset_at":                  "2099-01-01T00:00:00Z",
+			"codex_5h_used_percent":                99.0,
+			"codex_7d_reset_at":                    "2099-01-01T00:00:00Z",
 			"codex_primary_over_secondary_percent": 2.0,
-			"privacy_mode":                       "training_off",
-			"quota_daily_limit":                  10.0,
+			"privacy_mode":                         "training_off",
+			"quota_daily_limit":                    10.0,
 		},
 	}
 
@@ -195,6 +195,55 @@ func TestAccountUsageService_SyncOpenAIRefreshMetadata_KeepsSnapshotForProAlias(
 	}
 	if got := after.Extra["codex_5h_used_percent"]; got != 88.0 {
 		t.Fatalf("codex_5h_used_percent = %v, want 88", got)
+	}
+}
+
+// TestShouldRefreshOpenAICodexSnapshot_SparkShadowIgnoresWSv2 外审第9轮 P1:spark 影子用量走
+// QueryUsage(/wham/usage,与 WSv2 无关),staleness 不得被 WSv2 门控,否则首刷后窗口永久冻结。
+func TestShouldRefreshOpenAICodexSnapshot_SparkShadowIgnoresWSv2(t *testing.T) {
+	t.Parallel()
+
+	now := time.Now()
+	usage := &UsageInfo{
+		FiveHour: &UsageProgress{Utilization: 0},
+		SevenDay: &UsageProgress{Utilization: 0},
+	}
+	staleAt := now.Add(-(openAIProbeCacheTTL + time.Minute)).Format(time.RFC3339)
+	freshAt := now.Add(-time.Minute).Format(time.RFC3339)
+	parentID := int64(7001)
+
+	// 影子无 WSv2,但首刷后窗口已存在;过期 codex_usage_updated_at 必须触发再刷新。
+	shadowStale := &Account{
+		Platform:        PlatformOpenAI,
+		Type:            AccountTypeOAuth,
+		ParentAccountID: &parentID,
+		QuotaDimension:  QuotaDimensionSpark,
+		Extra:           map[string]any{"codex_usage_updated_at": staleAt},
+	}
+	if !shouldRefreshOpenAICodexSnapshot(shadowStale, usage, now) {
+		t.Fatal("expected stale spark shadow (no WSv2) to trigger refresh")
+	}
+
+	// 影子时间戳仍新鲜→不刷(TTL 生效)。
+	shadowFresh := &Account{
+		Platform:        PlatformOpenAI,
+		Type:            AccountTypeOAuth,
+		ParentAccountID: &parentID,
+		QuotaDimension:  QuotaDimensionSpark,
+		Extra:           map[string]any{"codex_usage_updated_at": freshAt},
+	}
+	if shouldRefreshOpenAICodexSnapshot(shadowFresh, usage, now) {
+		t.Fatal("expected fresh spark shadow to skip refresh (TTL not elapsed)")
+	}
+
+	// 反向对照:普通账号无 WSv2 + 过期时间戳→仍不刷(WSv2 门控普通账号的 probe 刷新)。
+	normalNoWS := &Account{
+		Platform: PlatformOpenAI,
+		Type:     AccountTypeOAuth,
+		Extra:    map[string]any{"codex_usage_updated_at": staleAt},
+	}
+	if shouldRefreshOpenAICodexSnapshot(normalNoWS, usage, now) {
+		t.Fatal("expected non-WSv2 normal account to skip codex probe refresh")
 	}
 }
 

@@ -125,6 +125,8 @@ scripts
 !.agents/skills/release-docker/scripts/
 !.agents/skills/release-docker/scripts/release_docker.py
 __pycache__/
+!backend/scripts/
+!backend/scripts/resolve-version.sh
 .code-review-state
 #openspec/
 code-reviews/

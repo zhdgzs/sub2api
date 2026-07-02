@@ -289,6 +289,17 @@ func cloneAccountForRefreshMetadata(account *Account) *Account {
 	return &cloned
 }
 
+func cloneCredentials(credentials map[string]any) map[string]any {
+	if credentials == nil {
+		return nil
+	}
+	cloned := make(map[string]any, len(credentials))
+	for key, value := range credentials {
+		cloned[key] = value
+	}
+	return cloned
+}
+
 // refreshWithRetry 带重试的刷新
 func (s *TokenRefreshService) refreshWithRetry(ctx context.Context, account *Account, refresher TokenRefresher, executor OAuthRefreshExecutor, refreshWindow time.Duration) error {
 	var lastErr error
