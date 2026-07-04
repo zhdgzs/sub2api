@@ -13,3 +13,4 @@
 | `v0.1.142-zhdgzs.2` | `2026-07-02` | 支持 GitHub Actions 远端 Docker 构建。 | `b1bc87f3` feat(release): 支持 GitHub Actions 远端 Docker 构建 |
 | `v0.1.142-zhdgzs.3` | `2026-07-02` | 本次打包未包含新的自定义功能变更。 | 无 |
 | `v0.1.142-zhdgzs.4` | `2026-07-02` | 完善远程 Docker 发布自动部署流程。 | `dd7528eb` 完善远程 Docker 发布自动部署流程 |
+| `v0.1.144-zhdgzs.1` | `2026-07-04` | 本次打包未包含新的自定义功能变更。 | 无 |
