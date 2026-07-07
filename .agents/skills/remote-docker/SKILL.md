@@ -20,7 +20,7 @@ Do not modify or invoke `release-docker` execution mode for remote builds. This 
 
 This workflow performs high-risk operations: branch checkout, pull, merge, commit, push, and a remote Docker release build.
 
-Before any mutating execution, show this confirmation:
+Before the first mutating execution, show this single combined confirmation unless the user already gave clear approval in the current turn. This one confirmation covers the embedded `sync-upstream` step and the remote Docker release. Do not ask for a separate `sync-upstream` confirmation, and do not ask for a second version confirmation when using the script's candidate version.
 
 ```text
 ⚠️ 危险操作检测！
@@ -33,12 +33,15 @@ Before any mutating execution, show this confirmation:
 
 Do not auto-stash, auto-resolve conflicts, delete branches, delete tags, force-push, push to `upstream`, wait for the GitHub Actions build to finish, or call production deploy/restart endpoints manually.
 
+Use the candidate version from the post-sync preview by default. If the user supplied an explicit version in the initial request, use it only if it validates against the synced `main` base version. Do not use `--allow-version-override` unless that override was explicitly approved before the first mutating command; otherwise stop and report the validation error instead of starting a second confirmation round.
+
 ## Required Files
 
 Remote builds require:
 
 ```text
 .github/workflows/remote-docker.yml
+.agents/skills/sync-upstream/scripts/sync_upstream.py
 .agents/skills/remote-docker/scripts/remote_docker.py
 /root/sub2api-deploy/watch_remote_docker_deploy.sh
 ```
@@ -56,22 +59,29 @@ ghcr.io/<owner>/sub2api:custom
 2. Confirm the current directory is the intended `sub2api` repository.
 3. Record the current branch as the source branch.
 4. Require a clean working tree before starting.
-5. Run the remote release script in preview mode:
+5. If the user has not already given clear approval in the current turn, show the single combined high-risk confirmation from **Safety Rules**. After that confirmation, continue without any second confirmation.
+6. Run `sync-upstream` first so `main` is current before choosing the release version:
+
+   ```bash
+   python3 ".agents/skills/sync-upstream/scripts/sync_upstream.py" --repo "$PWD" --yes
+   ```
+
+7. Run the remote release script in preview mode after the sync:
 
    ```bash
    python3 ".agents/skills/remote-docker/scripts/remote_docker.py" --repo "$PWD"
    ```
 
-6. Review the proposed source branch, `main`, `custom`, version candidate, GHCR tags, workflow file, and release record file.
-7. Ask the user to confirm the version and the high-risk operation.
-8. Execute after explicit confirmation:
+8. Review the proposed source branch, `main`, `custom`, version candidate, GHCR tags, workflow file, and release record file.
+9. Choose the script's `candidate_version` unless the user already supplied an explicit valid version in the initial request.
+10. Execute immediately after the preview with the chosen version:
 
    ```bash
-   python3 ".agents/skills/remote-docker/scripts/remote_docker.py" --repo "$PWD" --yes --version <confirmed-version>
+   python3 ".agents/skills/remote-docker/scripts/remote_docker.py" --repo "$PWD" --yes --version <chosen-version>
    ```
 
-9. Report the release commit, GHCR image tags, workflow URL, deploy watcher PID, and deploy watcher log path.
-10. Treat the task as complete after the workflow is triggered and the deploy watcher script is started. Do not wait for the watcher, poll Actions from the agent, or manually restart production.
+11. Report the release commit, GHCR image tags, workflow URL, deploy watcher PID, and deploy watcher log path.
+12. Treat the task as complete after the workflow is triggered and the deploy watcher script is started. Do not wait for the watcher, poll Actions from the agent, or manually restart production.
 
 ## Script Contract
 
@@ -83,7 +93,7 @@ Execution mode:
 
 - Requires `--yes` and `--version`.
 - Requires the initial source branch worktree to be clean.
-- Calls the project `sync-upstream` script with `--yes`.
+- Calls the project `sync-upstream` script with `--yes`. The skill workflow also runs `sync-upstream` before preview so the candidate version is based on current `main`; this internal execution call should normally be a no-op after that pre-sync and must not trigger another user confirmation.
 - Checks out `custom`.
 - Pulls `origin/custom` with `--ff-only`.
 - Merges `main` into `custom` with `--no-ff` when needed.
