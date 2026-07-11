@@ -113,7 +113,7 @@ const (
 	openAIProbeCacheTTL               = 10 * time.Minute
 	openAIUsageProbeTimeout           = 15 * time.Second
 	openAIRefreshMetadataProbeTimeout = 30 * time.Second
-	openAICodexProbeVersion           = "0.125.0"
+	openAICodexProbeVersion = "0.144.1"
 )
 
 // UsageCache 封装账户使用量相关的缓存
