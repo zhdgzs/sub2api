@@ -1,7 +1,10 @@
+import { readFileSync } from 'node:fs'
+
 import { describe, expect, it } from 'vitest'
 
 import enAdminAccounts from '../locales/en/admin/accounts'
 import enAdminChannels from '../locales/en/admin/channels'
+import enAdminCodexInspection from '../locales/en/admin/codexInspection'
 import enAdminOps from '../locales/en/admin/ops'
 import enAdminOverview from '../locales/en/admin/overview'
 import enAdminResources from '../locales/en/admin/resources'
@@ -12,14 +15,17 @@ import enLanding from '../locales/en/landing'
 import enMisc from '../locales/en/misc'
 import zhAdminAccounts from '../locales/zh/admin/accounts'
 import zhAdminChannels from '../locales/zh/admin/channels'
+import zhAdminCodexInspection from '../locales/zh/admin/codexInspection'
 import zhAdminOps from '../locales/zh/admin/ops'
 import zhAdminOverview from '../locales/zh/admin/overview'
 import zhAdminResources from '../locales/zh/admin/resources'
 import zhAdminSettings from '../locales/zh/admin/settings'
 import zhCommon from '../locales/zh/common'
 import zhDashboard from '../locales/zh/dashboard'
+import zhLocale from '../locales/zh'
 import zhLanding from '../locales/zh/landing'
 import zhMisc from '../locales/zh/misc'
+import enLocale from '../locales/en'
 
 // locales/{zh,en}/index.ts 与 admin/index.ts 使用对象展开聚合各域模块，
 // 展开模块之间若出现同名顶层键会静默覆盖。本测试将该风险固化为显式失败。
@@ -41,6 +47,19 @@ function collisions(modules: Modules): string[] {
   return out
 }
 
+function getPath(root: Record<string, unknown>, path: string): unknown {
+  return path.split('.').reduce<unknown>((current, segment) => {
+    if (!current || typeof current !== 'object') {
+      return undefined
+    }
+    return (current as Record<string, unknown>)[segment]
+  }, root)
+}
+
+function literalTranslationKeys(source: string): string[] {
+  return Array.from(source.matchAll(/\bt\('([^'`$]+)'\)/g), (match) => match[1])
+}
+
 const roots: Record<string, Modules> = {
   zh: { landing: zhLanding, common: zhCommon, dashboard: zhDashboard, misc: zhMisc },
   en: { landing: enLanding, common: enCommon, dashboard: enDashboard, misc: enMisc }
@@ -53,7 +72,8 @@ const admins: Record<string, Modules> = {
     accounts: zhAdminAccounts,
     resources: zhAdminResources,
     ops: zhAdminOps,
-    settings: zhAdminSettings
+    settings: zhAdminSettings,
+    codexInspection: zhAdminCodexInspection
   },
   en: {
     overview: enAdminOverview,
@@ -61,7 +81,8 @@ const admins: Record<string, Modules> = {
     accounts: enAdminAccounts,
     resources: enAdminResources,
     ops: enAdminOps,
-    settings: enAdminSettings
+    settings: enAdminSettings,
+    codexInspection: enAdminCodexInspection
   }
 }
 
@@ -78,5 +99,36 @@ describe.each(Object.keys(roots))('locale %s spread assembly', (locale) => {
 
   it('admin modules have no overlapping top-level keys', () => {
     expect(collisions(admins[locale])).toEqual([])
+  })
+})
+
+describe('codex inspection locale coverage', () => {
+  const viewSource = readFileSync('src/views/admin/CodexInspectionView.vue', 'utf8')
+  const staticKeys = literalTranslationKeys(viewSource)
+  const dynamicKeys = [
+    'admin.codexInspection.action.keep',
+    'admin.codexInspection.action.enable',
+    'admin.codexInspection.action.disable',
+    'admin.codexInspection.action.reauth',
+    'admin.codexInspection.action.delete',
+    'admin.codexInspection.actionStatus.none',
+    'admin.codexInspection.actionStatus.pending',
+    'admin.codexInspection.actionStatus.success',
+    'admin.codexInspection.actionStatus.failed',
+    'admin.codexInspection.actionStatus.skipped',
+    'admin.codexInspection.actionStatus.needs_review',
+    'admin.codexInspection.probe.success',
+    'admin.codexInspection.probe.failed',
+    'admin.codexInspection.probe.skipped',
+    'nav.codexInspection'
+  ]
+
+  it.each([
+    ['zh', zhLocale],
+    ['en', enLocale]
+  ])('%s locale resolves all codex inspection page keys', (_, locale) => {
+    for (const key of [...new Set([...staticKeys, ...dynamicKeys])]) {
+      expect(getPath(locale, key), key).toBeDefined()
+    }
   })
 })

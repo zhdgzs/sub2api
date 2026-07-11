@@ -188,6 +188,7 @@ export default {
     channelManagement: '渠道管理',
     channelPricing: '渠道定价',
     channelMonitor: '渠道监控',
+    codexInspection: 'Codex 巡检',
     channelStatus: '渠道状态',
     riskControl: '风控中心',
   },
