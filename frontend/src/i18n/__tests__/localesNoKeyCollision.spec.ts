@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync, statSync } from 'node:fs'
 
 import { describe, expect, it } from 'vitest'
 
@@ -57,7 +57,65 @@ function getPath(root: Record<string, unknown>, path: string): unknown {
 }
 
 function literalTranslationKeys(source: string): string[] {
-  return Array.from(source.matchAll(/\bt\('([^'`$]+)'\)/g), (match) => match[1])
+  return Array.from(
+    source.matchAll(/(?:\b|\$)t\s*\(\s*(['"`])([A-Za-z][A-Za-z0-9_.-]*\.[A-Za-z0-9_.-]+)\1/g),
+    (match) => match[2]
+  ).filter((key) => !key.endsWith('.'))
+}
+
+function literalMetadataKeys(source: string): string[] {
+  return Array.from(
+    source.matchAll(/\b(?:titleKey|descriptionKey|messageKey|hintKey|labelKey)\s*:\s*(['"`])([A-Za-z][A-Za-z0-9_.-]*\.[A-Za-z0-9_.-]+)\1/g),
+    (match) => match[2]
+  ).filter((key) => !key.endsWith('.'))
+}
+
+function literalLocaleKeys(source: string, namespace: string): string[] {
+  const escaped = namespace.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const pattern = new RegExp(`['"\`](${escaped}\\.[A-Za-z0-9_.-]+)['"\`]`, 'g')
+  return Array.from(source.matchAll(pattern), (match) => match[1]).filter((key) => !key.endsWith('.'))
+}
+
+function readSources(paths: string[]): string {
+  return paths.map((path) => readFileSync(path, 'utf8')).join('\n')
+}
+
+function sourceFilePaths(dir: string): string[] {
+  const entries = readdirSync(dir, { withFileTypes: true })
+  const paths: string[] = []
+
+  for (const entry of entries) {
+    const fullPath = `${dir}/${entry.name}`
+    if (entry.isDirectory()) {
+      if (entry.name === '__tests__' || fullPath === 'src/i18n/locales') {
+        continue
+      }
+      paths.push(...sourceFilePaths(fullPath))
+      continue
+    }
+
+    if (!statSync(fullPath).isFile()) {
+      continue
+    }
+    if (!/\.(vue|ts|tsx|js|jsx)$/.test(entry.name) || /\.(spec|test)\./.test(entry.name)) {
+      continue
+    }
+    paths.push(fullPath)
+  }
+
+  return paths
+}
+
+function staticSourceLocaleKeys(): string[] {
+  const keys = sourceFilePaths('src').flatMap((path) => {
+    const source = readFileSync(path, 'utf8')
+    return [
+      ...literalTranslationKeys(source),
+      ...literalMetadataKeys(source)
+    ]
+  })
+
+  return [...new Set(keys)].sort()
 }
 
 const roots: Record<string, Modules> = {
@@ -128,6 +186,40 @@ describe('codex inspection locale coverage', () => {
     ['en', enLocale]
   ])('%s locale resolves all codex inspection page keys', (_, locale) => {
     for (const key of [...new Set([...staticKeys, ...dynamicKeys])]) {
+      expect(getPath(locale, key), key).toBeDefined()
+    }
+  })
+})
+
+describe('admin accounts locale coverage', () => {
+  const source = readSources([
+    'src/views/admin/AccountsView.vue',
+    'src/components/admin/account/AccountActionMenu.vue',
+    'src/components/admin/account/AccountTestModal.vue'
+  ])
+  const staticKeys = [...new Set([
+    ...literalTranslationKeys(source).filter((key) => key.startsWith('admin.accounts.')),
+    ...literalLocaleKeys(source, 'admin.accounts')
+  ])]
+
+  it.each([
+    ['zh', zhLocale],
+    ['en', enLocale]
+  ])('%s locale resolves static admin account page keys', (_, locale) => {
+    for (const key of staticKeys) {
+      expect(getPath(locale, key), key).toBeDefined()
+    }
+  })
+})
+
+describe('frontend static locale coverage', () => {
+  const staticKeys = staticSourceLocaleKeys()
+
+  it.each([
+    ['zh', zhLocale],
+    ['en', enLocale]
+  ])('%s locale resolves static source keys', (_, locale) => {
+    for (const key of staticKeys) {
       expect(getPath(locale, key), key).toBeDefined()
     }
   })
