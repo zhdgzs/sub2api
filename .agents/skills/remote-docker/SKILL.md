@@ -26,12 +26,14 @@ Before the first mutating execution, show this single combined confirmation unle
 ⚠️ 危险操作检测！
 操作类型：remote Docker 发布流程
 影响范围：会同步 upstream/main 到 origin/main 和本地 main，切换到 custom，合并 main 和调用时所在开发分支，更新 backend/cmd/server/VERSION 和 docs/DOCKER_RELEASE_HISTORY.md，提交 release 元数据，推送 origin/custom，触发 GitHub Actions 构建/推送正式 Docker 镜像，并在本机后台启动 /root/sub2api-deploy/watch_remote_docker_deploy.sh
-风险评估：如果分支选择或版本号错误，会影响正式发布追溯；如果合并冲突，流程会中止并要求人工解决；不会自动解决冲突，不会自动 stash 或提交未提交改动；GitHub Actions 负责构建和推送镜像，部署 watcher 会在后台轮询构建结果并自行拉取镜像、执行 docker compose up -d 和发送飞书通知，agent 不等待该脚本完成
+风险评估：如果分支选择或版本号错误，会影响正式发布追溯；发生合并冲突时会自动采用正在合入分支的版本并创建合并提交（`main → custom` 优先上游，`feature → custom` 优先功能分支），可能覆盖目标分支同一冲突区的改动；不会自动 stash 或提交用户未提交改动；GitHub Actions 负责构建和推送镜像，部署 watcher 会在后台轮询构建结果并自行拉取镜像、执行 docker compose up -d 和发送飞书通知，agent 不等待该脚本完成
 
 请确认是否继续？[需要明确的"是"、"确认"、"继续"]
 ```
 
-Do not auto-stash, auto-resolve conflicts, delete branches, delete tags, force-push, push to `upstream`, wait for the GitHub Actions build to finish, or call production deploy/restart endpoints manually.
+Do not auto-stash, delete branches, delete tags, force-push, push to `upstream`, wait for the GitHub Actions build to finish, or call production deploy/restart endpoints manually.
+
+Resolve release merges automatically with the deterministic `theirs` policy: for `main → custom`, retain the incoming upstream version in each conflict; for `feature/* → custom`, retain the incoming feature version. Commit the resolved merge before continuing. If Git cannot apply this policy to every conflicted path, abort the merge and stop without pushing.
 
 Use the candidate version from the post-sync preview by default. If the user supplied an explicit version in the initial request, use it only if it validates against the synced `main` base version. Do not use `--allow-version-override` unless that override was explicitly approved before the first mutating command; otherwise stop and report the validation error instead of starting a second confirmation round.
 
@@ -66,7 +68,7 @@ ghcr.io/<owner>/sub2api:custom
    python3 ".agents/skills/sync-upstream/scripts/sync_upstream.py" --repo "$PWD" --yes
    ```
 
-7. Run the remote release script in preview mode after the sync:
+7. Run the remote release script in preview mode after the sync. A sync conflict preview is informational for this skill; execution continues because the release script resolves the actual `custom` merges automatically:
 
    ```bash
    python3 ".agents/skills/remote-docker/scripts/remote_docker.py" --repo "$PWD"
@@ -93,12 +95,12 @@ Execution mode:
 
 - Requires `--yes` and `--version`.
 - Requires the initial source branch worktree to be clean.
-- Calls the project `sync-upstream` script with `--yes`. The skill workflow also runs `sync-upstream` before preview so the candidate version is based on current `main`; this internal execution call should normally be a no-op after that pre-sync and must not trigger another user confirmation.
+- Calls the project `sync-upstream` script with `--yes`. A conflict-preview exit code is accepted because the actual `custom` merge is resolved automatically.
 - Checks out `custom`.
 - Pulls `origin/custom` with `--ff-only`.
 - Merges `main` into `custom` with `--no-ff` when needed.
 - Merges the recorded source branch into `custom` with `--no-ff` unless already contained.
-- Stops on merge conflicts.
+- Resolves merge conflicts using the deterministic incoming-branch (`theirs`) policy, commits the resolution, and continues. If a path cannot be resolved by that policy, aborts the merge and stops.
 - Writes `backend/cmd/server/VERSION`.
 - Writes/updates `docs/DOCKER_RELEASE_HISTORY.md`.
 - Commits `chore(release): <version>` only if release metadata changed.
