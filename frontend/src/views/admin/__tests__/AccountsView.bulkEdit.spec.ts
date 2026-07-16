@@ -84,6 +84,7 @@ const DataTableStub = {
       <div v-for="row in data" :key="row.id">
         <div data-test="select-row"><slot name="cell-select" :row="row" /></div>
         <slot name="cell-created_at" :value="row.created_at" :row="row" />
+        <slot name="cell-priority" :value="row.priority" :row="row" />
       </div>
     </div>
   `
@@ -235,6 +236,22 @@ describe('admin AccountsView bulk edit scope', () => {
       label: 'admin.accounts.columns.createdAt',
       sortable: true
     })
+  })
+
+  it('renders the priority quick editor', async () => {
+    listAccounts.mockResolvedValue({
+      items: [buildAccount()],
+      total: 1,
+      page: 1,
+      page_size: 20,
+      pages: 1
+    })
+
+    const wrapper = mountAccountsView()
+
+    await flushPromises()
+
+    expect(wrapper.get('[data-test="account-priority-input"]').element).toBeInstanceOf(HTMLInputElement)
   })
 
   it('submits selected account IDs from every page for backend eligibility checks', async () => {

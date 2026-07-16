@@ -372,8 +372,31 @@
               @probe="handleProbeUpstreamBilling(row)"
             />
           </template>
-          <template #cell-priority="{ value }">
-            <span class="text-sm text-gray-700 dark:text-gray-300">{{ value }}</span>
+          <template #cell-priority="{ row }">
+            <div class="inline-flex w-28 items-center gap-1.5" @click.stop>
+              <input
+                :value="getPriorityDraft(row)"
+                type="number"
+                min="1"
+                step="1"
+                inputmode="numeric"
+                class="h-8 w-16 rounded-md border border-gray-300 bg-white px-2 text-sm font-mono text-gray-700 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400 dark:border-dark-600 dark:bg-dark-800 dark:text-gray-200 dark:disabled:bg-dark-700"
+                :disabled="isPrioritySaving(row.id)"
+                :aria-label="t('admin.accounts.priorityQuickEditLabel', { name: row.name })"
+                :title="t('admin.accounts.priorityQuickEditHint')"
+                data-test="account-priority-input"
+                @input="setPriorityDraft(row, ($event.target as HTMLInputElement).value)"
+                @blur="commitPriorityDraft(row)"
+                @keydown.enter.prevent="commitPriorityDraft(row)"
+                @keydown.esc.prevent="resetPriorityDraft(row)"
+              />
+              <Icon
+                v-if="isPrioritySaving(row.id)"
+                name="refresh"
+                size="xs"
+                class="animate-spin text-primary-500"
+              />
+            </div>
           </template>
           <template #header-scheduler_score="{ column }">
             <div class="flex items-center">
