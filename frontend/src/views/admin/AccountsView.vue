@@ -522,7 +522,7 @@ import { buildOpenAIUsageRefreshKey } from '@/utils/accountUsageRefresh'
 import { formatDateTime, formatRelativeTime } from '@/utils/format'
 import { proxyExpiryBadgeClass, proxyExpiryLabelKey } from '@/utils/proxyExpiry'
 import { extractApiErrorMessage } from '@/utils/apiError'
-import type { Account, AccountPlatform, AccountSchedulerGroupScore, AccountType, Proxy as AccountProxy, AdminGroup, WindowStats, ClaudeModel, UpstreamBillingProbeSettings, UpstreamBillingProbeSnapshot } from '@/types'
+import type { Account, AccountPlatform, AccountSchedulerGroupScore, AccountType, Proxy as AccountProxy, AdminGroup, WindowStats, ClaudeModel, AdminDataPayload, UpstreamBillingProbeSettings, UpstreamBillingProbeSnapshot } from '@/types'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -604,6 +604,8 @@ const scheduleModelOptions = ref<SelectOption[]>([])
 const togglingSchedulable = ref<number | null>(null)
 const menu = reactive<{show:boolean, acc:Account|null, pos:{top:number, left:number}|null}>({ show: false, acc: null, pos: null })
 const exportingData = ref(false)
+const priorityDrafts = reactive<Record<number, string>>({})
+const savingPriorityIds = ref<Set<number>>(new Set())
 const upstreamBillingProbeSettings = reactive<UpstreamBillingProbeSettings>({
   enabled: true,
   interval_minutes: 30
