@@ -72,6 +72,31 @@ describe('AccountUsageCell', () => {
     })
   })
 
+  it('错误状态账号不会自动请求 usage', async () => {
+    mount(AccountUsageCell, {
+      props: {
+        account: makeAccount({
+          id: 1000,
+          platform: 'openai',
+          type: 'oauth',
+          status: 'error',
+          error_message: 'Token refresh failed'
+        })
+      },
+      global: {
+        stubs: {
+          UsageProgressBar: true,
+          AccountQuotaInfo: true,
+          OpenAIQuotaResetCell: true
+        }
+      }
+    })
+
+    await flushPromises()
+
+    expect(getUsage).not.toHaveBeenCalled()
+  })
+
   it('Antigravity 图片用量会聚合新旧 image 模型', async () => {
     getUsage.mockResolvedValue({
       antigravity_quota: {

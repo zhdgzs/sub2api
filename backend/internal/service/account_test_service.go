@@ -622,6 +622,18 @@ func (s *AccountTestService) testOpenAIAccountConnection(c *gin.Context, account
 
 	// Set common headers
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "text/event-stream")
+	applyOpenAIUpstreamUserAgent(ctx, req, account, openAIUpstreamUserAgentOptions{
+		Config:             s.cfg,
+		DefaultUserAgent:   codexCLIUserAgent,
+		ForceCodexForOAuth: true,
+	})
+	probeSessionID := openAIProbeSessionID("probe_responses", account.ID)
+	if isOAuth {
+		applyOpenAICodexInternalAPIHeaders(req, probeSessionID)
+	} else {
+		applyOpenAICodexClientIdentityHeaders(req, probeSessionID)
+	}
 	if credentialAccount.IsOpenAIAgentIdentity() {
 		authHeaders, authErr := buildAgentIdentityAuthenticationHeaders(ctx, s.accountRepo, s.agentIdentityWS, &s.agentIdentityTaskMu, credentialAccount)
 		if authErr != nil {
@@ -1843,11 +1855,10 @@ func (s *AccountTestService) testOpenAIImageOAuth(c *gin.Context, ctx context.Co
 	req.Header.Set("Accept", "text/event-stream")
 	req.Header.Set("OpenAI-Beta", "responses=experimental")
 	req.Header.Set("originator", "codex_cli_rs")
-	if customUA := strings.TrimSpace(credentialAccount.GetOpenAIUserAgent()); customUA != "" {
-		req.Header.Set("User-Agent", customUA)
-	} else {
-		req.Header.Set("User-Agent", codexCLIUserAgent)
-	}
+	applyOpenAIUpstreamUserAgent(ctx, req, account, openAIUpstreamUserAgentOptions{
+		Config:           s.cfg,
+		DefaultUserAgent: codexCLIUserAgent,
+	})
 	setOpenAIChatGPTAccountHeaders(req.Header, credentialAccount)
 	// 与真实转发一致：originator 与最终 User-Agent 首段配套（原 opencode 与 Codex UA 错配会 404，issue #3901）。
 	enforceCodexIdentityHeaders(req.Header)

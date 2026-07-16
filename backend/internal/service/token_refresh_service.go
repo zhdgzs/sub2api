@@ -893,6 +893,7 @@ func (s *TokenRefreshService) refreshWithRetryWithRateGate(
 		attemptCtx, cancelAttempt := context.WithTimeout(ctx, s.attemptTimeout())
 		var newCredentials map[string]any
 		var err error
+		beforeRefresh := cloneAccountForRefreshMetadata(account)
 		shortCircuit := false
 		credentialsPersisted := false
 
@@ -979,7 +980,7 @@ func (s *TokenRefreshService) refreshWithRetryWithRateGate(
 				s.postRefreshStateSyncWithCleanup(ctx, account)
 				return nil
 			}
-			s.postRefreshActions(ctx, account)
+			s.postRefreshActions(ctx, beforeRefresh, account)
 			return nil
 		}
 		if ctxErr := ctx.Err(); ctxErr != nil {

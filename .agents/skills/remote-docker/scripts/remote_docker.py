@@ -175,10 +175,74 @@ def start_deploy_watcher(release: ModuleType, repo: Path, head_sha: str) -> int:
     return proc.pid
 
 
+def run_sync_upstream_allowing_conflict_preview(release: ModuleType, repo: Path) -> None:
+    """Sync main; conflict-preview exit code 2 is expected before auto-merging custom."""
+    script = repo / ".agents" / "skills" / "sync-upstream" / "scripts" / "sync_upstream.py"
+    if not script.exists():
+        raise SystemExit("[ERROR] sync-upstream script not found")
+
+    proc = release.run(
+        ["python3", str(script), "--repo", str(repo), "--yes"],
+        cwd=repo,
+        check=False,
+        capture=False,
+    )
+    if proc.returncode == 0:
+        return
+    if proc.returncode == 2:
+        print("[INFO] 检测到 main 与源分支的预检冲突，将在 custom 发布合并时自动解决。")
+        return
+    raise SystemExit(f"[ERROR] sync-upstream failed with exit code {proc.returncode}")
+
+
+def abort_merge(release: ModuleType, repo: Path) -> None:
+    release.git(repo, "merge", "--abort", check=False)
+
+
+def merge_branch_auto(release: ModuleType, repo: Path, branch: str, message: str) -> None:
+    """Merge an incoming branch, resolving conflicts in favor of the incoming side."""
+    proc = release.run(
+        ["git", "merge", "--no-ff", "-X", "theirs", branch, "-m", message],
+        cwd=repo,
+        check=False,
+    )
+    if proc.returncode == 0:
+        return
+
+    conflicts = release.git(repo, "diff", "--name-only", "--diff-filter=U", check=False)
+    if not conflicts:
+        detail = (proc.stderr or proc.stdout or "").strip()
+        abort_merge(release, repo)
+        raise SystemExit(f"[ERROR] Merge failed for {branch}.\n{detail}")
+
+    for path in conflicts.splitlines():
+        checkout = release.run(
+            ["git", "checkout", "--theirs", "--", path],
+            cwd=repo,
+            check=False,
+        )
+        if checkout.returncode != 0:
+            abort_merge(release, repo)
+            detail = (checkout.stderr or checkout.stdout or "").strip()
+            raise SystemExit(f"[ERROR] Cannot auto-resolve {path} from {branch}.\n{detail}")
+        release.git(repo, "add", "--", path)
+
+    remaining = release.git(repo, "diff", "--name-only", "--diff-filter=U", check=False)
+    if remaining:
+        abort_merge(release, repo)
+        raise SystemExit(f"[ERROR] Unresolved merge conflicts after auto-resolution:\n{remaining}")
+
+    commit = release.run(["git", "commit", "--no-edit"], cwd=repo, check=False)
+    if commit.returncode != 0:
+        abort_merge(release, repo)
+        detail = (commit.stderr or commit.stdout or "").strip()
+        raise SystemExit(f"[ERROR] Cannot commit auto-resolved merge for {branch}.\n{detail}")
+
+
 def execute(release: ModuleType, repo: Path, version: str, allow_version_override: bool) -> None:
     release.require_clean(repo)
     source_branch = release.current_branch(repo)
-    release.run_sync_upstream(repo)
+    run_sync_upstream_allowing_conflict_preview(release, repo)
     base = release.main_version(repo)
     release.validate_version(version, base, allow_override=allow_version_override)
 
@@ -186,10 +250,10 @@ def execute(release: ModuleType, repo: Path, version: str, allow_version_overrid
     release.git(repo, "pull", "--ff-only", "origin", "custom")
 
     if not release.branch_contains(repo, "main", "custom"):
-        release.merge_branch(repo, "main", f"chore: merge upstream main {base}")
+        merge_branch_auto(release, repo, "main", f"chore: 合并上游 main {base}")
 
     if source_branch != "custom" and not release.branch_contains(repo, source_branch, "custom"):
-        release.merge_branch(repo, source_branch, f"chore: merge {source_branch} into custom")
+        merge_branch_auto(release, repo, source_branch, f"chore: 合并 {source_branch} 到 custom")
 
     require_remote_workflow(repo)
     release.require_clean_or_merge_complete(repo)

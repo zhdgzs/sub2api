@@ -16,6 +16,41 @@ type accountUsageCodexProbeRepo struct {
 	clearCalls    int
 }
 
+type accountUsageReadOnlyRepo struct {
+	stubOpenAIAccountRepo
+	clearErrorCalls int
+}
+
+func (r *accountUsageReadOnlyRepo) ClearError(context.Context, int64) error {
+	r.clearErrorCalls++
+	return nil
+}
+
+func TestAccountUsageService_GetUsageDoesNotClearAccountError(t *testing.T) {
+	repo := &accountUsageReadOnlyRepo{
+		stubOpenAIAccountRepo: stubOpenAIAccountRepo{
+			accounts: []Account{{
+				ID:       1,
+				Platform: PlatformOpenAI,
+				Type:     AccountTypeOAuth,
+				Status:   StatusError,
+				Extra: map[string]any{
+					"codex_5h_used_percent": 0.0,
+					"codex_7d_used_percent": 0.0,
+				},
+			}},
+		},
+	}
+	svc := &AccountUsageService{accountRepo: repo}
+
+	if _, err := svc.GetUsage(context.Background(), 1); err != nil {
+		t.Fatalf("GetUsage() error = %v", err)
+	}
+	if repo.clearErrorCalls != 0 {
+		t.Fatalf("ClearError calls = %d, want 0", repo.clearErrorCalls)
+	}
+}
+
 func (r *accountUsageCodexProbeRepo) UpdateExtra(_ context.Context, _ int64, updates map[string]any) error {
 	r.updatedExtra = make(map[string]any, len(updates))
 	for k, v := range updates {
