@@ -958,7 +958,7 @@ func (s *TokenRefreshService) refreshWithRetryWithRateGate(
 			err = &refreshAttemptTimeoutError{err: cause}
 			shortCircuit = false
 			if credentialsPersisted {
-				s.postRefreshStateSyncWithCleanup(ctx, account)
+				s.postRefreshStateSyncWithCleanup(ctx, beforeRefresh, account)
 			}
 		}
 		if shortCircuit {
@@ -968,7 +968,7 @@ func (s *TokenRefreshService) refreshWithRetryWithRateGate(
 		if err == nil {
 			if ctxErr := ctx.Err(); ctxErr != nil {
 				if credentialsPersisted {
-					s.postRefreshStateSyncWithCleanup(ctx, account)
+					s.postRefreshStateSyncWithCleanup(ctx, beforeRefresh, account)
 				}
 				return ctxErr
 			}
@@ -977,7 +977,7 @@ func (s *TokenRefreshService) refreshWithRetryWithRateGate(
 				// the internal attempt budget elapsed while bounded detached cleanup
 				// completed; do not convert that success into retry/cooldown/breaker
 				// evidence. Publish cache state with a fresh cleanup context and stop.
-				s.postRefreshStateSyncWithCleanup(ctx, account)
+				s.postRefreshStateSyncWithCleanup(ctx, beforeRefresh, account)
 				return nil
 			}
 			s.postRefreshActions(ctx, beforeRefresh, account)
@@ -985,7 +985,7 @@ func (s *TokenRefreshService) refreshWithRetryWithRateGate(
 		}
 		if ctxErr := ctx.Err(); ctxErr != nil {
 			if credentialsPersisted {
-				s.postRefreshStateSyncWithCleanup(ctx, account)
+				s.postRefreshStateSyncWithCleanup(ctx, beforeRefresh, account)
 			}
 			return ctxErr
 		}
@@ -1227,24 +1227,24 @@ func (s *TokenRefreshService) postRefreshActions(ctx context.Context, beforeRefr
 			}
 		}
 	}
-	s.postRefreshStateSync(ctx, account)
+	s.postRefreshStateSync(ctx, beforeRefresh, account)
 	// OpenAI OAuth: 刷新成功后，检查是否已设置 privacy_mode，未设置则尝试关闭训练数据共享
 	s.ensureOpenAIPrivacy(ctx, account)
 	// Antigravity OAuth: 刷新成功后，检查是否已设置 privacy_mode，未设置则调用 setUserSettings
 	s.ensureAntigravityPrivacy(ctx, account)
 }
 
-func (s *TokenRefreshService) postRefreshStateSyncWithCleanup(parent context.Context, account *Account) {
+func (s *TokenRefreshService) postRefreshStateSyncWithCleanup(parent context.Context, beforeRefresh, account *Account) {
 	cleanupParent := context.Background()
 	if parent != nil {
 		cleanupParent = context.WithoutCancel(parent)
 	}
 	ctx, cancel := context.WithTimeout(cleanupParent, defaultTokenRefreshCleanupTimeout)
 	defer cancel()
-	s.postRefreshStateSync(ctx, account)
+	s.postRefreshStateSync(ctx, beforeRefresh, account)
 }
 
-func (s *TokenRefreshService) postRefreshStateSync(ctx context.Context, account *Account) {
+func (s *TokenRefreshService) postRefreshStateSync(ctx context.Context, beforeRefresh, account *Account) {
 	// 对所有 OAuth 账号调用缓存失效（InvalidateToken 内部根据平台判断是否需要处理）
 	if s.cacheInvalidator != nil && account.Type == AccountTypeOAuth {
 		if err := s.cacheInvalidator.InvalidateToken(ctx, account); err != nil {
