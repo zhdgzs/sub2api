@@ -33,7 +33,7 @@ Before the first mutating execution, show this single combined confirmation unle
 
 Do not auto-stash, auto-resolve conflicts, delete branches, delete tags, force-push, push to `upstream`, wait for the GitHub Actions build to finish, or call production deploy/restart endpoints manually.
 
-Before every release merge, run the read-only risk assessment. Report all conflicts from both `main → custom` and `source → custom` in one response. For each path, state the recommended strategy and the required verification. When any recommendation requires a product or code-semantic choice, stop and request one consolidated user decision before modifying `custom`.
+Before every release merge, run the read-only risk assessment. Report all text conflicts and all high-risk shared edits that Git would auto-merge from both `main → custom` and `source → custom` in one response. For each path, state the recommended strategy and the required verification. When any recommendation requires a product or code-semantic choice, stop and request one consolidated user decision before modifying `custom`. In i18n files, explicitly check that object keys remain unique; a clean Git merge does not guarantee valid TypeScript.
 
 Treat generated files as derived artifacts: resolve their source definitions first, regenerate when tooling is available, and never resolve a generated-file conflict by blindly choosing one side.
 
@@ -103,7 +103,7 @@ Execution mode:
 - Pulls `origin/custom` with `--ff-only`.
 - Merges `main` into `custom` with `--no-ff` when needed.
 - Merges the recorded source branch into `custom` with `--no-ff` unless already contained.
-- Performs a read-only risk assessment before checkout or merge. If any conflict exists, prints every conflicted path with its recommendation and exits without modifying `custom`.
+- Performs a read-only risk assessment before checkout or merge. If any text conflict or high-risk auto-merged shared edit exists, prints every affected path with its recommendation and exits without modifying `custom`.
 - Does not auto-resolve conflicts. After reviewed decisions are applied and the preview is conflict-free, normal merges create their own commits.
 - Writes `backend/cmd/server/VERSION`.
 - Writes/updates `docs/DOCKER_RELEASE_HISTORY.md`.

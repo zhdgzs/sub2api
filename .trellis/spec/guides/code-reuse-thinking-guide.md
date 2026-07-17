@@ -105,6 +105,17 @@ When you've made similar changes to multiple files:
 2. **Search**: Run grep to find any missed
 3. **Consider**: Should this be abstracted?
 
+## Merge Review: Clean Git Is Not a Clean Program
+
+When merging two branches that both changed the same source, configuration, or
+i18n file, Git can combine non-overlapping lines without raising a conflict.
+That result still needs semantic review before release.
+
+For each shared file, review the combined diff for duplicate object keys,
+duplicate registrations, incompatible type or API changes, and generated files
+whose source definitions changed on either side. Treat i18n object keys as a
+compile-time contract: every key must be unique within its object.
+
 ### Reducers Should Use Exhaustive Structure
 
 When state is derived from action-like values (`action`, `kind`, `status`,

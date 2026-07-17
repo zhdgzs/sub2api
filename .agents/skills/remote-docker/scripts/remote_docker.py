@@ -22,6 +22,12 @@ WORKFLOW_NAME = "remote-docker.yml"
 DEPLOY_WATCHER = Path("/root/sub2api-deploy/watch_remote_docker_deploy.sh")
 DEPLOY_WATCHER_LOG = Path("/root/sub2api-deploy/watch_remote_docker_deploy.log")
 
+# A clean Git merge only proves that the changed line ranges do not overlap.  It
+# does not prove that the resulting program is valid (for example, two i18n
+# changes can introduce the same object key).  Restrict the extra review gate
+# to files whose combined semantics affect the build or runtime behaviour.
+AUTO_MERGE_RISK_SUFFIXES = (".go", ".ts", ".tsx", ".vue", ".json", ".yaml", ".yml")
+
 
 def load_release_module(repo: Path) -> ModuleType:
     script = repo / ".agents" / "skills" / "release-docker" / "scripts" / "release_docker.py"
@@ -130,6 +136,34 @@ def merge_conflict_paths(release: ModuleType, repo: Path, target: str, incoming:
     return sorted(set(paths))
 
 
+def changed_paths(release: ModuleType, repo: Path, base: str, ref: str) -> set[str]:
+    """Return paths changed by ref since base."""
+    output = release.git(repo, "diff", "--name-only", f"{base}..{ref}")
+    return {line.strip() for line in output.splitlines() if line.strip()}
+
+
+def needs_auto_merge_review(path: str) -> bool:
+    """Whether an automatically merged shared edit needs semantic review."""
+    name = Path(path).name
+    return (
+        path.startswith("frontend/src/i18n/")
+        or name in {"wire.go", "wire_gen.go"}
+        or name.endswith("_gen.go")
+        or name.endswith(AUTO_MERGE_RISK_SUFFIXES)
+    )
+
+
+def shared_changed_paths(release: ModuleType, repo: Path, target: str, incoming: str) -> list[str]:
+    """Find important files changed on both sides even when Git can merge them."""
+    if target == incoming or release.branch_contains(repo, incoming, target):
+        return []
+
+    base = release.git(repo, "merge-base", target, incoming).strip()
+    target_paths = changed_paths(release, repo, base, target)
+    incoming_paths = changed_paths(release, repo, base, incoming)
+    return sorted(path for path in target_paths & incoming_paths if needs_auto_merge_review(path))
+
+
 def merge_recommendation(path: str) -> str:
     name = Path(path).name
     if name == "wire_gen.go" or name.endswith("_gen.go"):
@@ -143,31 +177,54 @@ def merge_recommendation(path: str) -> str:
     return "人工审查双方语义后决定，保留互不冲突的改动。"
 
 
-def release_merge_risks(release: ModuleType, repo: Path, source_branch: str) -> list[tuple[str, str, list[str]]]:
-    risks: list[tuple[str, str, list[str]]] = []
+def auto_merge_recommendation(path: str) -> str:
+    if path.startswith("frontend/src/i18n/"):
+        return "双方均修改且 Git 可自动合并；核对对象键唯一性、保留双方文案，并做静态类型检查。"
+    if Path(path).name == "wire_gen.go" or Path(path).name.endswith("_gen.go"):
+        return "双方均修改且 Git 可自动合并；先核对源定义，生成文件只能由对应工具重新生成。"
+    return "双方均修改且 Git 可自动合并；逐段核对合并结果、调用链和类型一致性后再发布。"
+
+
+def release_merge_risks(
+    release: ModuleType, repo: Path, source_branch: str
+) -> list[tuple[str, str, str, list[str]]]:
+    risks: list[tuple[str, str, str, list[str]]] = []
     if not release.branch_contains(repo, "main", "custom"):
         paths = merge_conflict_paths(release, repo, "custom", "main")
         if paths:
-            risks.append(("main", "custom", paths))
+            risks.append(("text_conflict", "main", "custom", paths))
+        paths = shared_changed_paths(release, repo, "custom", "main")
+        if paths:
+            risks.append(("auto_merged_shared_changes", "main", "custom", paths))
     if source_branch != "custom" and not release.branch_contains(repo, source_branch, "custom"):
         paths = merge_conflict_paths(release, repo, "custom", source_branch)
         if paths:
-            risks.append((source_branch, "custom", paths))
+            risks.append(("text_conflict", source_branch, "custom", paths))
+        paths = shared_changed_paths(release, repo, "custom", source_branch)
+        if paths:
+            risks.append(("auto_merged_shared_changes", source_branch, "custom", paths))
     return risks
 
 
-def print_merge_risk_assessment(release: ModuleType, repo: Path, source_branch: str) -> list[tuple[str, str, list[str]]]:
+def print_merge_risk_assessment(
+    release: ModuleType, repo: Path, source_branch: str
+) -> list[tuple[str, str, str, list[str]]]:
     risks = release_merge_risks(release, repo, source_branch)
     print("merge_risk_assessment:")
     if not risks:
         print("- 未发现发布路径上的文本冲突；仍需执行发布前质量检查。")
         return risks
 
-    print("- 发现需要决策的语义冲突；请一次性确认下列建议后再执行发布。")
-    for incoming, target, paths in risks:
-        print(f"- merge: {incoming} -> {target}")
+    print("- 发现需要审查的合并风险；请一次性确认下列建议后再执行发布。")
+    for risk_type, incoming, target, paths in risks:
+        print(f"- {risk_type}: {incoming} -> {target}")
         for path in paths:
-            print(f"  - {path}: {merge_recommendation(path)}")
+            recommendation = (
+                merge_recommendation(path)
+                if risk_type == "text_conflict"
+                else auto_merge_recommendation(path)
+            )
+            print(f"  - {path}: {recommendation}")
     return risks
 
 
@@ -270,7 +327,7 @@ def execute(release: ModuleType, repo: Path, version: str, allow_version_overrid
 
     risks = print_merge_risk_assessment(release, repo, source_branch)
     if risks:
-        raise SystemExit("[ERROR] Release merge conflicts require reviewed decisions before modifying custom.")
+        raise SystemExit("[ERROR] Release merge risks require reviewed decisions before modifying custom.")
 
     release.git(repo, "checkout", "custom")
     release.git(repo, "pull", "--ff-only", "origin", "custom")
