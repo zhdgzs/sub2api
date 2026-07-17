@@ -106,6 +106,77 @@ def remote_candidate_version(release: ModuleType, repo: Path, base_version: str)
     return f"{base_version}-zhdgzs.{highest + 1}"
 
 
+def merge_conflict_paths(release: ModuleType, repo: Path, target: str, incoming: str) -> list[str]:
+    """Return paths Git reports as conflicted when merging incoming into target."""
+    if target == incoming or release.branch_contains(repo, incoming, target):
+        return []
+
+    proc = release.run(
+        ["git", "merge-tree", "--write-tree", "--messages", "--name-only", target, incoming],
+        cwd=repo,
+        check=False,
+    )
+    if proc.returncode == 0:
+        return []
+    if proc.returncode != 1:
+        detail = (proc.stderr or proc.stdout or "").strip()
+        raise SystemExit(f"[ERROR] Cannot assess merge {incoming} -> {target}.\n{detail}")
+
+    paths: list[str] = []
+    for raw in (proc.stdout + "\n" + proc.stderr).splitlines():
+        path = raw.strip()
+        if not path or re.fullmatch(r"[0-9a-f]{40}", path):
+            continue
+        if path.startswith("CONFLICT ") and " in " in path:
+            path = path.rsplit(" in ", 1)[1]
+        if path.startswith("Auto-merging "):
+            path = path.removeprefix("Auto-merging ")
+        if "/" in path or "." in path:
+            paths.append(path)
+    return sorted(set(paths))
+
+
+def merge_recommendation(path: str) -> str:
+    name = Path(path).name
+    if name == "wire_gen.go" or name.endswith("_gen.go"):
+        return "以对应的 Wire/源定义为准，合并后重新生成；不要直接选任一生成文件。"
+    if "__tests__/" in path or name.endswith("_test.go") or name.endswith(".spec.ts"):
+        return "合并双方测试场景，确认旧行为与新增行为都被覆盖。"
+    if name.endswith((".vue", ".go", ".ts", ".tsx")):
+        return "人工组合双方改动，核对模板/类型/调用链或服务/生成代码的一致性。"
+    if name.endswith((".lock", "pnpm-lock.yaml", "go.sum")):
+        return "根据合并后的依赖清单重新生成，避免直接选边。"
+    return "人工审查双方语义后决定，保留互不冲突的改动。"
+
+
+def release_merge_risks(release: ModuleType, repo: Path, source_branch: str) -> list[tuple[str, str, list[str]]]:
+    risks: list[tuple[str, str, list[str]]] = []
+    if not release.branch_contains(repo, "main", "custom"):
+        paths = merge_conflict_paths(release, repo, "custom", "main")
+        if paths:
+            risks.append(("main", "custom", paths))
+    if source_branch != "custom" and not release.branch_contains(repo, source_branch, "custom"):
+        paths = merge_conflict_paths(release, repo, "custom", source_branch)
+        if paths:
+            risks.append((source_branch, "custom", paths))
+    return risks
+
+
+def print_merge_risk_assessment(release: ModuleType, repo: Path, source_branch: str) -> list[tuple[str, str, list[str]]]:
+    risks = release_merge_risks(release, repo, source_branch)
+    print("merge_risk_assessment:")
+    if not risks:
+        print("- 未发现发布路径上的文本冲突；仍需执行发布前质量检查。")
+        return risks
+
+    print("- 发现需要决策的语义冲突；请一次性确认下列建议后再执行发布。")
+    for incoming, target, paths in risks:
+        print(f"- merge: {incoming} -> {target}")
+        for path in paths:
+            print(f"  - {path}: {merge_recommendation(path)}")
+    return risks
+
+
 def print_plan(release: ModuleType, state: object, version: str | None) -> None:
     candidate = remote_candidate_version(release, state.repo, state.main_base_version)
     chosen = version or candidate
@@ -131,6 +202,7 @@ def print_plan(release: ModuleType, state: object, version: str | None) -> None:
     print(f"- {image}:custom")
     if url:
         print(f"workflow_url: {url}")
+    print_merge_risk_assessment(release, state.repo, state.source_branch)
     print()
     print("Execution sequence with --yes:")
     print("1. require clean working tree")
@@ -175,8 +247,8 @@ def start_deploy_watcher(release: ModuleType, repo: Path, head_sha: str) -> int:
     return proc.pid
 
 
-def run_sync_upstream_allowing_conflict_preview(release: ModuleType, repo: Path) -> None:
-    """Sync main; conflict-preview exit code 2 is expected before auto-merging custom."""
+def run_sync_upstream_for_assessment(release: ModuleType, repo: Path) -> None:
+    """Sync main; keep conflict-preview output for the release risk report."""
     script = repo / ".agents" / "skills" / "sync-upstream" / "scripts" / "sync_upstream.py"
     if not script.exists():
         raise SystemExit("[ERROR] sync-upstream script not found")
@@ -190,70 +262,30 @@ def run_sync_upstream_allowing_conflict_preview(release: ModuleType, repo: Path)
     if proc.returncode == 0:
         return
     if proc.returncode == 2:
-        print("[INFO] 检测到 main 与源分支的预检冲突，将在 custom 发布合并时自动解决。")
+        print("[INFO] 检测到合并预检冲突；发布脚本会在修改 custom 前汇总并停止。")
         return
     raise SystemExit(f"[ERROR] sync-upstream failed with exit code {proc.returncode}")
-
-
-def abort_merge(release: ModuleType, repo: Path) -> None:
-    release.git(repo, "merge", "--abort", check=False)
-
-
-def merge_branch_auto(release: ModuleType, repo: Path, branch: str, message: str) -> None:
-    """Merge an incoming branch, resolving conflicts in favor of the incoming side."""
-    proc = release.run(
-        ["git", "merge", "--no-ff", "-X", "theirs", branch, "-m", message],
-        cwd=repo,
-        check=False,
-    )
-    if proc.returncode == 0:
-        return
-
-    conflicts = release.git(repo, "diff", "--name-only", "--diff-filter=U", check=False)
-    if not conflicts:
-        detail = (proc.stderr or proc.stdout or "").strip()
-        abort_merge(release, repo)
-        raise SystemExit(f"[ERROR] Merge failed for {branch}.\n{detail}")
-
-    for path in conflicts.splitlines():
-        checkout = release.run(
-            ["git", "checkout", "--theirs", "--", path],
-            cwd=repo,
-            check=False,
-        )
-        if checkout.returncode != 0:
-            abort_merge(release, repo)
-            detail = (checkout.stderr or checkout.stdout or "").strip()
-            raise SystemExit(f"[ERROR] Cannot auto-resolve {path} from {branch}.\n{detail}")
-        release.git(repo, "add", "--", path)
-
-    remaining = release.git(repo, "diff", "--name-only", "--diff-filter=U", check=False)
-    if remaining:
-        abort_merge(release, repo)
-        raise SystemExit(f"[ERROR] Unresolved merge conflicts after auto-resolution:\n{remaining}")
-
-    commit = release.run(["git", "commit", "--no-edit"], cwd=repo, check=False)
-    if commit.returncode != 0:
-        abort_merge(release, repo)
-        detail = (commit.stderr or commit.stdout or "").strip()
-        raise SystemExit(f"[ERROR] Cannot commit auto-resolved merge for {branch}.\n{detail}")
 
 
 def execute(release: ModuleType, repo: Path, version: str, allow_version_override: bool) -> None:
     release.require_clean(repo)
     source_branch = release.current_branch(repo)
-    run_sync_upstream_allowing_conflict_preview(release, repo)
+    run_sync_upstream_for_assessment(release, repo)
     base = release.main_version(repo)
     release.validate_version(version, base, allow_override=allow_version_override)
+
+    risks = print_merge_risk_assessment(release, repo, source_branch)
+    if risks:
+        raise SystemExit("[ERROR] Release merge conflicts require reviewed decisions before modifying custom.")
 
     release.git(repo, "checkout", "custom")
     release.git(repo, "pull", "--ff-only", "origin", "custom")
 
     if not release.branch_contains(repo, "main", "custom"):
-        merge_branch_auto(release, repo, "main", f"chore: 合并上游 main {base}")
+        release.merge_branch(repo, "main", f"chore: 合并上游 main {base}")
 
     if source_branch != "custom" and not release.branch_contains(repo, source_branch, "custom"):
-        merge_branch_auto(release, repo, source_branch, f"chore: 合并 {source_branch} 到 custom")
+        release.merge_branch(repo, source_branch, f"chore: 合并 {source_branch} 到 custom")
 
     require_remote_workflow(repo)
     release.require_clean_or_merge_complete(repo)
