@@ -208,6 +208,11 @@ func (s *OpenAIGatewayService) proxyOpenAIWSHTTPBridgeTurn(
 			releaseUpstreamCtx()
 			return nil, fmt.Errorf("apply grok prompt cache identity: %w", err)
 		}
+		body, err = applyGrokFreeMessagesFunctionToolCacheRoute(body, grokIntentSourceBody, account, grokCacheIdentity)
+		if err != nil {
+			releaseUpstreamCtx()
+			return nil, fmt.Errorf("apply grok Free function-tool cache route: %w", err)
+		}
 		upstreamReq, err = buildGrokResponsesRequest(upstreamCtx, c, account, body, token, grokCacheIdentity, s.cfg)
 	} else {
 		upstreamReq, err = s.buildUpstreamRequestOpenAIPassthrough(upstreamCtx, c, account, body, token)
@@ -338,6 +343,9 @@ func (s *OpenAIGatewayService) proxyOpenAIWSHTTPBridgeTurn(
 		}
 
 		upstreamMessage := []byte(trimmedData)
+		if normalized, changed := normalizeCompletedImageGenerationStatus(upstreamMessage); changed {
+			upstreamMessage = normalized
+		}
 		eventType, eventResponseID, _ := parseOpenAIWSEventEnvelope(upstreamMessage)
 		if responseID == "" && eventResponseID != "" {
 			responseID = eventResponseID

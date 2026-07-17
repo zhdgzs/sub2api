@@ -252,7 +252,24 @@
           </template>
           <template #cell-name="{ row, value }">
             <div class="flex flex-col">
-              <span class="font-medium text-gray-900 dark:text-white">{{ value }}</span>
+              <HelpTooltip
+                v-if="accountHomepageUrl(row)"
+                :content="accountHomepageUrl(row)"
+                width-class="w-max max-w-sm break-all"
+                class="-ml-1 self-start"
+              >
+                <template #trigger>
+                  <a
+                    :href="accountHomepageUrl(row)"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="border-b border-dotted border-gray-300 font-medium text-gray-900 dark:border-gray-600 dark:text-white"
+                  >
+                    {{ value }}
+                  </a>
+                </template>
+              </HelpTooltip>
+              <span v-else class="font-medium text-gray-900 dark:text-white">{{ value }}</span>
               <span
                 v-if="accountDisplayEmail(row)"
                 class="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[200px]"
@@ -498,6 +515,7 @@
     </ConfirmDialog>
     <ErrorPassthroughRulesModal :show="showErrorPassthrough" @close="showErrorPassthrough = false" />
     <TLSFingerprintProfilesModal :show="showTLSFingerprintProfiles" @close="showTLSFingerprintProfiles = false" />
+    <TotpStepUpDialog :controller="accountExportStepUp" />
   </AppLayout>
 </template>
 
@@ -513,6 +531,8 @@ import { useTableLoader } from '@/composables/useTableLoader'
 import { useSwipeSelect, type SwipeSelectVirtualContext } from '@/composables/useSwipeSelect'
 import { useTableSelection } from '@/composables/useTableSelection'
 import { useClipboard } from '@/composables/useClipboard'
+import { useStepUp, isStepUpBlocked, isStepUpCancelled, stepUpBlockReason } from '@/composables/useStepUp'
+import TotpStepUpDialog from '@/components/auth/TotpStepUpDialog.vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import TablePageLayout from '@/components/layout/TablePageLayout.vue'
 import DataTable from '@/components/common/DataTable.vue'
@@ -545,6 +565,7 @@ import { buildOpenAIUsageRefreshKey } from '@/utils/accountUsageRefresh'
 import { formatDateTime, formatRelativeTime } from '@/utils/format'
 import { proxyExpiryBadgeClass, proxyExpiryLabelKey } from '@/utils/proxyExpiry'
 import { extractApiErrorMessage } from '@/utils/apiError'
+import { sanitizeUrl } from '@/utils/url'
 import type { Account, AccountPlatform, AccountSchedulerGroupScore, AccountType, Proxy as AccountProxy, AdminGroup, WindowStats, ClaudeModel, AdminDataPayload, UpstreamBillingProbeSettings, UpstreamBillingProbeSnapshot } from '@/types'
 
 const { t } = useI18n()
@@ -1394,6 +1415,12 @@ function accountDisplayEmail(row: any): string {
   return row.extra?.email_address || row.extra?.email || row.credentials?.email || row.parent_email || ''
 }
 
+function accountHomepageUrl(row: Account): string {
+  if (row.type !== 'apikey' || typeof row.credentials?.base_url !== 'string') return ''
+  const baseUrl = sanitizeUrl(row.credentials.base_url)
+  return baseUrl ? new URL(baseUrl).origin : ''
+}
+
 type OpenAICompactBadgeState = 'active' | 'blocked' | 'auto'
 
 function getOpenAICompactState(row: any): OpenAICompactBadgeState | null {
@@ -1982,14 +2009,14 @@ const handleExportData = async () => {
   exportingData.value = true
   try {
     const targetIds = exportAccountIds.value ?? selIds.value
-    const dataPayload = await adminAPI.accounts.exportData(
+    const dataPayload = await accountExportStepUp.run(() => adminAPI.accounts.exportData(
       targetIds.length > 0
         ? { ids: targetIds, includeProxies: includeProxyOnExport.value }
         : {
             includeProxies: includeProxyOnExport.value,
             filters: buildAccountQueryFilters()
           }
-    )
+    ))
     downloadAccountData(dataPayload)
     // spark 影子账号被后端排除出备份(其凭据透传母账号、调度配置不可经凭据型导入重建);
     // 跳过非零时明确提示用户,避免「下载成功但少了账号」的静默丢失。
@@ -1999,7 +2026,17 @@ const handleExportData = async () => {
       appStore.showSuccess(t('admin.accounts.dataExported'))
     }
   } catch (error: any) {
-    appStore.showError(error?.message || t('admin.accounts.dataExportFailed'))
+    if (isStepUpCancelled(error)) {
+      // 用户主动取消 step-up 验证，静默返回，不弹错误提示。
+    } else if (isStepUpBlocked(error)) {
+      appStore.showError(
+        stepUpBlockReason(error) === 'STEP_UP_ADMIN_API_KEY_FORBIDDEN'
+          ? t('stepUp.adminApiKeyForbidden')
+          : t('stepUp.notEnabled')
+      )
+    } else {
+      appStore.showError(error?.message || t('admin.accounts.dataExportFailed'))
+    }
   } finally {
     exportingData.value = false
     closeExportDataDialog()
@@ -2022,6 +2059,7 @@ const handleCopyAccessToken = async (a: Account) => {
     appStore.showError(error?.message || t('admin.accounts.copyAccessTokenFailed'))
   }
 }
+const accountExportStepUp = useStepUp()
 const closeTestModal = () => { showTest.value = false; testingAcc.value = null }
 const closeStatsModal = () => { showStats.value = false; statsAcc.value = null }
 const closeReAuthModal = () => { showReAuth.value = false; reAuthAcc.value = null }

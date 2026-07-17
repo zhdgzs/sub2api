@@ -144,6 +144,7 @@ docs/*
 !docs/ADMIN_PAYMENT_INTEGRATION_API.md
 !docs/SYNC_UPSTREAM_CN.md
 !docs/DOCKER_RELEASE_HISTORY.md
+!docs/ASYNC_IMAGE_TASKS.md
 !docs/legal/
 !docs/legal/*.md
 .serena/
