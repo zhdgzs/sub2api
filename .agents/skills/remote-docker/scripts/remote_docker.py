@@ -124,15 +124,9 @@ def merge_conflict_paths(release: ModuleType, repo: Path, target: str, incoming:
 
     paths: list[str] = []
     for raw in (proc.stdout + "\n" + proc.stderr).splitlines():
-        path = raw.strip()
-        if not path or re.fullmatch(r"[0-9a-f]{40}", path):
-            continue
-        if path.startswith("CONFLICT ") and " in " in path:
-            path = path.rsplit(" in ", 1)[1]
-        if path.startswith("Auto-merging "):
-            path = path.removeprefix("Auto-merging ")
-        if "/" in path or "." in path:
-            paths.append(path)
+        match = re.search(r"^CONFLICT \([^)]*\): Merge conflict in (?P<path>.+)$", raw.strip())
+        if match:
+            paths.append(match.group("path"))
     return sorted(set(paths))
 
 
