@@ -197,6 +197,9 @@ export default {
     codexInspection: 'Codex Inspection',
     channelStatus: 'Channel Status',
     riskControl: 'Risk Control',
+    securityAudit: 'Security Audit',
+    contentModeration: 'Content Moderation',
+    promptAudit: 'Prompt Audit',
     auditLogs: 'Audit Logs',
   },
 
