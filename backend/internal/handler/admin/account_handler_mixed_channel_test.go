@@ -248,3 +248,22 @@ func TestBulkUpdateRejectsInvalidPlanTypeFilter(t *testing.T) {
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
 	require.Equal(t, "INVALID_PLAN_TYPE_FILTER", resp["reason"])
 }
+
+func TestBulkUpdateAcceptsDedicatedUpstreamBillingProbeSetting(t *testing.T) {
+	adminSvc := newStubAdminService()
+	router := setupAccountMixedChannelRouter(adminSvc)
+
+	body, _ := json.Marshal(map[string]any{
+		"account_ids":                    []int64{1, 2},
+		"upstream_billing_probe_enabled": false,
+	})
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/admin/accounts/bulk-update", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.NotNil(t, adminSvc.lastBulkUpdateAccountInput)
+	require.NotNil(t, adminSvc.lastBulkUpdateAccountInput.ProbeEnabled)
+	require.False(t, *adminSvc.lastBulkUpdateAccountInput.ProbeEnabled)
+}
