@@ -632,6 +632,7 @@ func (s *AccountTestService) testOpenAIAccountConnection(c *gin.Context, account
 	if isOAuth {
 		applyOpenAICodexInternalAPIHeaders(req, probeSessionID)
 	} else {
+		applyOpenAICodexProbeHeaders(req.Header)
 		applyOpenAICodexClientIdentityHeaders(req, probeSessionID)
 	}
 	if credentialAccount.IsOpenAIAgentIdentity() {
@@ -961,10 +962,7 @@ func (s *AccountTestService) testOpenAICompactConnection(c *gin.Context, account
 	} else {
 		req.Header.Set("Authorization", "Bearer "+authToken)
 	}
-	req.Header.Set("OpenAI-Beta", "responses=experimental")
-	req.Header.Set("Originator", "codex_cli_rs")
-	req.Header.Set("User-Agent", codexCLIUserAgent)
-	req.Header.Set("Version", codexCLIVersion)
+	applyOpenAICodexProbeHeaders(req.Header)
 	probeSessionID := compactProbeSessionID(account.ID)
 	applyOpenAIUpstreamUserAgent(ctx, req, account, openAIUpstreamUserAgentOptions{
 		Config:             s.cfg,
