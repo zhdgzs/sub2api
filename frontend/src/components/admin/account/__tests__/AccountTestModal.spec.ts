@@ -156,7 +156,7 @@ describe('AccountTestModal', () => {
       model_id: 'gpt-5.4',
       prompt: '你是什么模型'
     })
-    expect(wrapper.text()).toContain('发送测试消息："你是什么模型"')
+    expect(wrapper.text()).toContain('你是什么模型')
   })
 
   it('自定义提示词为空时禁用开始测试', async () => {
