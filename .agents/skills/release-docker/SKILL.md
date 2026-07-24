@@ -44,6 +44,29 @@ Release Docker builds must preserve the local Docker build cache by default.
 - If the user asks to clean cache, prune images, or force a no-cache build, treat it as a separate high-risk operation and require explicit confirmation before doing it.
 - When diagnosing a slow release build, first inspect cache hits with `DOCKER_BUILDKIT=1 docker build --progress=plain ...` or equivalent output instead of clearing cache.
 
+## Release Validation Scope
+
+`$release-docker` is a release packaging workflow, not a test or QA workflow.
+By default, it must perform only the minimum checks required to package and
+trace a release plus the production Docker build.
+
+- Do not run unit, integration, E2E, or frontend test commands as part of this
+  skill. This includes `go test`, `go test -run`, `go test ./...`, `pnpm test`,
+  `pnpm test:run`, `vitest`, `playwright`, `make test-*`, and equivalent
+  commands.
+- Do not run test compilation or standalone validation builds as part of this
+  skill. This includes `go test -c`, `go test` used only to compile test
+  packages, standalone `pnpm typecheck`, `vue-tsc`, `tsc --noEmit`, and
+  equivalent commands.
+- Do not run an extra project build outside the release script as a default
+  quality gate. The release Docker build is the only default build validation.
+- It is allowed for the Dockerfile itself to run the production build steps
+  required to produce the image, such as frontend production build and backend
+  `go build`; these are not extra test gates.
+- If the user explicitly asks for tests, type-checks, or extra validation in the
+  same turn, run them as a separate pre-release validation step and report that
+  they were user-requested. Do not silently add them to `$release-docker`.
+
 ## Standard Workflow
 
 1. Read `docs/SYNC_UPSTREAM_CN.md`.
@@ -65,7 +88,8 @@ Release Docker builds must preserve the local Docker build cache by default.
    python3 ".agents/skills/release-docker/scripts/release_docker.py" --repo "$PWD" --yes --version <confirmed-version>
    ```
 
-10. After the build completes, verify that `docs/DOCKER_RELEASE_HISTORY.md` has been updated for this version.
+10. After the build completes, verify release metadata with lightweight Git/file
+    checks only; do not run tests or standalone type-checks.
 11. Report the commit, tag, Docker tags, release record, and any warnings.
 
 ## Script Contract
@@ -95,7 +119,10 @@ Execution mode:
   - `sub2api:<version>`
   - `sub2api:custom`
 
-The script does not run full test suites. Docker build is the build validation. If the user asks for extra validation, run it before execution or before Docker build.
+The script does not run test suites or standalone test compilation. Docker build
+is the only default build validation. If the user explicitly asks for extra
+validation, run it before execution or before Docker build as a separate,
+user-requested step.
 
 ## Version Rules
 
