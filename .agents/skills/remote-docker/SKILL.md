@@ -20,16 +20,9 @@ Do not modify or invoke `release-docker` execution mode for remote builds. This 
 
 This workflow performs high-risk operations: branch checkout, pull, merge, commit, push, and a remote Docker release build.
 
-Before the first mutating execution, show this single combined confirmation unless the user already gave clear approval in the current turn. This one confirmation covers the embedded `sync-upstream` step and the remote Docker release. Do not ask for a separate `sync-upstream` confirmation, and do not ask for a second version confirmation when using the script's candidate version.
+A direct user invocation of `$remote-docker` in the current turn is explicit approval for this entire release workflow, including the embedded `sync-upstream` step. Begin the workflow without asking whether to proceed. Do not request a separate `sync-upstream` confirmation or a second version confirmation when using the script's candidate version.
 
-```text
-⚠️ 危险操作检测！
-操作类型：remote Docker 发布流程
-影响范围：会同步 upstream/main 到 origin/main 和本地 main，切换到 custom，合并 main 和调用时所在开发分支，更新 backend/cmd/server/VERSION 和 docs/DOCKER_RELEASE_HISTORY.md，提交 release 元数据，推送 origin/custom，触发 GitHub Actions 构建/推送正式 Docker 镜像，并在本机后台启动 /root/sub2api-deploy/watch_remote_docker_deploy.sh
-风险评估：如果分支选择或版本号错误，会影响正式发布追溯；发布预检会列出 `main → custom` 与 `source → custom` 的全部冲突及合并建议，存在语义冲突时流程会在修改 custom 前停止，等待一次性确认；不会自动选边、自动解决冲突、自动 stash 或提交用户未提交改动；GitHub Actions 负责构建和推送镜像，部署 watcher 会在后台轮询构建结果并自行拉取镜像、执行 docker compose up -d 和发送飞书通知，agent 不等待该脚本完成
-
-请确认是否继续？[需要明确的"是"、"确认"、"继续"]
-```
+Still stop for a consolidated user decision when the read-only risk assessment finds text conflicts or high-risk shared edits requiring a product or code-semantic choice. This is a merge-resolution decision, not a release-start confirmation.
 
 Do not auto-stash, auto-resolve conflicts, delete branches, delete tags, force-push, push to `upstream`, wait for the GitHub Actions build to finish, or call production deploy/restart endpoints manually.
 
@@ -63,30 +56,29 @@ ghcr.io/<owner>/sub2api:custom
 2. Confirm the current directory is the intended `sub2api` repository.
 3. Record the current branch as the source branch.
 4. Require a clean working tree before starting.
-5. If the user has not already given clear approval in the current turn, show the single combined high-risk confirmation from **Safety Rules**. After that confirmation, continue without any second confirmation.
-6. Run `sync-upstream` first so `main` is current before choosing the release version:
+5. Treat the direct `$remote-docker` invocation as approval and run `sync-upstream` first so `main` is current before choosing the release version:
 
    ```bash
    python3 ".agents/skills/sync-upstream/scripts/sync_upstream.py" --repo "$PWD" --yes
    ```
 
-7. Run the remote release script in preview mode after the sync. Review its `merge_risk_assessment`, which reports conflicts on the actual release merge paths:
+6. Run the remote release script in preview mode after the sync. Review its `merge_risk_assessment`, which reports conflicts on the actual release merge paths:
 
    ```bash
    python3 ".agents/skills/remote-docker/scripts/remote_docker.py" --repo "$PWD"
    ```
 
-8. Review the proposed source branch, `main`, `custom`, version candidate, GHCR tags, workflow file, release record file, and every conflict recommendation.
-9. If conflicts exist, present the complete list with recommendations in one response and wait for a single user decision. Resolve the approved decisions, run applicable quality checks, and repeat the preview until no unresolved conflicts remain.
-10. Choose the script's `candidate_version` unless the user already supplied an explicit valid version in the initial request.
-11. Execute immediately after the conflict-free preview with the chosen version:
+7. Review the proposed source branch, `main`, `custom`, version candidate, GHCR tags, workflow file, release record file, and every conflict recommendation.
+8. If conflicts exist, present the complete list with recommendations in one response and wait for a single user decision. Resolve the approved decisions, run applicable quality checks, and repeat the preview until no unresolved conflicts remain.
+9. Choose the script's `candidate_version` unless the user already supplied an explicit valid version in the initial request.
+10. Execute immediately after the conflict-free preview with the chosen version:
 
    ```bash
    python3 ".agents/skills/remote-docker/scripts/remote_docker.py" --repo "$PWD" --yes --version <chosen-version>
    ```
 
-12. Report the release commit, GHCR image tags, workflow URL, deploy watcher PID, and deploy watcher log path.
-13. Treat the task as complete after the workflow is triggered and the deploy watcher script is started. Do not wait for the watcher, poll Actions from the agent, or manually restart production.
+11. Report the release commit, GHCR image tags, workflow URL, deploy watcher PID, and deploy watcher log path.
+12. Treat the task as complete after the workflow is triggered and the deploy watcher script is started. Do not wait for the watcher, poll Actions from the agent, or manually restart production.
 
 ## Script Contract
 
