@@ -12,6 +12,13 @@ var CodexCLIUserAgentPrefixes = []string{
 	"codex_cli_rs/",
 }
 
+// IsBrowserUserAgent reports whether userAgent has the browser UA prefix.
+// OpenAI OAuth requests with browser-shaped UAs may trigger Cloudflare
+// challenges, so callers use this to switch them to a Codex UA.
+func IsBrowserUserAgent(userAgent string) bool {
+	return strings.HasPrefix(strings.ToLower(strings.TrimSpace(userAgent)), "mozilla/")
+}
+
 // codexOfficialClientUAPrefixes：Codex 官方客户端家族 User-Agent 前缀（均含下划线/连字符，
 // 每项都是确定字面量；不含会被 TrimSpace 退化成裸 "codex" 的空格前缀）。
 // 用途：OpenAI OAuth `codex_cli_only` 访问限制判定 + passthrough 的「非官方 UA 安全兜底」

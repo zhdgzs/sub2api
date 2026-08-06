@@ -27,6 +27,27 @@ func TestIsCodexCLIRequest(t *testing.T) {
 	}
 }
 
+func TestIsBrowserUserAgent(t *testing.T) {
+	tests := []struct {
+		name string
+		ua   string
+		want bool
+	}{
+		{name: "Chrome", ua: "Mozilla/5.0 Chrome/120.0", want: true},
+		{name: "大小写与空白", ua: "  moZiLlA/5.0 Firefox/121.0  ", want: true},
+		{name: "Codex CLI", ua: "codex_cli_rs/0.146.0", want: false},
+		{name: "空字符串", ua: "", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IsBrowserUserAgent(tt.ua); got != tt.want {
+				t.Fatalf("IsBrowserUserAgent(%q) = %v, want %v", tt.ua, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestCodexUATrailerName(t *testing.T) {
 	tests := []struct {
 		name string
