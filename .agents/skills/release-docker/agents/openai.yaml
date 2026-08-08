@@ -1,0 +1,4 @@
+interface:
+  display_name: "Release Docker"
+  short_description: "Build Sub2API release Docker images"
+  default_prompt: "Use $release-docker to merge release sources into cust, tag the release, and build the Docker image."

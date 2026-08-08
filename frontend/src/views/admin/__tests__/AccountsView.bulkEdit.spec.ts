@@ -12,6 +12,10 @@ const {
   getAllGroups,
   probeUpstreamBilling,
   probeUpstreamBillingBatch,
+  updateAccount,
+  exportData,
+  copyToClipboard,
+  routeQuery,
   showError,
   showSuccess
 } = vi.hoisted(() => ({
@@ -23,8 +27,39 @@ const {
   getAllGroups: vi.fn(),
   probeUpstreamBilling: vi.fn(),
   probeUpstreamBillingBatch: vi.fn(),
+  updateAccount: vi.fn(),
+  exportData: vi.fn(),
+  copyToClipboard: vi.fn(),
+  routeQuery: {} as Record<string, unknown>,
   showError: vi.fn(),
   showSuccess: vi.fn()
+}))
+
+vi.mock('vue-router', () => ({
+  useRoute: () => ({ query: routeQuery })
+}))
+
+vi.mock('@/composables/useClipboard', () => ({
+  useClipboard: () => ({
+    copyToClipboard
+  })
+}))
+
+vi.mock('@/composables/useStepUp', () => ({
+  useStepUp: () => {
+    const visible = { value: false }
+    return {
+      visible,
+      blockedReason: { value: '' },
+      prompt: vi.fn(),
+      onVerified: () => { visible.value = false },
+      onCancel: () => { visible.value = false },
+      run: (action: () => unknown) => action()
+    }
+  },
+  isStepUpBlocked: () => false,
+  isStepUpCancelled: () => false,
+  stepUpBlockReason: () => null
 }))
 
 vi.mock('@/api/admin', () => ({
@@ -39,6 +74,8 @@ vi.mock('@/api/admin', () => ({
       batchRefresh: vi.fn(),
       probeUpstreamBilling,
       probeUpstreamBillingBatch,
+      update: updateAccount,
+      exportData,
       toggleSchedulable: vi.fn()
     },
     proxies: {
@@ -82,7 +119,9 @@ const DataTableStub = {
       <div v-for="row in data" :key="row.id">
         <div data-test="select-row"><slot name="cell-select" :row="row" /></div>
         <slot name="cell-created_at" :value="row.created_at" :row="row" />
+        <slot name="cell-priority" :value="row.priority" :row="row" />
         <div data-test="account-rate"><slot name="cell-rate_multiplier" :row="row" /></div>
+        <slot name="cell-actions" :row="row" />
       </div>
     </div>
   `
@@ -121,6 +160,95 @@ const BulkEditAccountModalStub = {
   template: '<div data-test="bulk-edit-modal" :data-show="String(show)" :data-target-mode="target?.mode ?? \'\'"></div>'
 }
 
+const AccountActionMenuStub = {
+  props: ['show', 'account'],
+  emits: ['copy-access-token', 'export-account'],
+  template: `
+    <div v-if="show && account">
+      <button data-test="copy-row-token" @click="$emit('copy-access-token', account)">copy token</button>
+      <button data-test="export-row-account" @click="$emit('export-account', account)">export account</button>
+    </div>
+  `
+}
+
+const ConfirmDialogStub = {
+  props: ['show'],
+  emits: ['confirm'],
+  template: '<button v-if="show" data-test="confirm-dialog" @click="$emit(\'confirm\')">confirm</button>'
+}
+
+const InteractiveAccountTableFiltersStub = {
+  emits: ['update:filters', 'change', 'update:searchQuery'],
+  template: `
+    <div>
+      <button data-test="set-platform-filter" @click="$emit('update:filters', { platform: 'openai' }); $emit('change')">set platform</button>
+      <button data-test="set-search-filter" @click="$emit('update:searchQuery', 'saved-account')">set search</button>
+    </div>
+  `
+}
+
+const baseStubs = {
+  AppLayout: { template: '<div><slot /></div>' },
+  TablePageLayout: {
+    template: '<div><slot name="filters" /><slot name="table" /><slot name="pagination" /></div>'
+  },
+  DataTable: DataTableStub,
+  Pagination: true,
+  ConfirmDialog: ConfirmDialogStub,
+  AccountTableActions: { template: '<div><slot name="beforeCreate" /><slot name="after" /></div>' },
+  AccountTableFilters: { template: '<div></div>' },
+  AccountBulkActionsBar: AccountBulkActionsBarStub,
+  AccountActionMenu: AccountActionMenuStub,
+  ImportDataModal: true,
+  ReAuthAccountModal: true,
+  AccountTestModal: true,
+  AccountStatsModal: true,
+  ScheduledTestsPanel: true,
+  SyncFromCrsModal: true,
+  TempUnschedStatusModal: true,
+  ErrorPassthroughRulesModal: true,
+  TLSFingerprintProfilesModal: true,
+  TotpStepUpDialog: true,
+  CreateAccountModal: true,
+  EditAccountModal: true,
+  BulkEditAccountModal: BulkEditAccountModalStub,
+  PlatformTypeBadge: true,
+  AccountCapacityCell: true,
+  AccountStatusIndicator: true,
+  AccountTodayStatsCell: true,
+  AccountGroupsCell: true,
+  AccountUsageCell: true,
+  Icon: true
+}
+
+const mountAccountsView = (stubs: Record<string, unknown> = {}) => mount(AccountsView, {
+  global: {
+    stubs: {
+      ...baseStubs,
+      ...stubs
+    }
+  }
+})
+
+const buildAccount = (overrides: Record<string, unknown> = {}) => ({
+  id: 1,
+  name: 'test-account',
+  platform: 'anthropic',
+  type: 'oauth',
+  status: 'active',
+  schedulable: true,
+  priority: 10,
+  created_at: '2026-08-08T10:00:00Z',
+  updated_at: '2026-08-08T10:00:00Z',
+  ...overrides
+})
+
+const openFirstRowMenu = async (wrapper: ReturnType<typeof mountAccountsView>) => {
+  const moreButton = wrapper.findAll('button').find(button => button.text().includes('common.more'))
+  if (!moreButton) throw new Error('row more button not found')
+  await moreButton.trigger('click')
+}
+
 describe('admin AccountsView bulk edit scope', () => {
   beforeEach(() => {
     localStorage.clear()
@@ -133,8 +261,12 @@ describe('admin AccountsView bulk edit scope', () => {
     getAllGroups.mockReset()
     probeUpstreamBilling.mockReset()
     probeUpstreamBillingBatch.mockReset()
+    updateAccount.mockReset()
+    exportData.mockReset()
+    copyToClipboard.mockReset()
     showError.mockReset()
     showSuccess.mockReset()
+    for (const key of Object.keys(routeQuery)) delete routeQuery[key]
 
     listAccounts.mockResolvedValue({
       items: [],
@@ -154,6 +286,19 @@ describe('admin AccountsView bulk edit scope', () => {
     getAllGroups.mockResolvedValue([])
     probeUpstreamBilling.mockResolvedValue({})
     probeUpstreamBillingBatch.mockResolvedValue([])
+    copyToClipboard.mockResolvedValue(true)
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      value: vi.fn(() => 'blob:test')
+    })
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      configurable: true,
+      value: vi.fn()
+    })
+    Object.defineProperty(HTMLAnchorElement.prototype, 'click', {
+      configurable: true,
+      value: vi.fn()
+    })
   })
 
   it('opens bulk edit in filtered-results mode from the bulk actions dropdown', async () => {
@@ -268,6 +413,159 @@ describe('admin AccountsView bulk edit scope', () => {
       label: 'admin.accounts.columns.createdAt',
       sortable: true
     })
+  })
+
+  it('updates priority from the inline editor', async () => {
+    const account = buildAccount()
+    listAccounts.mockResolvedValue({ items: [account], total: 1, page: 1, page_size: 20, pages: 1 })
+    updateAccount.mockResolvedValue({ ...account, priority: 20 })
+    const wrapper = mountAccountsView()
+
+    await flushPromises()
+    const input = wrapper.get('[data-test="account-priority-input"]')
+    await input.setValue('20')
+    await input.trigger('keydown', { key: 'Enter' })
+    await flushPromises()
+
+    expect(updateAccount).toHaveBeenCalledWith(1, { priority: 20 })
+    expect(showError).not.toHaveBeenCalled()
+  })
+
+  it('rejects an invalid inline priority without sending a request', async () => {
+    const account = buildAccount()
+    listAccounts.mockResolvedValue({ items: [account], total: 1, page: 1, page_size: 20, pages: 1 })
+    const wrapper = mountAccountsView()
+
+    await flushPromises()
+    const input = wrapper.get('[data-test="account-priority-input"]')
+    await input.setValue('0')
+    await input.trigger('keydown', { key: 'Enter' })
+    await flushPromises()
+
+    expect(updateAccount).not.toHaveBeenCalled()
+    expect(showError).toHaveBeenCalledWith('admin.accounts.priorityInvalid')
+  })
+
+  it('restores the server priority and reports an API update failure', async () => {
+    const account = buildAccount()
+    listAccounts.mockResolvedValue({ items: [account], total: 1, page: 1, page_size: 20, pages: 1 })
+    updateAccount.mockRejectedValue({})
+    const wrapper = mountAccountsView()
+
+    await flushPromises()
+    const input = wrapper.get('[data-test="account-priority-input"]')
+    await input.setValue('20')
+    await input.trigger('keydown', { key: 'Enter' })
+    await flushPromises()
+
+    expect(updateAccount).toHaveBeenCalledWith(1, { priority: 20 })
+    expect(showError).toHaveBeenCalledWith('admin.accounts.priorityUpdateFailed')
+    expect((input.element as HTMLInputElement).value).toBe('10')
+  })
+
+  it('restores saved account filters and lets the URL search override storage', async () => {
+    localStorage.setItem('account-table-filters', JSON.stringify({
+      platform: 'openai',
+      type: 'oauth',
+      status: 'active',
+      privacy_mode: 'enabled',
+      group: '7',
+      search: 'saved-search'
+    }))
+    routeQuery.search = 'route-search'
+
+    mountAccountsView()
+    await flushPromises()
+
+    const requestFilters = listAccounts.mock.calls[0]?.[2]
+    expect(requestFilters).toMatchObject({
+      platform: 'openai',
+      type: 'oauth',
+      status: 'active',
+      privacy_mode: 'enabled',
+      group: '7',
+      search: 'route-search'
+    })
+  })
+
+  it('falls back to empty filters when saved browser state is corrupted', async () => {
+    localStorage.setItem('account-table-filters', '{invalid-json')
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    mountAccountsView()
+    await flushPromises()
+
+    expect(listAccounts.mock.calls[0]?.[2]).toMatchObject({
+      platform: '',
+      type: '',
+      status: '',
+      privacy_mode: '',
+      group: '',
+      search: ''
+    })
+    expect(consoleError).toHaveBeenCalled()
+    consoleError.mockRestore()
+  })
+
+  it('persists changed account filters in localStorage', async () => {
+    const wrapper = mountAccountsView({ AccountTableFilters: InteractiveAccountTableFiltersStub })
+    await flushPromises()
+
+    await wrapper.get('[data-test="set-platform-filter"]').trigger('click')
+    await wrapper.get('[data-test="set-search-filter"]').trigger('click')
+    await flushPromises()
+
+    expect(JSON.parse(localStorage.getItem('account-table-filters') || '{}')).toMatchObject({
+      platform: 'openai',
+      search: 'saved-account'
+    })
+    await new Promise(resolve => setTimeout(resolve, 350))
+    wrapper.unmount()
+  })
+
+  it('copies access_token from the selected row export payload', async () => {
+    const account = buildAccount({ id: 9 })
+    listAccounts.mockResolvedValue({ items: [account], total: 1, page: 1, page_size: 20, pages: 1 })
+    exportData.mockResolvedValue({ accounts: [{ credentials: { access_token: 'secret-token' } }] })
+    const wrapper = mountAccountsView()
+
+    await flushPromises()
+    await openFirstRowMenu(wrapper)
+    await wrapper.get('[data-test="copy-row-token"]').trigger('click')
+    await flushPromises()
+
+    expect(exportData).toHaveBeenCalledWith({ ids: [9], includeProxies: false })
+    expect(copyToClipboard).toHaveBeenCalledWith('secret-token', 'admin.accounts.accessTokenCopied')
+  })
+
+  it('reports a missing access_token without copying', async () => {
+    const account = buildAccount({ id: 9 })
+    listAccounts.mockResolvedValue({ items: [account], total: 1, page: 1, page_size: 20, pages: 1 })
+    exportData.mockResolvedValue({ accounts: [{ credentials: {} }] })
+    const wrapper = mountAccountsView()
+
+    await flushPromises()
+    await openFirstRowMenu(wrapper)
+    await wrapper.get('[data-test="copy-row-token"]').trigger('click')
+    await flushPromises()
+
+    expect(copyToClipboard).not.toHaveBeenCalled()
+    expect(showError).toHaveBeenCalledWith('admin.accounts.accessTokenNotFound')
+  })
+
+  it('exports only the account selected from the row menu', async () => {
+    const account = buildAccount({ id: 11 })
+    listAccounts.mockResolvedValue({ items: [account], total: 1, page: 1, page_size: 20, pages: 1 })
+    exportData.mockResolvedValue({ accounts: [], proxies: [] })
+    const wrapper = mountAccountsView()
+
+    await flushPromises()
+    await openFirstRowMenu(wrapper)
+    await wrapper.get('[data-test="export-row-account"]').trigger('click')
+    await wrapper.get('[data-test="confirm-dialog"]').trigger('click')
+    await flushPromises()
+
+    expect(exportData).toHaveBeenCalledWith({ ids: [11], includeProxies: true })
   })
 
   it('passes the loaded global probe state to every upstream billing cell', async () => {

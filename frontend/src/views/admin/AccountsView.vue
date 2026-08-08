@@ -373,8 +373,31 @@
               @probe="handleProbeUpstreamBilling(row)"
             />
           </template>
-          <template #cell-priority="{ value }">
-            <span class="text-sm text-gray-700 dark:text-gray-300">{{ value }}</span>
+          <template #cell-priority="{ row }">
+            <div class="inline-flex w-28 items-center gap-1.5" @click.stop>
+              <input
+                :value="getPriorityDraft(row)"
+                type="number"
+                min="1"
+                step="1"
+                inputmode="numeric"
+                class="h-8 w-16 rounded-md border border-gray-300 bg-white px-2 text-sm font-mono text-gray-700 transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400 dark:border-dark-600 dark:bg-dark-800 dark:text-gray-200 dark:disabled:bg-dark-700"
+                :disabled="isPrioritySaving(row.id)"
+                :aria-label="t('admin.accounts.priorityQuickEditLabel', { name: row.name })"
+                :title="t('admin.accounts.priorityQuickEditHint')"
+                data-test="account-priority-input"
+                @input="setPriorityDraft(row, ($event.target as HTMLInputElement).value)"
+                @blur="commitPriorityDraft(row)"
+                @keydown.enter.prevent="commitPriorityDraft(row)"
+                @keydown.esc.prevent="resetPriorityDraft(row)"
+              />
+              <Icon
+                v-if="isPrioritySaving(row.id)"
+                name="refresh"
+                size="xs"
+                class="animate-spin text-primary-500"
+              />
+            </div>
           </template>
           <template #header-scheduler_score="{ column }">
             <div class="flex items-center">
@@ -451,7 +474,7 @@
     <AccountTestModal :show="showTest" :account="testingAcc" @close="closeTestModal" />
     <AccountStatsModal :show="showStats" :account="statsAcc" @close="closeStatsModal" />
     <ScheduledTestsPanel :show="showSchedulePanel" :account-id="scheduleAcc?.id ?? null" :model-options="scheduleModelOptions" @close="closeSchedulePanel" />
-    <AccountActionMenu :show="menu.show" :account="menu.acc" :position="menu.pos" @close="menu.show = false" @test="handleTest" @stats="handleViewStats" @schedule="handleSchedule" @duplicate="handleDuplicateAccount" @reauth="handleReAuth" @refresh-token="handleRefresh" @recover-state="handleRecoverState" @reset-quota="handleResetQuota" @set-privacy="handleSetPrivacy" @create-spark-shadow="handleCreateSparkShadow" />
+    <AccountActionMenu :show="menu.show" :account="menu.acc" :position="menu.pos" @close="menu.show = false" @test="handleTest" @stats="handleViewStats" @copy-access-token="handleCopyAccessToken" @export-account="openExportDataDialogForAccount" @schedule="handleSchedule" @duplicate="handleDuplicateAccount" @reauth="handleReAuth" @refresh-token="handleRefresh" @recover-state="handleRecoverState" @reset-quota="handleResetQuota" @set-privacy="handleSetPrivacy" @create-spark-shadow="handleCreateSparkShadow" />
     <SyncFromCrsModal :show="showSync" @close="showSync = false" @synced="reload" />
     <ImportDataModal :show="showImportData" @close="showImportData = false" @imported="handleDataImported" />
     <BulkEditAccountModal
@@ -468,7 +491,7 @@
     <TempUnschedStatusModal :show="showTempUnsched" :account="tempUnschedAcc" @close="showTempUnsched = false" @reset="handleTempUnschedReset" />
     <ConfirmDialog :show="showDeleteDialog" :title="t('admin.accounts.deleteAccount')" :message="t('admin.accounts.deleteConfirm', { name: deletingAcc?.name })" :confirm-text="t('common.delete')" :cancel-text="t('common.cancel')" :danger="true" @confirm="confirmDelete" @cancel="showDeleteDialog = false" />
     <ConfirmDialog :show="showCreateShadowDialog" :title="t('admin.accounts.createSparkShadow')" :message="t('admin.accounts.createSparkShadowConfirm', { name: creatingShadowAcc?.name })" @confirm="confirmCreateSparkShadow" @cancel="showCreateShadowDialog = false" />
-    <ConfirmDialog :show="showExportDataDialog" :title="t('admin.accounts.dataExport')" :message="t('admin.accounts.dataExportConfirmMessage')" :confirm-text="t('admin.accounts.dataExportConfirm')" :cancel-text="t('common.cancel')" @confirm="handleExportData" @cancel="showExportDataDialog = false">
+    <ConfirmDialog :show="showExportDataDialog" :title="t('admin.accounts.dataExport')" :message="t('admin.accounts.dataExportConfirmMessage')" :confirm-text="t('admin.accounts.dataExportConfirm')" :cancel-text="t('common.cancel')" @confirm="handleExportData" @cancel="closeExportDataDialog">
       <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
         <input type="checkbox" class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500" v-model="includeProxyOnExport" />
         <span>{{ t('admin.accounts.dataExportIncludeProxies') }}</span>
@@ -484,12 +507,14 @@
 import { ref, reactive, computed, onMounted, onUnmounted, toRaw, watch } from 'vue'
 import { useIntervalFn } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'
 import { adminAPI } from '@/api/admin'
 import { useTableLoader } from '@/composables/useTableLoader'
 import { useSwipeSelect, type SwipeSelectVirtualContext } from '@/composables/useSwipeSelect'
 import { useTableSelection } from '@/composables/useTableSelection'
+import { useClipboard } from '@/composables/useClipboard'
 import { useStepUp, isStepUpBlocked, isStepUpCancelled, stepUpBlockReason } from '@/composables/useStepUp'
 import TotpStepUpDialog from '@/components/auth/TotpStepUpDialog.vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
@@ -527,11 +552,13 @@ import { extractApiErrorMessage } from '@/utils/apiError'
 import { sanitizeUrl } from '@/utils/url'
 import { getFloatingPanelPosition } from '@/utils/floatingPanel'
 import { formatMultiplier } from '@/utils/formatters'
-import type { Account, AccountPlatform, AccountSchedulerGroupScore, AccountType, Proxy as AccountProxy, AdminGroup, WindowStats, ClaudeModel, UpstreamBillingProbeSnapshot } from '@/types'
+import type { Account, AccountPlatform, AccountSchedulerGroupScore, AccountType, Proxy as AccountProxy, AdminGroup, WindowStats, ClaudeModel, AdminDataPayload, UpstreamBillingProbeSnapshot } from '@/types'
 
 const { t } = useI18n()
+const route = useRoute()
 const appStore = useAppStore()
 const authStore = useAuthStore()
+const { copyToClipboard } = useClipboard()
 
 const proxies = ref<AccountProxy[]>([])
 const groups = ref<AdminGroup[]>([])
@@ -582,6 +609,7 @@ const showSync = ref(false)
 const showImportData = ref(false)
 const showExportDataDialog = ref(false)
 const includeProxyOnExport = ref(true)
+const exportAccountIds = ref<number[] | null>(null)
 const showBulkEdit = ref(false)
 const bulkEditTarget = ref<AccountBulkEditTarget | null>(null)
 const showTempUnsched = ref(false)
@@ -605,6 +633,8 @@ const scheduleModelOptions = ref<SelectOption[]>([])
 const togglingSchedulable = ref<number | null>(null)
 const menu = reactive<{show:boolean, acc:Account|null, pos:{top:number, left:number}|null}>({ show: false, acc: null, pos: null })
 const exportingData = ref(false)
+const priorityDrafts = reactive<Record<number, string>>({})
+const savingPriorityIds = ref<Set<number>>(new Set())
 const probingUpstreamBilling = reactive(new Set<number>())
 const upstreamBillingProbeGloballyEnabled = ref<boolean | undefined>(undefined)
 const upstreamBillingNow = ref(Date.now())
@@ -629,15 +659,24 @@ const accountToolsDropdownStyle = computed(() => ({
   width: `${accountToolsDropdownPosition.width}px`
 }))
 const hiddenColumns = reactive<Set<string>>(new Set())
-const DEFAULT_HIDDEN_COLUMNS = ['today_stats', 'proxy', 'notes', 'priority', 'scheduler_score', 'rate_multiplier']
+const DEFAULT_HIDDEN_COLUMNS = ['today_stats', 'proxy', 'notes', 'scheduler_score', 'rate_multiplier']
 const HIDDEN_COLUMNS_KEY = 'account-hidden-columns'
 // One-time migration: hide scheduler score for existing admins too, because showing it opt-ins to heavy backend scoring.
 const HIDDEN_COLUMNS_VERSION_KEY = 'account-hidden-columns-version'
 const HIDDEN_COLUMNS_CURRENT_VERSION = 'scheduler-score-hidden-by-default'
 
 // Sorting settings
+const ACCOUNT_FILTERS_STORAGE_KEY = 'account-table-filters'
 const ACCOUNT_SORT_STORAGE_KEY = 'account-table-sort'
 type AccountSortOrder = 'asc' | 'desc'
+type AccountListFilterValues = {
+  platform: string
+  type: string
+  status: string
+  privacy_mode: string
+  group: string
+  search: string
+}
 type AccountSortState = {
   sort_by: string
   sort_order: AccountSortOrder
@@ -654,6 +693,56 @@ const ACCOUNT_SORTABLE_KEYS = new Set([
   'created_at',
   'expires_at'
 ])
+const sanitizePersistedAccountFilter = (value: unknown): string => {
+  return typeof value === 'string' ? value : ''
+}
+
+const getRouteSearchFilter = (): string | null => {
+  const search = route?.query?.search
+  return typeof search === 'string' ? search : null
+}
+
+const loadInitialAccountFilters = (): AccountListFilterValues => {
+  const routeSearch = getRouteSearchFilter()
+  const fallback: AccountListFilterValues = {
+    platform: '',
+    type: '',
+    status: '',
+    privacy_mode: '',
+    group: '',
+    search: routeSearch ?? ''
+  }
+
+  if (typeof window === 'undefined') return fallback
+
+  try {
+    const raw = window.localStorage.getItem(ACCOUNT_FILTERS_STORAGE_KEY)
+    if (!raw) return fallback
+
+    const parsed = JSON.parse(raw) as Partial<Record<keyof AccountListFilterValues, unknown>>
+    return {
+      platform: sanitizePersistedAccountFilter(parsed.platform),
+      type: sanitizePersistedAccountFilter(parsed.type),
+      status: sanitizePersistedAccountFilter(parsed.status),
+      privacy_mode: sanitizePersistedAccountFilter(parsed.privacy_mode),
+      group: sanitizePersistedAccountFilter(parsed.group),
+      search: routeSearch ?? sanitizePersistedAccountFilter(parsed.search)
+    }
+  } catch (error) {
+    console.error('Failed to load saved account filters:', error)
+    return fallback
+  }
+}
+
+const saveAccountFiltersToStorage = (filters: AccountListFilterValues) => {
+  if (typeof window === 'undefined') return
+
+  try {
+    window.localStorage.setItem(ACCOUNT_FILTERS_STORAGE_KEY, JSON.stringify(filters))
+  } catch (error) {
+    console.error('Failed to save account filters:', error)
+  }
+}
 const loadInitialAccountSortState = (): AccountSortState => {
   const fallback: AccountSortState = { sort_by: 'name', sort_order: 'asc' }
   try {
@@ -916,12 +1005,7 @@ const {
 } = useTableLoader<Account, any>({
   fetchFn: adminAPI.accounts.list,
   initialParams: {
-    platform: '',
-    type: '',
-    status: '',
-    privacy_mode: '',
-    group: '',
-    search: '',
+    ...loadInitialAccountFilters(),
     include_scheduler_score: shouldIncludeSchedulerScore() ? '1' : '0',
     sort_by: sortState.sort_by,
     sort_order: sortState.sort_order
@@ -1041,6 +1125,20 @@ const debouncedReload = () => {
   pendingTodayStatsRefresh.value = true
   baseDebouncedReload()
 }
+
+watch(
+  () => ({
+    platform: params.platform,
+    type: params.type,
+    status: params.status,
+    privacy_mode: params.privacy_mode,
+    group: params.group,
+    search: params.search
+  }),
+  (filters) => {
+    saveAccountFiltersToStorage(filters)
+  }
+)
 
 const handlePageChange = (page: number) => {
   syncAccountListDerivedParams()
@@ -1928,36 +2026,106 @@ const handleAccountUpdated = (updatedAccount: Account) => {
   patchAccountInList(updatedAccount)
   enterAutoRefreshSilentWindow()
 }
+const getPriorityDraft = (account: Account) => priorityDrafts[account.id] ?? String(account.priority)
+const setPriorityDraft = (account: Account, value: string) => {
+  priorityDrafts[account.id] = value
+}
+const resetPriorityDraft = (account: Account) => {
+  delete priorityDrafts[account.id]
+}
+const parsePriorityDraft = (value: string) => {
+  const priority = Number(value.trim())
+  return Number.isInteger(priority) && priority >= 1 ? priority : null
+}
+const setPrioritySaving = (accountId: number, saving: boolean) => {
+  const next = new Set(savingPriorityIds.value)
+  if (saving) next.add(accountId)
+  else next.delete(accountId)
+  savingPriorityIds.value = next
+}
+const isPrioritySaving = (accountId: number) => savingPriorityIds.value.has(accountId)
+const commitPriorityDraft = async (account: Account) => {
+  if (isPrioritySaving(account.id)) return
+
+  const priority = parsePriorityDraft(getPriorityDraft(account))
+  if (priority === null) {
+    resetPriorityDraft(account)
+    appStore.showError(t('admin.accounts.priorityInvalid'))
+    return
+  }
+  if (priority === account.priority) {
+    resetPriorityDraft(account)
+    return
+  }
+
+  setPrioritySaving(account.id, true)
+  try {
+    const updated = await adminAPI.accounts.update(account.id, { priority })
+    patchAccountInList(updated)
+    resetPriorityDraft(updated)
+    enterAutoRefreshSilentWindow()
+  } catch (error) {
+    resetPriorityDraft(account)
+    appStore.showError(extractApiErrorMessage(error, t('admin.accounts.priorityUpdateFailed')))
+  } finally {
+    setPrioritySaving(account.id, false)
+  }
+}
 const formatExportTimestamp = () => {
   const now = new Date()
   const pad2 = (value: number) => String(value).padStart(2, '0')
   return `${now.getFullYear()}${pad2(now.getMonth() + 1)}${pad2(now.getDate())}${pad2(now.getHours())}${pad2(now.getMinutes())}${pad2(now.getSeconds())}`
 }
-const openExportDataDialog = () => {
+const accountExportStepUp = useStepUp()
+const openExportDataDialog = (accountIds?: number[]) => {
+  exportAccountIds.value = accountIds && accountIds.length > 0 ? [...accountIds] : null
   includeProxyOnExport.value = true
   showExportDataDialog.value = true
+}
+const openExportDataDialogForAccount = (account: Account) => {
+  openExportDataDialog([account.id])
+}
+const closeExportDataDialog = () => {
+  showExportDataDialog.value = false
+  exportAccountIds.value = null
+}
+const downloadAccountData = (dataPayload: AdminDataPayload) => {
+  const timestamp = formatExportTimestamp()
+  const filename = `sub2api-account-${timestamp}.json`
+  const blob = new Blob([JSON.stringify(dataPayload, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  link.click()
+  URL.revokeObjectURL(url)
+}
+const showAccountExportError = (error: unknown, fallbackMessage: string) => {
+  if (isStepUpCancelled(error)) return
+  if (isStepUpBlocked(error)) {
+    appStore.showError(
+      stepUpBlockReason(error) === 'STEP_UP_ADMIN_API_KEY_FORBIDDEN'
+        ? t('stepUp.adminApiKeyForbidden')
+        : t('stepUp.notEnabled')
+    )
+    return
+  }
+  appStore.showError(extractApiErrorMessage(error, fallbackMessage))
 }
 const handleExportData = async () => {
   if (exportingData.value) return
   exportingData.value = true
   try {
+    const targetIds = exportAccountIds.value ?? selIds.value
     const dataPayload = await accountExportStepUp.run(() => adminAPI.accounts.exportData(
-      selIds.value.length > 0
-        ? { ids: selIds.value, includeProxies: includeProxyOnExport.value }
+      targetIds.length > 0
+        ? { ids: targetIds, includeProxies: includeProxyOnExport.value }
         : {
             includeProxies: includeProxyOnExport.value,
             filters: buildAccountQueryFilters()
           }
     ))
-    const timestamp = formatExportTimestamp()
-    const filename = `sub2api-account-${timestamp}.json`
-    const blob = new Blob([JSON.stringify(dataPayload, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = filename
-    link.click()
-    URL.revokeObjectURL(url)
+    downloadAccountData(dataPayload)
     // spark 影子账号被后端排除出备份(其凭据透传母账号、调度配置不可经凭据型导入重建);
     // 跳过非零时明确提示用户,避免「下载成功但少了账号」的静默丢失。
     if (dataPayload.skipped_shadows && dataPayload.skipped_shadows > 0) {
@@ -1965,24 +2133,33 @@ const handleExportData = async () => {
     } else {
       appStore.showSuccess(t('admin.accounts.dataExported'))
     }
-  } catch (error: any) {
-    if (isStepUpCancelled(error)) {
-      // 用户主动取消 step-up 验证，静默返回，不弹错误提示。
-    } else if (isStepUpBlocked(error)) {
-      appStore.showError(
-        stepUpBlockReason(error) === 'STEP_UP_ADMIN_API_KEY_FORBIDDEN'
-          ? t('stepUp.adminApiKeyForbidden')
-          : t('stepUp.notEnabled')
-      )
-    } else {
-      appStore.showError(error?.message || t('admin.accounts.dataExportFailed'))
-    }
+  } catch (error) {
+    showAccountExportError(error, t('admin.accounts.dataExportFailed'))
   } finally {
     exportingData.value = false
-    showExportDataDialog.value = false
+    closeExportDataDialog()
   }
 }
-const accountExportStepUp = useStepUp()
+const getStringCredential = (credentials: Record<string, unknown> | undefined, key: string) => {
+  const value = credentials?.[key]
+  return typeof value === 'string' ? value : ''
+}
+const handleCopyAccessToken = async (account: Account) => {
+  try {
+    const dataPayload = await accountExportStepUp.run(() => adminAPI.accounts.exportData({
+      ids: [account.id],
+      includeProxies: false
+    }))
+    const accessToken = getStringCredential(dataPayload.accounts[0]?.credentials, 'access_token')
+    if (!accessToken) {
+      appStore.showError(t('admin.accounts.accessTokenNotFound'))
+      return
+    }
+    await copyToClipboard(accessToken, t('admin.accounts.accessTokenCopied'))
+  } catch (error) {
+    showAccountExportError(error, t('admin.accounts.copyAccessTokenFailed'))
+  }
+}
 const closeTestModal = () => { showTest.value = false; testingAcc.value = null }
 const closeStatsModal = () => { showStats.value = false; statsAcc.value = null }
 const closeReAuthModal = () => { showReAuth.value = false; reAuthAcc.value = null }

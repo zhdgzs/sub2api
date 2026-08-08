@@ -1,0 +1,4 @@
+interface:
+  display_name: "Remote Docker"
+  short_description: "Release Sub2API via GitHub Actions Docker build"
+  default_prompt: "Use $remote-docker to prepare a cust release and let GitHub Actions build and push the Docker image from cust."

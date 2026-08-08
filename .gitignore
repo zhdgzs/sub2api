@@ -121,6 +121,10 @@ tests
 CLAUDE.md
 .claude
 scripts
+!/scripts/
+/scripts/*
+!/scripts/update_docker_release_record.py
+__pycache__/
 !backend/scripts/
 !backend/scripts/resolve-version.sh
 .code-review-state
@@ -135,6 +139,8 @@ docs/*
 !docs/PAYMENT.md
 !docs/PAYMENT_CN.md
 !docs/ADMIN_PAYMENT_INTEGRATION_API.md
+!docs/SYNC_UPSTREAM_CN.md
+!docs/DOCKER_RELEASE_HISTORY.md
 !docs/ASYNC_IMAGE_TASKS.md
 !docs/legal/
 !docs/legal/*.md
