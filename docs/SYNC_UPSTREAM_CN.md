@@ -101,6 +101,8 @@ make test-frontend
 make build
 ```
 
+上述本地质量检查适用于普通手工合并。用户直接调用 `remote-docker` 时是明确例外：不得在本地运行测试、lint、typecheck、编译、前后端构建或 Docker build；只做合并风险、冲突标记、diff 卫生、i18n 键和发布元数据等结构检查，随后推送 `cust`，由 GitHub Actions Docker 构建验证发布链路。
+
 ## Docker 发布
 
 正式镜像只从 `cust` 构建。远程发布是默认方式：
@@ -123,6 +125,8 @@ $remote-docker
 - watcher 参数：`BRANCH=cust`、`REMOTE_IMAGE=...:cust`、`LOCAL_IMAGE=sub2api:cust`
 
 发布 preview 必须只读；发现文本冲突或高风险共享修改时，必须汇总风险并等待用户一次性决策。生成文件必须先解决源定义再重新生成，不能直接选边。i18n 文件必须检查对象键唯一性。
+
+`remote-docker` 不执行任何本地测试或构建；合并冲突按用户确认解决并通过结构检查后，直接推送发布提交，由 GitHub Actions 构建镜像。构建结果和后续部署由 watcher 处理，agent 不等待或主动轮询。
 
 远程发布不创建 release tag。本地 `release-docker` 仅在用户明确要求本地正式构建时使用，并可能创建 release tag。
 
@@ -152,7 +156,7 @@ chore(release): 发布 0.1.172-zhdgzs.1
 - [ ] 工作树干净。
 - [ ] `main` 已同步所需的最新上游版本。
 - [ ] 合并风险预检已通过或已按用户决策处理。
-- [ ] 前后端测试与构建通过。
+- [ ] 普通手工发布已完成本地测试与构建；`remote-docker` 已跳过本地测试并准备由 GitHub Actions 构建验证。
 - [ ] VERSION 与发布记录一致。
 - [ ] workflow 的 trigger、checkout、脚本 push、镜像标签和 watcher 参数均为 `cust`。
 - [ ] 推送的是 `origin/cust`，没有修改或推送 `custom`。

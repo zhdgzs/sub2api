@@ -26,7 +26,9 @@ Still stop for a consolidated user decision when the read-only risk assessment f
 
 Do not auto-stash, auto-resolve conflicts, delete branches, delete tags, force-push, push to `upstream`, wait for the GitHub Actions build to finish, or call production deploy/restart endpoints manually.
 
-Before every release merge, run the read-only risk assessment. Report all text conflicts and all high-risk shared edits that Git would auto-merge from both `main → cust` and `source → cust` in one response. For each path, state the recommended strategy and the required verification. When any recommendation requires a product or code-semantic choice, stop and request one consolidated user decision before modifying `cust`. In i18n files, explicitly check that object keys remain unique; a clean Git merge does not guarantee valid TypeScript.
+Do not run local tests, linters, type checks, compilers, frontend/backend builds, or local Docker builds as part of this skill, including after resolving merge conflicts. Use the pushed `cust` GitHub Actions Docker build as the release validation surface. Limit local verification to read-only merge-risk inspection, conflict-marker scans, diff hygiene, i18n key review, and deterministic release metadata checks that do not execute project test or build toolchains.
+
+Before every release merge, run the read-only risk assessment. Report all text conflicts and all high-risk shared edits that Git would auto-merge from both `main → cust` and `source → cust` in one response. For each path, state the recommended strategy and the required remote-build validation. When any recommendation requires a product or code-semantic choice, stop and request one consolidated user decision before modifying `cust`. In i18n files, explicitly inspect object keys for uniqueness; a clean Git merge does not guarantee valid TypeScript.
 
 Treat generated files as derived artifacts: resolve their source definitions first, regenerate when tooling is available, and never resolve a generated-file conflict by blindly choosing one side.
 
@@ -71,7 +73,7 @@ ghcr.io/<owner>/sub2api:cust
    ```
 
 7. Review the proposed source branch, `main`, `cust`, version candidate, GHCR tags, workflow file, release record file, and every conflict recommendation.
-8. If conflicts exist, present the complete list with recommendations in one response and wait for a single user decision. Resolve the approved decisions, run applicable quality checks, and repeat the preview until no unresolved conflicts remain.
+8. If conflicts exist, present the complete list with recommendations in one response and wait for a single user decision. Resolve the approved decisions, perform only the permitted local structural checks, and repeat the preview until no unresolved conflicts remain. Do not run local tests, lint, type-check, compilation, or builds.
 9. Choose the script's `candidate_version` unless the user already supplied an explicit valid version in the initial request.
 10. Execute immediately after the conflict-free preview with the chosen version:
 
@@ -104,7 +106,7 @@ Execution mode:
 - Commits `chore(release): 发布 <version>` only if release metadata changed.
 - Pushes `origin/cust`.
 - Starts `/root/sub2api-deploy/watch_remote_docker_deploy.sh` in the background after the push, explicitly setting the `cust` branch/image variables and `EXPECTED_HEAD_SHA`.
-- Does not run local Docker build.
+- Does not run local tests, lint, type-check, compilation, frontend/backend builds, or Docker builds.
 - Relies on `.github/workflows/remote-docker.yml` to build and push GHCR images from `cust`.
 - Does not wait for GitHub Actions or the deploy watcher to finish.
 

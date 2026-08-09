@@ -169,7 +169,7 @@ def merge_recommendation(path: str) -> str:
     if name == "wire_gen.go" or name.endswith("_gen.go"):
         return "以对应的 Wire/源定义为准，合并后重新生成；不要直接选任一生成文件。"
     if "__tests__/" in path or name.endswith("_test.go") or name.endswith(".spec.ts"):
-        return "合并双方测试场景，确认旧行为与新增行为都被覆盖。"
+        return "合并双方测试场景并随分支推送；不在本地执行，交由 GitHub Actions Docker 构建验证编译链路。"
     if name.endswith((".vue", ".go", ".ts", ".tsx")):
         return "人工组合双方改动，核对模板/类型/调用链或服务/生成代码的一致性。"
     if name.endswith((".lock", "pnpm-lock.yaml", "go.sum")):
@@ -213,7 +213,7 @@ def print_merge_risk_assessment(
     risks = release_merge_risks(release, repo, source_branch)
     print("merge_risk_assessment:")
     if not risks:
-        print("- 未发现发布路径上的文本冲突；仍需执行发布前质量检查。")
+        print("- 未发现发布路径上的文本冲突；不运行本地测试或构建，后续由 GitHub Actions Docker 构建验证。")
         return risks
 
     print("- 发现需要审查的合并风险；请一次性确认下列建议后再执行发布。")
