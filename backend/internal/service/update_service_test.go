@@ -69,6 +69,58 @@ func TestUpdateServicePerformUpdateNoUpdateReturnsSentinel(t *testing.T) {
 	require.ErrorIs(t, err, ErrNoUpdateAvailable)
 }
 
+func TestCompareVersionsIgnoresForkSuffix(t *testing.T) {
+	tests := []struct {
+		name     string
+		current  string
+		latest   string
+		expected int
+	}{
+		{
+			name:     "same upstream version with fork suffix",
+			current:  "v0.1.172-zhdgzs.1",
+			latest:   "v0.1.172",
+			expected: 0,
+		},
+		{
+			name:     "older fork version",
+			current:  "0.1.171-zhdgzs.9",
+			latest:   "0.1.172",
+			expected: -1,
+		},
+		{
+			name:     "newer fork version",
+			current:  "0.1.173-zhdgzs.1",
+			latest:   "0.1.172",
+			expected: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, compareVersions(tt.current, tt.latest))
+		})
+	}
+}
+
+func TestUpdateServiceCheckUpdateTreatsForkBuildAsCurrent(t *testing.T) {
+	svc := NewUpdateService(
+		&updateServiceCacheStub{},
+		&updateServiceGitHubClientStub{
+			release: &GitHubRelease{TagName: "v0.1.172"},
+		},
+		"0.1.172-zhdgzs.1",
+		"release",
+	)
+
+	info, err := svc.CheckUpdate(context.Background(), true)
+
+	require.NoError(t, err)
+	require.False(t, info.HasUpdate)
+	require.Equal(t, "0.1.172-zhdgzs.1", info.CurrentVersion)
+	require.Equal(t, "0.1.172", info.LatestVersion)
+}
+
 func newRollbackTestService(current string, releases []*GitHubRelease) *UpdateService {
 	return NewUpdateService(
 		&updateServiceCacheStub{},
