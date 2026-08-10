@@ -24,7 +24,9 @@ A direct user invocation of `$remote-docker` in the current turn is explicit app
 
 Still stop for a consolidated user decision when the read-only risk assessment finds text conflicts or high-risk shared edits requiring a product or code-semantic choice. This is a merge-resolution decision, not a release-start confirmation.
 
-Do not auto-stash, auto-resolve conflicts, delete branches, delete tags, force-push, push to `upstream`, wait for the GitHub Actions build to finish, or call production deploy/restart endpoints manually.
+Pure version metadata conflicts do not require a second user decision when they do not affect code or feature semantics. The script may automatically resolve only explicitly allowlisted single-purpose version files, taking the incoming branch value. This includes the release `backend/cmd/server/VERSION` file and common single-value tool-version files. Dependency manifests, lockfiles, workflow files, and general configuration files are not pure version metadata even when their conflicting lines contain version numbers; keep them behind the normal review gate unless a future deterministic classifier proves the whole conflict is metadata-only.
+
+Do not auto-stash, auto-resolve conflicts outside the pure-version metadata allowlist, delete branches, delete tags, force-push, push to `upstream`, wait for the GitHub Actions build to finish, or call production deploy/restart endpoints manually.
 
 Do not run local tests, linters, type checks, compilers, frontend/backend builds, or local Docker builds as part of this skill, including after resolving merge conflicts. Use the pushed `cust` GitHub Actions Docker build as the release validation surface. Limit local verification to read-only merge-risk inspection, conflict-marker scans, diff hygiene, i18n key review, and deterministic release metadata checks that do not execute project test or build toolchains.
 
@@ -73,7 +75,7 @@ ghcr.io/<owner>/sub2api:cust
    ```
 
 7. Review the proposed source branch, `main`, `cust`, version candidate, GHCR tags, workflow file, release record file, and every conflict recommendation.
-8. If conflicts exist, present the complete list with recommendations in one response and wait for a single user decision. Resolve the approved decisions, perform only the permitted local structural checks, and repeat the preview until no unresolved conflicts remain. Do not run local tests, lint, type-check, compilation, or builds.
+8. Automatically resolve allowlisted pure version metadata conflicts. If any other conflicts exist, present the complete list with recommendations in one response and wait for a single user decision. Resolve the approved decisions, perform only the permitted local structural checks, and repeat the preview until no unresolved conflicts remain. Do not run local tests, lint, type-check, compilation, or builds.
 9. Choose the script's `candidate_version` unless the user already supplied an explicit valid version in the initial request.
 10. Execute immediately after the conflict-free preview with the chosen version:
 
@@ -99,8 +101,8 @@ Execution mode:
 - Pulls `origin/cust` with `--ff-only` when the remote branch exists; the first release creates it with an upstream-tracking push.
 - Merges `main` into `cust` with `--no-ff` when needed.
 - Merges the recorded source branch into `cust` with `--no-ff` unless already contained.
-- Performs a read-only risk assessment before checkout or merge. If any text conflict or high-risk auto-merged shared edit exists, prints every affected path with its recommendation and exits without modifying `cust`.
-- Does not auto-resolve conflicts. After reviewed decisions are applied and the preview is conflict-free, normal merges create their own commits.
+- Performs a read-only risk assessment before checkout or merge. Allowlisted pure version metadata conflicts are reported as automatic resolutions. If any other text conflict or high-risk auto-merged shared edit exists, prints every affected path with its recommendation and exits without modifying `cust`.
+- Auto-resolves only allowlisted pure version metadata conflicts by taking the incoming branch value. It does not auto-resolve code, dependency manifest, lockfile, workflow, generated-file, or general configuration conflicts. After reviewed decisions are applied and the preview has no blocking risks, normal merges create their own commits.
 - Writes `backend/cmd/server/VERSION`.
 - Writes/updates `docs/DOCKER_RELEASE_HISTORY.md`.
 - Commits `chore(release): 发布 <version>` only if release metadata changed.

@@ -27,6 +27,14 @@ DEPLOY_WATCHER_LOG = Path("/root/sub2api-deploy/watch_remote_docker_deploy.log")
 # changes can introduce the same object key).  Restrict the extra review gate
 # to files whose combined semantics affect the build or runtime behaviour.
 AUTO_MERGE_RISK_SUFFIXES = (".go", ".ts", ".tsx", ".vue", ".json", ".yaml", ".yml")
+AUTO_RESOLVE_VERSION_PATHS = {
+    ".node-version",
+    ".nvmrc",
+    ".python-version",
+    ".ruby-version",
+    ".tool-versions",
+    "backend/cmd/server/VERSION",
+}
 
 
 def load_release_module(repo: Path) -> ModuleType:
@@ -177,6 +185,17 @@ def merge_recommendation(path: str) -> str:
     return "人工审查双方语义后决定，保留互不冲突的改动。"
 
 
+def is_auto_resolvable_version_conflict(path: str) -> bool:
+    """Whether a conflict is limited to an allowlisted version metadata file."""
+    return path in AUTO_RESOLVE_VERSION_PATHS
+
+
+def version_conflict_recommendation(path: str) -> str:
+    if path == "backend/cmd/server/VERSION":
+        return "自动采用 incoming 的上游基础版本；发布步骤随后写入本次 fork 版本。"
+    return "纯工具版本元数据，自动采用 incoming 分支版本。"
+
+
 def auto_merge_recommendation(path: str) -> str:
     if path.startswith("frontend/src/i18n/"):
         return "双方均修改且 Git 可自动合并；核对对象键唯一性、保留双方文案，并做静态类型检查。"
@@ -185,35 +204,48 @@ def auto_merge_recommendation(path: str) -> str:
     return "双方均修改且 Git 可自动合并；逐段核对合并结果、调用链和类型一致性后再发布。"
 
 
-def release_merge_risks(
+def release_merge_assessment(
     release: ModuleType, repo: Path, source_branch: str
-) -> list[tuple[str, str, str, list[str]]]:
+) -> tuple[list[tuple[str, str, str, list[str]]], list[tuple[str, str, str, list[str]]]]:
     risks: list[tuple[str, str, str, list[str]]] = []
+    auto_resolutions: list[tuple[str, str, str, list[str]]] = []
     target = release.RELEASE_BRANCH
     if not release.branch_contains(repo, "main", target):
         paths = merge_conflict_paths(release, repo, target, "main")
-        if paths:
-            risks.append(("text_conflict", "main", target, paths))
+        auto_paths = [path for path in paths if is_auto_resolvable_version_conflict(path)]
+        risk_paths = [path for path in paths if path not in auto_paths]
+        if auto_paths:
+            auto_resolutions.append(("version_metadata_conflict", "main", target, auto_paths))
+        if risk_paths:
+            risks.append(("text_conflict", "main", target, risk_paths))
         paths = shared_changed_paths(release, repo, target, "main")
         if paths:
             risks.append(("auto_merged_shared_changes", "main", target, paths))
     if source_branch != target and not release.branch_contains(repo, source_branch, target):
         paths = merge_conflict_paths(release, repo, target, source_branch)
-        if paths:
-            risks.append(("text_conflict", source_branch, target, paths))
+        auto_paths = [path for path in paths if is_auto_resolvable_version_conflict(path)]
+        risk_paths = [path for path in paths if path not in auto_paths]
+        if auto_paths:
+            auto_resolutions.append(("version_metadata_conflict", source_branch, target, auto_paths))
+        if risk_paths:
+            risks.append(("text_conflict", source_branch, target, risk_paths))
         paths = shared_changed_paths(release, repo, target, source_branch)
         if paths:
             risks.append(("auto_merged_shared_changes", source_branch, target, paths))
-    return risks
+    return risks, auto_resolutions
 
 
 def print_merge_risk_assessment(
     release: ModuleType, repo: Path, source_branch: str
 ) -> list[tuple[str, str, str, list[str]]]:
-    risks = release_merge_risks(release, repo, source_branch)
+    risks, auto_resolutions = release_merge_assessment(release, repo, source_branch)
     print("merge_risk_assessment:")
+    for risk_type, incoming, target, paths in auto_resolutions:
+        print(f"- {risk_type} (auto-resolve): {incoming} -> {target}")
+        for path in paths:
+            print(f"  - {path}: {version_conflict_recommendation(path)}")
     if not risks:
-        print("- 未发现发布路径上的文本冲突；不运行本地测试或构建，后续由 GitHub Actions Docker 构建验证。")
+        print("- 未发现需要人工决策的发布合并风险；不运行本地测试或构建，后续由 GitHub Actions Docker 构建验证。")
         return risks
 
     print("- 发现需要审查的合并风险；请一次性确认下列建议后再执行发布。")
@@ -227,6 +259,32 @@ def print_merge_risk_assessment(
             )
             print(f"  - {path}: {recommendation}")
     return risks
+
+
+def merge_branch_with_version_resolution(
+    release: ModuleType, repo: Path, branch: str, message: str
+) -> None:
+    """Merge a branch and resolve only allowlisted version metadata conflicts."""
+    proc = release.run(
+        ["git", "merge", "--no-ff", branch, "-m", message],
+        cwd=repo,
+        check=False,
+    )
+    if proc.returncode == 0:
+        return
+
+    conflicts = release.git(repo, "diff", "--name-only", "--diff-filter=U", check=False).splitlines()
+    conflicts = [path.strip() for path in conflicts if path.strip()]
+    if not conflicts or any(not is_auto_resolvable_version_conflict(path) for path in conflicts):
+        release.git(repo, "merge", "--abort", check=False)
+        detail = "\n".join(conflicts) or (proc.stderr or proc.stdout or "").strip()
+        raise SystemExit(f"[ERROR] Merge failed for {branch}; merge was aborted.\n{detail}")
+
+    for path in conflicts:
+        release.git(repo, "restore", "--source", branch, "--", path)
+        release.git(repo, "add", "--", path)
+        print(f"[INFO] 自动解决纯版本元数据冲突: {path} <- {branch}")
+    release.git(repo, "commit", "-m", message)
 
 
 def print_plan(release: ModuleType, state: object, version: str | None) -> None:
@@ -345,10 +403,12 @@ def execute(release: ModuleType, repo: Path, version: str, allow_version_overrid
         print(f"[INFO] {origin_target} does not exist; first release will create it")
 
     if not release.branch_contains(repo, "main", target):
-        release.merge_branch(repo, "main", f"chore: 合并上游 main {base}")
+        merge_branch_with_version_resolution(release, repo, "main", f"chore: 合并上游 main {base}")
 
     if source_branch != target and not release.branch_contains(repo, source_branch, target):
-        release.merge_branch(repo, source_branch, f"chore: 合并 {source_branch} 到 {target}")
+        merge_branch_with_version_resolution(
+            release, repo, source_branch, f"chore: 合并 {source_branch} 到 {target}"
+        )
 
     require_remote_workflow(repo)
     release.require_clean_or_merge_complete(repo)

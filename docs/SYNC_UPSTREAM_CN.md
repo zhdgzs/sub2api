@@ -124,9 +124,9 @@ $remote-docker
 - 滚动镜像：`ghcr.io/<owner>/sub2api:cust`
 - watcher 参数：`BRANCH=cust`、`REMOTE_IMAGE=...:cust`、`LOCAL_IMAGE=sub2api:cust`
 
-发布 preview 必须只读；发现文本冲突或高风险共享修改时，必须汇总风险并等待用户一次性决策。生成文件必须先解决源定义再重新生成，不能直接选边。i18n 文件必须检查对象键唯一性。
+发布 preview 必须只读。仅涉及版本号或工具版本、且不影响代码与功能语义的单一用途版本元数据冲突，允许按白名单自动采用 incoming 分支版本，无需二次确认；`backend/cmd/server/VERSION` 合并后仍由发布步骤写入本次 fork 版本。依赖清单、锁文件、workflow 和通用配置即使包含版本号也不视为纯版本元数据。其他文本冲突或高风险共享修改必须汇总风险并等待用户一次性决策。生成文件必须先解决源定义再重新生成，不能直接选边。i18n 文件必须检查对象键唯一性。
 
-`remote-docker` 不执行任何本地测试或构建；合并冲突按用户确认解决并通过结构检查后，直接推送发布提交，由 GitHub Actions 构建镜像。构建结果和后续部署由 watcher 处理，agent 不等待或主动轮询。
+`remote-docker` 不执行任何本地测试或构建；白名单外的合并冲突按用户确认解决并通过结构检查后，直接推送发布提交，由 GitHub Actions 构建镜像。构建结果和后续部署由 watcher 处理，agent 不等待或主动轮询。
 
 远程发布不创建 release tag。本地 `release-docker` 仅在用户明确要求本地正式构建时使用，并可能创建 release tag。
 
