@@ -1,5 +1,11 @@
 import { apiClient } from './client'
-import type { AccountPlatform, AccountType, PaginatedResponse, WindowStats } from '@/types'
+import type {
+  AccountPlatform,
+  AccountType,
+  AccountUsageInfo,
+  PaginatedResponse,
+  WindowStats,
+} from '@/types'
 
 export interface SubscriptionAccountGroup {
   id: number
@@ -24,14 +30,6 @@ export interface SubscriptionAccountCapacity {
   quota_weekly_limit?: number
 }
 
-export interface SubscriptionAccountUsageWindow {
-  key: string
-  utilization?: number
-  resets_at?: string
-  used?: number
-  limit?: number
-}
-
 export interface SubscriptionAccount {
   id: number
   name: string
@@ -45,8 +43,7 @@ export interface SubscriptionAccount {
   temp_unschedulable_until?: string
   today_stats?: WindowStats
   groups: SubscriptionAccountGroup[]
-  usage_windows: SubscriptionAccountUsageWindow[]
-  usage_updated_at?: string
+  usage?: AccountUsageInfo
   rate_multiplier: number
   last_used_at?: string
   created_at: string

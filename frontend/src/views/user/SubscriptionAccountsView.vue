@@ -66,7 +66,7 @@
           </template>
 
           <template #cell-capacity="{ row }">
-            <SubscriptionAccountCapacity :capacity="row.capacity" />
+            <SubscriptionAccountCapacity :account="row" />
           </template>
 
           <template #cell-status="{ row }">
@@ -74,24 +74,15 @@
           </template>
 
           <template #cell-today_stats="{ row }">
-            <AccountTodayStatsCell :stats="row.today_stats ?? null" />
+            <SubscriptionAccountTodayStats :stats="row.today_stats ?? null" />
           </template>
 
           <template #cell-groups="{ row }">
-            <div class="flex max-w-56 flex-wrap gap-1">
-              <span
-                v-for="group in row.groups"
-                :key="group.id"
-                class="inline-flex max-w-40 items-center truncate rounded border border-cyan-600/20 bg-cyan-600/10 px-2 py-1 text-xs font-medium text-cyan-700 dark:text-cyan-300"
-                :title="group.name"
-              >
-                {{ group.name }}
-              </span>
-            </div>
+            <AccountGroupsCell :groups="toReadonlyAccount(row).groups" :max-display="4" />
           </template>
 
           <template #cell-usage_windows="{ row }">
-            <SubscriptionAccountUsageWindows :windows="row.usage_windows" />
+            <SubscriptionAccountUsageWindows :account="row" />
           </template>
 
           <template #cell-rate_multiplier="{ row }">
@@ -146,10 +137,12 @@ import Pagination from '@/components/common/Pagination.vue'
 import Select from '@/components/common/Select.vue'
 import Icon from '@/components/icons/Icon.vue'
 import PlatformTypeBadge from '@/components/common/PlatformTypeBadge.vue'
-import AccountTodayStatsCell from '@/components/account/AccountTodayStatsCell.vue'
+import AccountGroupsCell from '@/components/account/AccountGroupsCell.vue'
 import SubscriptionAccountCapacity from '@/components/subscription-account/SubscriptionAccountCapacity.vue'
 import SubscriptionAccountStatus from '@/components/subscription-account/SubscriptionAccountStatus.vue'
+import SubscriptionAccountTodayStats from '@/components/subscription-account/SubscriptionAccountTodayStats.vue'
 import SubscriptionAccountUsageWindows from '@/components/subscription-account/SubscriptionAccountUsageWindows.vue'
+import { toReadonlyAccount } from '@/components/subscription-account/accountView'
 import subscriptionAccountsAPI, { type SubscriptionAccount } from '@/api/subscriptionAccounts'
 import { useSubscriptionStore } from '@/stores/subscriptions'
 import { useAppStore } from '@/stores/app'

@@ -24,9 +24,10 @@ func TestUserSubscriptionAccountFieldWhitelist(t *testing.T) {
 		Account: account,
 		Groups:  []service.SubscriptionAccountGroup{{ID: 3, Name: "Pro", Platform: service.PlatformOpenAI}},
 		Usage: &service.UsageInfo{
-			FiveHour:      &service.UsageProgress{Utilization: 42},
-			Error:         "secret usage error",
-			ValidationURL: "https://verify.example",
+			FiveHour:        &service.UsageProgress{Utilization: 42},
+			Error:           "secret usage error",
+			ForbiddenReason: "secret forbidden reason",
+			ValidationURL:   "https://verify.example",
 		},
 	}
 
@@ -37,11 +38,13 @@ func TestUserSubscriptionAccountFieldWhitelist(t *testing.T) {
 	jsonText := string(raw)
 	require.Contains(t, jsonText, `"name":"pool-8"`)
 	require.Contains(t, jsonText, `"rate_multiplier":1.25`)
-	require.Contains(t, jsonText, `"key":"five_hour"`)
+	require.Contains(t, jsonText, `"five_hour":{"utilization":42`)
 	require.NotContains(t, jsonText, "secret-token")
 	require.NotContains(t, jsonText, "secret-extra")
 	require.NotContains(t, jsonText, "internal upstream failure")
 	require.NotContains(t, jsonText, "verify.example")
+	require.NotContains(t, jsonText, "secret usage error")
+	require.NotContains(t, jsonText, "secret forbidden reason")
 	require.NotContains(t, jsonText, "proxy_id")
 	require.NotContains(t, jsonText, "credentials")
 	require.NotContains(t, jsonText, "extra")

@@ -1,12 +1,12 @@
 package handler
 
 import (
-	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/xai"
 	"github.com/Wei-Shaw/sub2api/internal/server/middleware"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 	"github.com/gin-gonic/gin"
@@ -44,32 +44,56 @@ type userSubscriptionAccountCapacity struct {
 	QuotaWeeklyLimit   *float64 `json:"quota_weekly_limit,omitempty"`
 }
 
-type userSubscriptionAccountUsageWindow struct {
-	Key         string   `json:"key"`
-	Utilization *float64 `json:"utilization,omitempty"`
-	ResetsAt    string   `json:"resets_at,omitempty"`
-	Used        *int64   `json:"used,omitempty"`
-	Limit       *int64   `json:"limit,omitempty"`
+// userSubscriptionAccountUsage 只保留账号列表用量单元格需要的字段。
+// 错误详情、验证链接和上游能力明细不会下放给普通用户。
+type userSubscriptionAccountUsage struct {
+	Source                 string                                    `json:"source,omitempty"`
+	UpdatedAt              *time.Time                                `json:"updated_at,omitempty"`
+	FiveHour               *service.UsageProgress                    `json:"five_hour"`
+	SevenDay               *service.UsageProgress                    `json:"seven_day,omitempty"`
+	SevenDaySonnet         *service.UsageProgress                    `json:"seven_day_sonnet,omitempty"`
+	SevenDayFable          *service.UsageProgress                    `json:"seven_day_fable,omitempty"`
+	ThirtyDay              *service.UsageProgress                    `json:"thirty_day,omitempty"`
+	GeminiSharedDaily      *service.UsageProgress                    `json:"gemini_shared_daily,omitempty"`
+	GeminiProDaily         *service.UsageProgress                    `json:"gemini_pro_daily,omitempty"`
+	GeminiFlashDaily       *service.UsageProgress                    `json:"gemini_flash_daily,omitempty"`
+	GeminiSharedMinute     *service.UsageProgress                    `json:"gemini_shared_minute,omitempty"`
+	GeminiProMinute        *service.UsageProgress                    `json:"gemini_pro_minute,omitempty"`
+	GeminiFlashMinute      *service.UsageProgress                    `json:"gemini_flash_minute,omitempty"`
+	AntigravityQuota       map[string]*service.AntigravityModelQuota `json:"antigravity_quota,omitempty"`
+	GrokRequestQuota       *xai.QuotaWindow                          `json:"grok_request_quota,omitempty"`
+	GrokTokenQuota         *xai.QuotaWindow                          `json:"grok_token_quota,omitempty"`
+	GrokRetryAfterSeconds  *int                                      `json:"grok_retry_after_seconds,omitempty"`
+	GrokEntitlementStatus  string                                    `json:"grok_entitlement_status,omitempty"`
+	GrokQuotaSnapshotState string                                    `json:"grok_quota_snapshot_state,omitempty"`
+	GrokFreeTokenLimit     int64                                     `json:"grok_free_token_limit,omitempty"`
+	GrokLocalUsage24h      *service.WindowStats                      `json:"grok_local_usage_24h,omitempty"`
+	GrokBilling            *xai.BillingSummary                       `json:"grok_billing,omitempty"`
+	SubscriptionTier       string                                    `json:"subscription_tier,omitempty"`
+	AICredits              []service.AICredit                        `json:"ai_credits,omitempty"`
+	IsForbidden            bool                                      `json:"is_forbidden,omitempty"`
+	ForbiddenType          string                                    `json:"forbidden_type,omitempty"`
+	NeedsReauth            bool                                      `json:"needs_reauth,omitempty"`
+	ErrorCode              string                                    `json:"error_code,omitempty"`
 }
 
 type userSubscriptionAccount struct {
-	ID                     int64                                `json:"id"`
-	Name                   string                               `json:"name"`
-	Platform               string                               `json:"platform"`
-	Type                   string                               `json:"type"`
-	Capacity               userSubscriptionAccountCapacity      `json:"capacity"`
-	Status                 string                               `json:"status"`
-	Schedulable            bool                                 `json:"schedulable"`
-	RateLimitResetAt       *time.Time                           `json:"rate_limit_reset_at,omitempty"`
-	OverloadUntil          *time.Time                           `json:"overload_until,omitempty"`
-	TempUnschedulableUntil *time.Time                           `json:"temp_unschedulable_until,omitempty"`
-	TodayStats             *service.WindowStats                 `json:"today_stats,omitempty"`
-	Groups                 []userSubscriptionAccountGroup       `json:"groups"`
-	UsageWindows           []userSubscriptionAccountUsageWindow `json:"usage_windows"`
-	UsageUpdatedAt         *time.Time                           `json:"usage_updated_at,omitempty"`
-	RateMultiplier         float64                              `json:"rate_multiplier"`
-	LastUsedAt             *time.Time                           `json:"last_used_at,omitempty"`
-	CreatedAt              time.Time                            `json:"created_at"`
+	ID                     int64                           `json:"id"`
+	Name                   string                          `json:"name"`
+	Platform               string                          `json:"platform"`
+	Type                   string                          `json:"type"`
+	Capacity               userSubscriptionAccountCapacity `json:"capacity"`
+	Status                 string                          `json:"status"`
+	Schedulable            bool                            `json:"schedulable"`
+	RateLimitResetAt       *time.Time                      `json:"rate_limit_reset_at,omitempty"`
+	OverloadUntil          *time.Time                      `json:"overload_until,omitempty"`
+	TempUnschedulableUntil *time.Time                      `json:"temp_unschedulable_until,omitempty"`
+	TodayStats             *service.WindowStats            `json:"today_stats,omitempty"`
+	Groups                 []userSubscriptionAccountGroup  `json:"groups"`
+	Usage                  *userSubscriptionAccountUsage   `json:"usage,omitempty"`
+	RateMultiplier         float64                         `json:"rate_multiplier"`
+	LastUsedAt             *time.Time                      `json:"last_used_at,omitempty"`
+	CreatedAt              time.Time                       `json:"created_at"`
 }
 
 // List 返回当前登录用户有效订阅分组内的账号。
@@ -136,8 +160,7 @@ func userSubscriptionAccountFromService(item *service.SubscriptionAccountItem) u
 		TempUnschedulableUntil: account.TempUnschedulableUntil,
 		TodayStats:             item.TodayStats,
 		Groups:                 groups,
-		UsageWindows:           userSubscriptionAccountUsageWindows(item.Usage),
-		UsageUpdatedAt:         usageUpdatedAt(item.Usage),
+		Usage:                  userSubscriptionAccountUsageFromService(item.Usage),
 		RateMultiplier:         account.BillingRateMultiplier(),
 		LastUsedAt:             account.LastUsedAt,
 		CreatedAt:              account.CreatedAt,
@@ -192,86 +215,38 @@ func userSubscriptionAccountCapacityFromService(
 	return capacity
 }
 
-func usageUpdatedAt(usage *service.UsageInfo) *time.Time {
+func userSubscriptionAccountUsageFromService(usage *service.UsageInfo) *userSubscriptionAccountUsage {
 	if usage == nil {
 		return nil
 	}
-	return usage.UpdatedAt
-}
-
-func userSubscriptionAccountUsageWindows(usage *service.UsageInfo) []userSubscriptionAccountUsageWindow {
-	windows := make([]userSubscriptionAccountUsageWindow, 0, 12)
-	if usage == nil {
-		return windows
+	return &userSubscriptionAccountUsage{
+		Source:                 usage.Source,
+		UpdatedAt:              usage.UpdatedAt,
+		FiveHour:               usage.FiveHour,
+		SevenDay:               usage.SevenDay,
+		SevenDaySonnet:         usage.SevenDaySonnet,
+		SevenDayFable:          usage.SevenDayFable,
+		ThirtyDay:              usage.ThirtyDay,
+		GeminiSharedDaily:      usage.GeminiSharedDaily,
+		GeminiProDaily:         usage.GeminiProDaily,
+		GeminiFlashDaily:       usage.GeminiFlashDaily,
+		GeminiSharedMinute:     usage.GeminiSharedMinute,
+		GeminiProMinute:        usage.GeminiProMinute,
+		GeminiFlashMinute:      usage.GeminiFlashMinute,
+		AntigravityQuota:       usage.AntigravityQuota,
+		GrokRequestQuota:       usage.GrokRequestQuota,
+		GrokTokenQuota:         usage.GrokTokenQuota,
+		GrokRetryAfterSeconds:  usage.GrokRetryAfterSeconds,
+		GrokEntitlementStatus:  usage.GrokEntitlementStatus,
+		GrokQuotaSnapshotState: usage.GrokQuotaSnapshotState,
+		GrokFreeTokenLimit:     usage.GrokFreeTokenLimit,
+		GrokLocalUsage24h:      usage.GrokLocalUsage24h,
+		GrokBilling:            usage.GrokBilling,
+		SubscriptionTier:       usage.SubscriptionTier,
+		AICredits:              usage.AICredits,
+		IsForbidden:            usage.IsForbidden,
+		ForbiddenType:          usage.ForbiddenType,
+		NeedsReauth:            usage.NeedsReauth,
+		ErrorCode:              usage.ErrorCode,
 	}
-	appendProgress := func(key string, progress *service.UsageProgress) {
-		if progress == nil {
-			return
-		}
-		utilization := progress.Utilization
-		window := userSubscriptionAccountUsageWindow{Key: key, Utilization: &utilization}
-		if progress.ResetsAt != nil {
-			window.ResetsAt = progress.ResetsAt.Format(time.RFC3339)
-		}
-		if progress.LimitRequests > 0 {
-			used, limit := progress.UsedRequests, progress.LimitRequests
-			window.Used, window.Limit = &used, &limit
-		}
-		windows = append(windows, window)
-	}
-	appendProgress("five_hour", usage.FiveHour)
-	appendProgress("seven_day", usage.SevenDay)
-	appendProgress("seven_day_sonnet", usage.SevenDaySonnet)
-	appendProgress("seven_day_fable", usage.SevenDayFable)
-	appendProgress("thirty_day", usage.ThirtyDay)
-	appendProgress("gemini_shared_daily", usage.GeminiSharedDaily)
-	appendProgress("gemini_pro_daily", usage.GeminiProDaily)
-	appendProgress("gemini_flash_daily", usage.GeminiFlashDaily)
-	appendProgress("gemini_shared_minute", usage.GeminiSharedMinute)
-	appendProgress("gemini_pro_minute", usage.GeminiProMinute)
-	appendProgress("gemini_flash_minute", usage.GeminiFlashMinute)
-
-	quotaKeys := make([]string, 0, len(usage.AntigravityQuota))
-	for key := range usage.AntigravityQuota {
-		quotaKeys = append(quotaKeys, key)
-	}
-	sort.Strings(quotaKeys)
-	for _, key := range quotaKeys {
-		quota := usage.AntigravityQuota[key]
-		if quota == nil {
-			continue
-		}
-		utilization := float64(quota.Utilization)
-		windows = append(windows, userSubscriptionAccountUsageWindow{
-			Key: "antigravity:" + key, Utilization: &utilization, ResetsAt: quota.ResetTime,
-		})
-	}
-	appendGrokQuota := func(key string, limit, remaining, resetUnix *int64, resetAt string) {
-		if limit == nil && remaining == nil && resetUnix == nil && resetAt == "" {
-			return
-		}
-		window := userSubscriptionAccountUsageWindow{Key: key, Limit: limit, ResetsAt: resetAt}
-		if limit != nil && remaining != nil {
-			used := *limit - *remaining
-			if used < 0 {
-				used = 0
-			}
-			window.Used = &used
-			if *limit > 0 {
-				utilization := float64(used) / float64(*limit) * 100
-				window.Utilization = &utilization
-			}
-		}
-		if window.ResetsAt == "" && resetUnix != nil {
-			window.ResetsAt = time.Unix(*resetUnix, 0).Format(time.RFC3339)
-		}
-		windows = append(windows, window)
-	}
-	if quota := usage.GrokRequestQuota; quota != nil {
-		appendGrokQuota("grok_requests", quota.Limit, quota.Remaining, quota.ResetUnix, quota.ResetAt)
-	}
-	if quota := usage.GrokTokenQuota; quota != nil {
-		appendGrokQuota("grok_tokens", quota.Limit, quota.Remaining, quota.ResetUnix, quota.ResetAt)
-	}
-	return windows
 }
