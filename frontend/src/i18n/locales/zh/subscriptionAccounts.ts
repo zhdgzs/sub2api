@@ -1,0 +1,41 @@
+export default {
+  subscriptionAccounts: {
+    title: '订阅账号',
+    searchPlaceholder: '搜索名称、平台或类型',
+    allGroups: '全部订阅分组',
+    empty: '暂无匹配账号',
+    noSubscription: '暂无有效订阅',
+    columns: {
+      name: '名称',
+      platformType: '平台 / 类型',
+      capacity: '容量',
+      status: '状态',
+      todayStats: '今日统计',
+      groups: '分组',
+      usageWindows: '用量窗口',
+      rateMultiplier: '账号倍率',
+      lastUsed: '最近使用',
+      createdAt: '创建时间',
+    },
+    status: {
+      available: '可用',
+      paused: '暂停调度',
+      cooldown: '冷却中',
+      rateLimited: '限流中',
+      overloaded: '过载',
+      error: '异常',
+      disabled: '已停用',
+    },
+    capacity: {
+      concurrency: '并发',
+      windowCost: '窗口',
+      sessions: '会话',
+      daily: '日额',
+      weekly: '周额',
+      total: '总额',
+    },
+    usage: {
+      unknown: '其他',
+    },
+  },
+}

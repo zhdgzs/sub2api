@@ -95,6 +95,13 @@ func RegisterUserRoutes(
 			channels.GET("/available", h.AvailableChannel.List)
 		}
 
+		// 当前用户有效订阅分组下的账号（只读、重查询）。
+		subscriptionAccounts := authenticated.Group("/subscription-accounts")
+		subscriptionAccounts.Use(panelRateLimiter.Heavy())
+		{
+			subscriptionAccounts.GET("", h.SubscriptionAccount.List)
+		}
+
 		// 使用记录（聚合统计属重查询，叠加更严格的按用户限流）
 		usage := authenticated.Group("/usage")
 		usage.Use(panelRateLimiter.Heavy())

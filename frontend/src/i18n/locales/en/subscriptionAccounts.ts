@@ -1,0 +1,41 @@
+export default {
+  subscriptionAccounts: {
+    title: 'Subscription Accounts',
+    searchPlaceholder: 'Search name, platform, or type',
+    allGroups: 'All subscription groups',
+    empty: 'No matching accounts',
+    noSubscription: 'No active subscription',
+    columns: {
+      name: 'Name',
+      platformType: 'Platform / Type',
+      capacity: 'Capacity',
+      status: 'Status',
+      todayStats: 'Today',
+      groups: 'Groups',
+      usageWindows: 'Usage Windows',
+      rateMultiplier: 'Account Rate',
+      lastUsed: 'Last Used',
+      createdAt: 'Created',
+    },
+    status: {
+      available: 'Available',
+      paused: 'Paused',
+      cooldown: 'Cooling down',
+      rateLimited: 'Rate limited',
+      overloaded: 'Overloaded',
+      error: 'Error',
+      disabled: 'Disabled',
+    },
+    capacity: {
+      concurrency: 'Slots',
+      windowCost: 'Window',
+      sessions: 'Sessions',
+      daily: 'Daily',
+      weekly: 'Weekly',
+      total: 'Total',
+    },
+    usage: {
+      unknown: 'Other',
+    },
+  },
+}
