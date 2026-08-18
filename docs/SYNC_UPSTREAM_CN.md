@@ -111,7 +111,7 @@ make build
 $remote-docker
 ```
 
-直接调用该 skill 视为授权其完整发布流程：同步上游、风险预检、切换和更新 `cust`、必要的合并与中文提交、推送 `origin/cust`、触发 GitHub Actions，并启动外部部署 watcher。
+直接调用该 skill 视为授权其完整发布流程：同步上游、风险预检、切换和更新 `cust`、必要的合并与中文提交、推送 `origin/cust`、触发 GitHub Actions。发布流程不启动外部部署 watcher。
 
 远程发布的统一契约：
 
@@ -122,11 +122,11 @@ $remote-docker
 - 发布记录：`docs/DOCKER_RELEASE_HISTORY.md`
 - 镜像：`ghcr.io/<owner>/sub2api:<version>`
 - 滚动镜像：`ghcr.io/<owner>/sub2api:cust`
-- watcher 参数：`BRANCH=cust`、`REMOTE_IMAGE=...:cust`、`LOCAL_IMAGE=sub2api:cust`
+- 不再配置 GitHub Actions 监控或自动更新容器的外部 watcher。
 
 发布 preview 必须只读。仅涉及版本号或工具版本、且不影响代码与功能语义的单一用途版本元数据冲突，允许按白名单自动采用 incoming 分支版本，无需二次确认；`backend/cmd/server/VERSION` 合并后仍由发布步骤写入本次 fork 版本。依赖清单、锁文件、workflow 和通用配置即使包含版本号也不视为纯版本元数据。其他文本冲突或高风险共享修改必须汇总风险并等待用户一次性决策。生成文件必须先解决源定义再重新生成，不能直接选边。i18n 文件必须检查对象键唯一性。
 
-`remote-docker` 不执行任何本地测试或构建；白名单外的合并冲突按用户确认解决并通过结构检查后，直接推送发布提交，由 GitHub Actions 构建镜像。构建结果和后续部署由 watcher 处理，agent 不等待或主动轮询。
+`remote-docker` 不执行任何本地测试或构建；白名单外的合并冲突按用户确认解决并通过结构检查后，直接推送发布提交，由 GitHub Actions 构建镜像。agent 不等待或主动轮询构建结果，也不自动更新生产容器。
 
 远程发布不创建 release tag。本地 `release-docker` 仅在用户明确要求本地正式构建时使用，并可能创建 release tag。
 
@@ -158,5 +158,5 @@ chore(release): 发布 0.1.172-zhdgzs.1
 - [ ] 合并风险预检已通过或已按用户决策处理。
 - [ ] 普通手工发布已完成本地测试与构建；`remote-docker` 已跳过本地测试并准备由 GitHub Actions 构建验证。
 - [ ] VERSION 与发布记录一致。
-- [ ] workflow 的 trigger、checkout、脚本 push、镜像标签和 watcher 参数均为 `cust`。
+- [ ] workflow 的 trigger、checkout、脚本 push 和镜像标签均为 `cust`。
 - [ ] 推送的是 `origin/cust`，没有修改或推送 `custom`。

@@ -46,7 +46,6 @@ Remote builds require:
 .agents/skills/release-docker/scripts/release_docker.py
 .agents/skills/remote-docker/scripts/remote_docker.py
 scripts/update_docker_release_record.py
-/root/sub2api-deploy/watch_remote_docker_deploy.sh
 ```
 
 The workflow builds the root `Dockerfile` from the pushed `cust` branch and pushes:
@@ -83,8 +82,8 @@ ghcr.io/<owner>/sub2api:cust
    python3 ".agents/skills/remote-docker/scripts/remote_docker.py" --repo "$PWD" --yes --version <chosen-version>
    ```
 
-11. Report the release commit, GHCR image tags, workflow URL, deploy watcher PID, and deploy watcher log path.
-12. Treat the task as complete after the workflow is triggered and the deploy watcher script is started. Do not wait for the watcher, poll Actions from the agent, or manually restart production.
+11. Report the release commit, GHCR image tags, and workflow URL.
+12. Treat the task as complete after the workflow is triggered. Do not wait for or poll Actions from the agent, and do not manually restart production.
 
 ## Script Contract
 
@@ -107,15 +106,13 @@ Execution mode:
 - Writes/updates `docs/DOCKER_RELEASE_HISTORY.md`.
 - Commits `chore(release): 发布 <version>` only if release metadata changed.
 - Pushes `origin/cust`.
-- Starts `/root/sub2api-deploy/watch_remote_docker_deploy.sh` in the background after the push, explicitly setting the `cust` branch/image variables and `EXPECTED_HEAD_SHA`.
+- Does not start an external deploy watcher after the push.
 - Does not run local tests, lint, type-check, compilation, frontend/backend builds, or Docker builds.
 - Relies on `.github/workflows/remote-docker.yml` to build and push GHCR images from `cust`.
 - Does not wait for GitHub Actions or the deploy watcher to finish.
 
 ## Restart Policy
 
-Remote Docker only triggers the remote build and starts the existing external deploy watcher. It must not configure deploy hooks, call restart endpoints, or assume any production deployment topology beyond invoking `/root/sub2api-deploy/watch_remote_docker_deploy.sh`.
-
-The deploy watcher is responsible for polling GitHub Actions, pulling `ghcr.io/zhdgzs/sub2api:cust`, tagging `sub2api:cust`, running `docker compose up -d` in `/root/sub2api-deploy`, and sending Feishu notifications. The agent must not keep monitoring the build after this script is launched.
+Remote Docker only triggers the remote build. It must not configure deploy hooks, call restart endpoints, or monitor GitHub Actions after the push.
 
 Manual `workflow_dispatch` is present for reruns, but `cust` branch push is the primary trigger because this fork keeps `main` as an upstream mirror.

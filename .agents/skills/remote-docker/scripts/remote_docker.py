@@ -8,9 +8,7 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
-import os
 import re
-import subprocess
 import sys
 from datetime import date
 from pathlib import Path
@@ -19,8 +17,6 @@ from types import ModuleType
 
 REMOTE_WORKFLOW_RELATIVE = Path(".github/workflows/remote-docker.yml")
 WORKFLOW_NAME = "remote-docker.yml"
-DEPLOY_WATCHER = Path("/root/sub2api-deploy/watch_remote_docker_deploy.sh")
-DEPLOY_WATCHER_LOG = Path("/root/sub2api-deploy/watch_remote_docker_deploy.log")
 
 # A clean Git merge only proves that the changed line ranges do not overlap.  It
 # does not prove that the resulting program is valid (for example, two i18n
@@ -84,10 +80,6 @@ def actions_url(release: ModuleType, repo: Path) -> str | None:
     if not slug:
         return None
     return f"https://github.com/{slug}/actions/workflows/{WORKFLOW_NAME}"
-
-
-def full_head(release: ModuleType, repo: Path) -> str:
-    return release.git(repo, "rev-parse", "HEAD").strip()
 
 
 def record_versions(release: ModuleType, repo: Path, base_version: str) -> list[str]:
@@ -305,8 +297,7 @@ def print_plan(release: ModuleType, state: object, version: str | None) -> None:
     print(f"main_base_version: {state.main_base_version}")
     print(f"candidate_version: {candidate}")
     print(f"chosen_version: {chosen}")
-    print(f"deploy_watcher: {DEPLOY_WATCHER}")
-    print(f"deploy_watcher_log: {DEPLOY_WATCHER_LOG}")
+    print("deploy_watcher: disabled")
     print("remote_docker_tags:")
     print(f"- {image}:{chosen}")
     print(f"- {image}:{release.ROLLING_IMAGE_TAG}")
@@ -326,38 +317,7 @@ def print_plan(release: ModuleType, state: object, version: str | None) -> None:
     print("9. commit release metadata if needed")
     print(f"10. push origin {release.RELEASE_BRANCH}")
     print(f"11. GitHub Actions builds and pushes the Docker image from {release.RELEASE_BRANCH}")
-    print("12. start deploy watcher script in background and do not wait for it")
-
-
-def start_deploy_watcher(release: ModuleType, repo: Path, head_sha: str) -> int:
-    if not DEPLOY_WATCHER.exists():
-        raise SystemExit(f"[ERROR] Deploy watcher script not found: {DEPLOY_WATCHER}")
-    if not os.access(DEPLOY_WATCHER, os.R_OK):
-        raise SystemExit(f"[ERROR] Deploy watcher script is not readable: {DEPLOY_WATCHER}")
-
-    DEPLOY_WATCHER_LOG.parent.mkdir(parents=True, exist_ok=True)
-    env = os.environ.copy()
-    slug = origin_slug(release, repo)
-    if slug:
-        env.setdefault("REPO", slug)
-    env["WORKFLOW"] = WORKFLOW_NAME
-    env["BRANCH"] = release.RELEASE_BRANCH
-    image = image_name(release, repo)
-    env["REMOTE_IMAGE"] = f"{image}:{release.ROLLING_IMAGE_TAG}"
-    env["LOCAL_IMAGE"] = f"sub2api:{release.ROLLING_IMAGE_TAG}"
-    env["EXPECTED_HEAD_SHA"] = head_sha
-
-    with DEPLOY_WATCHER_LOG.open("ab") as output:
-        proc = subprocess.Popen(
-            ["bash", str(DEPLOY_WATCHER)],
-            cwd=repo,
-            env=env,
-            stdin=subprocess.DEVNULL,
-            stdout=output,
-            stderr=subprocess.STDOUT,
-            start_new_session=True,
-        )
-    return proc.pid
+    print("12. do not start a deploy watcher")
 
 
 def run_sync_upstream_for_assessment(release: ModuleType, repo: Path) -> None:
@@ -421,12 +381,10 @@ def execute(release: ModuleType, repo: Path, version: str, allow_version_overrid
     else:
         print(f"[INFO] Release metadata already up to date for {version}; no release commit needed")
 
-    head_sha = full_head(release, repo)
     if remote_branch_exists:
         release.git(repo, "push", "origin", target)
     else:
         release.git(repo, "push", "-u", "origin", target)
-    watcher_pid = start_deploy_watcher(release, repo, head_sha)
 
     commit = release.short(repo, "HEAD")
     image = image_name(release, repo)
@@ -438,8 +396,7 @@ def execute(release: ModuleType, repo: Path, version: str, allow_version_overrid
     print(f"docker: {image}:{version}, {image}:{release.ROLLING_IMAGE_TAG}")
     if url:
         print(f"workflow: {url}")
-    print(f"deploy_watcher_pid: {watcher_pid}")
-    print(f"deploy_watcher_log: {DEPLOY_WATCHER_LOG}")
+    print("deploy_watcher: disabled")
     print(f"note: {note}")
 
 
