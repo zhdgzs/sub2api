@@ -14,7 +14,7 @@
 
 **サブスクリプションクォータ配分のための AI API ゲートウェイプラットフォーム**
 
-[English](README.md) | [中文](README_CN.md) | 日本語
+[English](README_EN.md) | [中文](README.md) | 日本語
 
 </div>
 
