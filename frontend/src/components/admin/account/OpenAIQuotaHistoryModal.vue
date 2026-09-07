@@ -31,7 +31,7 @@
 
       <div v-else class="h-[24rem] min-h-[20rem] w-full overflow-x-auto">
         <div class="h-full min-w-[52rem]">
-          <Bar :data="chartData" :options="chartOptions" />
+          <Bar :data="chartData" :options="chartOptions" :plugins="chartPlugins" />
         </div>
       </div>
     </div>
@@ -77,7 +77,8 @@ import {
   LinearScale,
   Tooltip,
   type ChartData,
-  type ChartOptions
+  type ChartOptions,
+  type Plugin
 } from 'chart.js'
 import { Bar } from 'vue-chartjs'
 import { adminAPI } from '@/api/admin'
@@ -87,7 +88,33 @@ import Icon from '@/components/icons/Icon.vue'
 import type { Account, OpenAIQuotaPeriod } from '@/types'
 import { formatCurrency, formatDateTime } from '@/utils/format'
 
+const GROUPED_BAR_GAP = 4
+const quotaBarGapPlugin: Plugin<'bar'> = {
+  id: 'quotaBarGap',
+  afterDatasetsUpdate(chart) {
+    const metas = chart.getSortedVisibleDatasetMetas().filter((meta) => meta.type === 'bar')
+    if (metas.length !== 2) return
+
+    const [leftMeta, rightMeta] = metas
+    const count = Math.min(leftMeta.data.length, rightMeta.data.length)
+    for (let index = 0; index < count; index++) {
+      const leftBar = leftMeta.data[index] as BarElement
+      const rightBar = rightMeta.data[index] as BarElement
+      const groupCenter = (leftBar.x + rightBar.x) / 2
+      leftBar.x = groupCenter - GROUPED_BAR_GAP / 2 - leftBar.width / 2
+      rightBar.x = groupCenter + GROUPED_BAR_GAP / 2 + rightBar.width / 2
+    }
+  }
+}
+const chartPlugins = [quotaBarGapPlugin]
+
 ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend)
+
+const compactTokenFormatter = new Intl.NumberFormat('en-US', {
+  notation: 'compact',
+  compactDisplay: 'short',
+  maximumFractionDigits: 1
+})
 
 const props = defineProps<{
   show: boolean
@@ -196,7 +223,7 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => ({
           if (!period) return []
           const details = [
             `${t('admin.accounts.quotaHistoryUsedPercent')}: ${period.used_percent.toFixed(1)}%`,
-            `${t('admin.accounts.quotaHistoryTokens')}: ${period.token_count == null ? '-' : period.token_count.toLocaleString()}`,
+            `${t('admin.accounts.quotaHistoryTokens')}: ${period.token_count == null ? '-' : compactTokenFormatter.format(period.token_count)}`,
             `${t('admin.accounts.quotaHistoryRequests')}: ${period.request_count.toLocaleString()}`
           ]
           if (period.predicted_quota_usd == null) {
