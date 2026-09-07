@@ -30,7 +30,7 @@
       </div>
 
       <div v-else class="h-[24rem] min-h-[20rem] w-full overflow-x-auto">
-        <div class="h-full" :style="{ minWidth: chartMinWidth }">
+        <div class="h-full min-w-[52rem]">
           <Bar :data="chartData" :options="chartOptions" />
         </div>
       </div>
@@ -106,7 +106,6 @@ const pagination = reactive({ page: 1, pageSize: 20, total: 0, pages: 1 })
 let requestSequence = 0
 
 const chronologicalPeriods = computed(() => [...periods.value].reverse())
-const chartMinWidth = computed(() => `${Math.max(720, chronologicalPeriods.value.length * 70)}px`)
 
 const periodLabel = (value: string) => {
   const date = new Date(value)
@@ -121,9 +120,8 @@ const periodLabel = (value: string) => {
 const periodAxisLabel = (period: OpenAIQuotaPeriod) => {
   const end = period.ended_at ?? period.reset_at
   return [
-    periodLabel(period.started_at),
-    '-',
-    end ? periodLabel(end) : t('admin.accounts.quotaHistoryCurrent')
+    `${t('admin.accounts.quotaHistoryStartShort')} ${periodLabel(period.started_at)}`,
+    `${t('admin.accounts.quotaHistoryEndShort')} ${end ? periodLabel(end) : t('admin.accounts.quotaHistoryCurrent')}`
   ]
 }
 
@@ -131,24 +129,26 @@ const chartData = computed<ChartData<'bar'>>(() => ({
   labels: chronologicalPeriods.value.map(periodAxisLabel),
   datasets: [
     {
-      label: t('admin.accounts.quotaHistoryUsed'),
-      data: chronologicalPeriods.value.map((period) => period.used_usd),
-      backgroundColor: 'rgba(13, 148, 136, 0.78)',
-      borderColor: 'rgb(13, 148, 136)',
-      borderWidth: 1,
-      borderRadius: 2,
-      barThickness: 10,
-      maxBarThickness: 12
-    },
-    {
       label: t('admin.accounts.quotaHistoryPredicted'),
       data: chronologicalPeriods.value.map((period) => period.predicted_quota_usd ?? null),
-      backgroundColor: 'rgba(245, 158, 11, 0.78)',
-      borderColor: 'rgb(217, 119, 6)',
+      backgroundColor: '#A5B4FC',
+      borderColor: '#818CF8',
       borderWidth: 1,
-      borderRadius: 2,
-      barThickness: 10,
-      maxBarThickness: 12
+      borderRadius: 3,
+      categoryPercentage: 0.7,
+      barPercentage: 0.72,
+      maxBarThickness: 18
+    },
+    {
+      label: t('admin.accounts.quotaHistoryUsed'),
+      data: chronologicalPeriods.value.map((period) => period.used_usd),
+      backgroundColor: '#4F46E5',
+      borderColor: '#4338CA',
+      borderWidth: 1,
+      borderRadius: 3,
+      categoryPercentage: 0.7,
+      barPercentage: 0.72,
+      maxBarThickness: 18
     }
   ]
 }))
@@ -170,7 +170,17 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => ({
     }
   },
   plugins: {
-    legend: { position: 'top' },
+    legend: {
+      position: 'top',
+      align: 'end',
+      labels: {
+        usePointStyle: true,
+        pointStyle: 'rectRounded',
+        boxWidth: 9,
+        boxHeight: 9,
+        padding: 18
+      }
+    },
     tooltip: {
       callbacks: {
         title: (items) => {
@@ -186,12 +196,17 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => ({
         afterBody: (items) => {
           const period = chronologicalPeriods.value[items[0]?.dataIndex ?? -1]
           if (!period) return []
-          return [
-            `${t('admin.accounts.quotaHistoryUsed')}: ${formatCurrency(period.used_usd)}`,
-            `${t('admin.accounts.quotaHistoryPredicted')}: ${period.predicted_quota_usd == null ? t('admin.accounts.quotaHistoryNoPrediction') : formatCurrency(period.predicted_quota_usd)}`,
+          const details = [
+            `${t('admin.accounts.quotaHistoryUsedPercent')}: ${period.used_percent.toFixed(1)}%`,
             `${t('admin.accounts.quotaHistoryTokens')}: ${period.token_count == null ? '-' : period.token_count.toLocaleString()}`,
             `${t('admin.accounts.quotaHistoryRequests')}: ${period.request_count.toLocaleString()}`
           ]
+          if (period.predicted_quota_usd == null) {
+            details.unshift(
+              `${t('admin.accounts.quotaHistoryPredicted')}: ${t('admin.accounts.quotaHistoryNoPrediction')}`
+            )
+          }
+          return details
         }
       }
     }
