@@ -480,6 +480,8 @@ export default {
       quotaHistoryTitle: '{name} - 额度历史',
       quotaHistoryUsed: '使用量',
       quotaHistoryPredicted: '预测量',
+      quotaHistoryTokens: 'Token 量',
+      quotaHistoryRequests: '调用次数',
       quotaHistoryEmpty: '暂无额度周期记录',
       quotaHistoryCurrent: '进行中',
       quotaHistoryNoPrediction: '暂无预测',

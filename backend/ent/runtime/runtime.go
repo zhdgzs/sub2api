@@ -1275,19 +1275,19 @@ func init() {
 	// openaiquotaperiod.DefaultRequestCount holds the default value on creation for the request_count field.
 	openaiquotaperiod.DefaultRequestCount = openaiquotaperiodDescRequestCount.Default.(int64)
 	// openaiquotaperiodDescUsedUsd is the schema descriptor for used_usd field.
-	openaiquotaperiodDescUsedUsd := openaiquotaperiodFields[5].Descriptor()
+	openaiquotaperiodDescUsedUsd := openaiquotaperiodFields[6].Descriptor()
 	// openaiquotaperiod.DefaultUsedUsd holds the default value on creation for the used_usd field.
 	openaiquotaperiod.DefaultUsedUsd = openaiquotaperiodDescUsedUsd.Default.(float64)
 	// openaiquotaperiodDescUsedPercent is the schema descriptor for used_percent field.
-	openaiquotaperiodDescUsedPercent := openaiquotaperiodFields[6].Descriptor()
+	openaiquotaperiodDescUsedPercent := openaiquotaperiodFields[7].Descriptor()
 	// openaiquotaperiod.DefaultUsedPercent holds the default value on creation for the used_percent field.
 	openaiquotaperiod.DefaultUsedPercent = openaiquotaperiodDescUsedPercent.Default.(float64)
 	// openaiquotaperiodDescCreatedAt is the schema descriptor for created_at field.
-	openaiquotaperiodDescCreatedAt := openaiquotaperiodFields[9].Descriptor()
+	openaiquotaperiodDescCreatedAt := openaiquotaperiodFields[10].Descriptor()
 	// openaiquotaperiod.DefaultCreatedAt holds the default value on creation for the created_at field.
 	openaiquotaperiod.DefaultCreatedAt = openaiquotaperiodDescCreatedAt.Default.(func() time.Time)
 	// openaiquotaperiodDescUpdatedAt is the schema descriptor for updated_at field.
-	openaiquotaperiodDescUpdatedAt := openaiquotaperiodFields[10].Descriptor()
+	openaiquotaperiodDescUpdatedAt := openaiquotaperiodFields[11].Descriptor()
 	// openaiquotaperiod.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	openaiquotaperiod.DefaultUpdatedAt = openaiquotaperiodDescUpdatedAt.Default.(func() time.Time)
 	// openaiquotaperiod.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.

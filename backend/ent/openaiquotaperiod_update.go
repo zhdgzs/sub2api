@@ -124,6 +124,33 @@ func (_u *OpenAIQuotaPeriodUpdate) AddRequestCount(v int64) *OpenAIQuotaPeriodUp
 	return _u
 }
 
+// SetTokenCount sets the "token_count" field.
+func (_u *OpenAIQuotaPeriodUpdate) SetTokenCount(v int64) *OpenAIQuotaPeriodUpdate {
+	_u.mutation.ResetTokenCount()
+	_u.mutation.SetTokenCount(v)
+	return _u
+}
+
+// SetNillableTokenCount sets the "token_count" field if the given value is not nil.
+func (_u *OpenAIQuotaPeriodUpdate) SetNillableTokenCount(v *int64) *OpenAIQuotaPeriodUpdate {
+	if v != nil {
+		_u.SetTokenCount(*v)
+	}
+	return _u
+}
+
+// AddTokenCount adds value to the "token_count" field.
+func (_u *OpenAIQuotaPeriodUpdate) AddTokenCount(v int64) *OpenAIQuotaPeriodUpdate {
+	_u.mutation.AddTokenCount(v)
+	return _u
+}
+
+// ClearTokenCount clears the value of the "token_count" field.
+func (_u *OpenAIQuotaPeriodUpdate) ClearTokenCount() *OpenAIQuotaPeriodUpdate {
+	_u.mutation.ClearTokenCount()
+	return _u
+}
+
 // SetUsedUsd sets the "used_usd" field.
 func (_u *OpenAIQuotaPeriodUpdate) SetUsedUsd(v float64) *OpenAIQuotaPeriodUpdate {
 	_u.mutation.ResetUsedUsd()
@@ -290,6 +317,15 @@ func (_u *OpenAIQuotaPeriodUpdate) sqlSave(ctx context.Context) (_node int, err 
 	if value, ok := _u.mutation.AddedRequestCount(); ok {
 		_spec.AddField(openaiquotaperiod.FieldRequestCount, field.TypeInt64, value)
 	}
+	if value, ok := _u.mutation.TokenCount(); ok {
+		_spec.SetField(openaiquotaperiod.FieldTokenCount, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedTokenCount(); ok {
+		_spec.AddField(openaiquotaperiod.FieldTokenCount, field.TypeInt64, value)
+	}
+	if _u.mutation.TokenCountCleared() {
+		_spec.ClearField(openaiquotaperiod.FieldTokenCount, field.TypeInt64)
+	}
 	if value, ok := _u.mutation.UsedUsd(); ok {
 		_spec.SetField(openaiquotaperiod.FieldUsedUsd, field.TypeFloat64, value)
 	}
@@ -430,6 +466,33 @@ func (_u *OpenAIQuotaPeriodUpdateOne) SetNillableRequestCount(v *int64) *OpenAIQ
 // AddRequestCount adds value to the "request_count" field.
 func (_u *OpenAIQuotaPeriodUpdateOne) AddRequestCount(v int64) *OpenAIQuotaPeriodUpdateOne {
 	_u.mutation.AddRequestCount(v)
+	return _u
+}
+
+// SetTokenCount sets the "token_count" field.
+func (_u *OpenAIQuotaPeriodUpdateOne) SetTokenCount(v int64) *OpenAIQuotaPeriodUpdateOne {
+	_u.mutation.ResetTokenCount()
+	_u.mutation.SetTokenCount(v)
+	return _u
+}
+
+// SetNillableTokenCount sets the "token_count" field if the given value is not nil.
+func (_u *OpenAIQuotaPeriodUpdateOne) SetNillableTokenCount(v *int64) *OpenAIQuotaPeriodUpdateOne {
+	if v != nil {
+		_u.SetTokenCount(*v)
+	}
+	return _u
+}
+
+// AddTokenCount adds value to the "token_count" field.
+func (_u *OpenAIQuotaPeriodUpdateOne) AddTokenCount(v int64) *OpenAIQuotaPeriodUpdateOne {
+	_u.mutation.AddTokenCount(v)
+	return _u
+}
+
+// ClearTokenCount clears the value of the "token_count" field.
+func (_u *OpenAIQuotaPeriodUpdateOne) ClearTokenCount() *OpenAIQuotaPeriodUpdateOne {
+	_u.mutation.ClearTokenCount()
 	return _u
 }
 
@@ -628,6 +691,15 @@ func (_u *OpenAIQuotaPeriodUpdateOne) sqlSave(ctx context.Context) (_node *OpenA
 	}
 	if value, ok := _u.mutation.AddedRequestCount(); ok {
 		_spec.AddField(openaiquotaperiod.FieldRequestCount, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.TokenCount(); ok {
+		_spec.SetField(openaiquotaperiod.FieldTokenCount, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedTokenCount(); ok {
+		_spec.AddField(openaiquotaperiod.FieldTokenCount, field.TypeInt64, value)
+	}
+	if _u.mutation.TokenCountCleared() {
+		_spec.ClearField(openaiquotaperiod.FieldTokenCount, field.TypeInt64)
 	}
 	if value, ok := _u.mutation.UsedUsd(); ok {
 		_spec.SetField(openaiquotaperiod.FieldUsedUsd, field.TypeFloat64, value)

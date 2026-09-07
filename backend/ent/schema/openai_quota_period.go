@@ -24,6 +24,7 @@ func (OpenAIQuotaPeriod) Fields() []ent.Field {
 		field.Time("ended_at").Optional().Nillable().SchemaType(map[string]string{dialect.Postgres: "timestamptz"}),
 		field.Time("reset_at").Optional().Nillable().SchemaType(map[string]string{dialect.Postgres: "timestamptz"}),
 		field.Int64("request_count").Default(0),
+		field.Int64("token_count").Optional().Nillable(),
 		field.Float("used_usd").Default(0).SchemaType(map[string]string{dialect.Postgres: "numeric(20,8)"}),
 		field.Float("used_percent").Default(0).SchemaType(map[string]string{dialect.Postgres: "numeric(8,4)"}),
 		field.Float("predicted_quota_usd").Optional().Nillable().SchemaType(map[string]string{dialect.Postgres: "numeric(20,8)"}),

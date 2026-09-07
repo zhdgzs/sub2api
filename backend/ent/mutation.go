@@ -29355,6 +29355,8 @@ type OpenAIQuotaPeriodMutation struct {
 	reset_at               *time.Time
 	request_count          *int64
 	addrequest_count       *int64
+	token_count            *int64
+	addtoken_count         *int64
 	used_usd               *float64
 	addused_usd            *float64
 	used_percent           *float64
@@ -29714,6 +29716,76 @@ func (m *OpenAIQuotaPeriodMutation) ResetRequestCount() {
 	m.addrequest_count = nil
 }
 
+// SetTokenCount sets the "token_count" field.
+func (m *OpenAIQuotaPeriodMutation) SetTokenCount(i int64) {
+	m.token_count = &i
+	m.addtoken_count = nil
+}
+
+// TokenCount returns the value of the "token_count" field in the mutation.
+func (m *OpenAIQuotaPeriodMutation) TokenCount() (r int64, exists bool) {
+	v := m.token_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTokenCount returns the old "token_count" field's value of the OpenAIQuotaPeriod entity.
+// If the OpenAIQuotaPeriod object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OpenAIQuotaPeriodMutation) OldTokenCount(ctx context.Context) (v *int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTokenCount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTokenCount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTokenCount: %w", err)
+	}
+	return oldValue.TokenCount, nil
+}
+
+// AddTokenCount adds i to the "token_count" field.
+func (m *OpenAIQuotaPeriodMutation) AddTokenCount(i int64) {
+	if m.addtoken_count != nil {
+		*m.addtoken_count += i
+	} else {
+		m.addtoken_count = &i
+	}
+}
+
+// AddedTokenCount returns the value that was added to the "token_count" field in this mutation.
+func (m *OpenAIQuotaPeriodMutation) AddedTokenCount() (r int64, exists bool) {
+	v := m.addtoken_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearTokenCount clears the value of the "token_count" field.
+func (m *OpenAIQuotaPeriodMutation) ClearTokenCount() {
+	m.token_count = nil
+	m.addtoken_count = nil
+	m.clearedFields[openaiquotaperiod.FieldTokenCount] = struct{}{}
+}
+
+// TokenCountCleared returns if the "token_count" field was cleared in this mutation.
+func (m *OpenAIQuotaPeriodMutation) TokenCountCleared() bool {
+	_, ok := m.clearedFields[openaiquotaperiod.FieldTokenCount]
+	return ok
+}
+
+// ResetTokenCount resets all changes to the "token_count" field.
+func (m *OpenAIQuotaPeriodMutation) ResetTokenCount() {
+	m.token_count = nil
+	m.addtoken_count = nil
+	delete(m.clearedFields, openaiquotaperiod.FieldTokenCount)
+}
+
 // SetUsedUsd sets the "used_usd" field.
 func (m *OpenAIQuotaPeriodMutation) SetUsedUsd(f float64) {
 	m.used_usd = &f
@@ -30038,7 +30110,7 @@ func (m *OpenAIQuotaPeriodMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *OpenAIQuotaPeriodMutation) Fields() []string {
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 12)
 	if m.account_id != nil {
 		fields = append(fields, openaiquotaperiod.FieldAccountID)
 	}
@@ -30053,6 +30125,9 @@ func (m *OpenAIQuotaPeriodMutation) Fields() []string {
 	}
 	if m.request_count != nil {
 		fields = append(fields, openaiquotaperiod.FieldRequestCount)
+	}
+	if m.token_count != nil {
+		fields = append(fields, openaiquotaperiod.FieldTokenCount)
 	}
 	if m.used_usd != nil {
 		fields = append(fields, openaiquotaperiod.FieldUsedUsd)
@@ -30090,6 +30165,8 @@ func (m *OpenAIQuotaPeriodMutation) Field(name string) (ent.Value, bool) {
 		return m.ResetAt()
 	case openaiquotaperiod.FieldRequestCount:
 		return m.RequestCount()
+	case openaiquotaperiod.FieldTokenCount:
+		return m.TokenCount()
 	case openaiquotaperiod.FieldUsedUsd:
 		return m.UsedUsd()
 	case openaiquotaperiod.FieldUsedPercent:
@@ -30121,6 +30198,8 @@ func (m *OpenAIQuotaPeriodMutation) OldField(ctx context.Context, name string) (
 		return m.OldResetAt(ctx)
 	case openaiquotaperiod.FieldRequestCount:
 		return m.OldRequestCount(ctx)
+	case openaiquotaperiod.FieldTokenCount:
+		return m.OldTokenCount(ctx)
 	case openaiquotaperiod.FieldUsedUsd:
 		return m.OldUsedUsd(ctx)
 	case openaiquotaperiod.FieldUsedPercent:
@@ -30176,6 +30255,13 @@ func (m *OpenAIQuotaPeriodMutation) SetField(name string, value ent.Value) error
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetRequestCount(v)
+		return nil
+	case openaiquotaperiod.FieldTokenCount:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTokenCount(v)
 		return nil
 	case openaiquotaperiod.FieldUsedUsd:
 		v, ok := value.(float64)
@@ -30233,6 +30319,9 @@ func (m *OpenAIQuotaPeriodMutation) AddedFields() []string {
 	if m.addrequest_count != nil {
 		fields = append(fields, openaiquotaperiod.FieldRequestCount)
 	}
+	if m.addtoken_count != nil {
+		fields = append(fields, openaiquotaperiod.FieldTokenCount)
+	}
 	if m.addused_usd != nil {
 		fields = append(fields, openaiquotaperiod.FieldUsedUsd)
 	}
@@ -30254,6 +30343,8 @@ func (m *OpenAIQuotaPeriodMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedAccountID()
 	case openaiquotaperiod.FieldRequestCount:
 		return m.AddedRequestCount()
+	case openaiquotaperiod.FieldTokenCount:
+		return m.AddedTokenCount()
 	case openaiquotaperiod.FieldUsedUsd:
 		return m.AddedUsedUsd()
 	case openaiquotaperiod.FieldUsedPercent:
@@ -30282,6 +30373,13 @@ func (m *OpenAIQuotaPeriodMutation) AddField(name string, value ent.Value) error
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddRequestCount(v)
+		return nil
+	case openaiquotaperiod.FieldTokenCount:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddTokenCount(v)
 		return nil
 	case openaiquotaperiod.FieldUsedUsd:
 		v, ok := value.(float64)
@@ -30318,6 +30416,9 @@ func (m *OpenAIQuotaPeriodMutation) ClearedFields() []string {
 	if m.FieldCleared(openaiquotaperiod.FieldResetAt) {
 		fields = append(fields, openaiquotaperiod.FieldResetAt)
 	}
+	if m.FieldCleared(openaiquotaperiod.FieldTokenCount) {
+		fields = append(fields, openaiquotaperiod.FieldTokenCount)
+	}
 	if m.FieldCleared(openaiquotaperiod.FieldPredictedQuotaUsd) {
 		fields = append(fields, openaiquotaperiod.FieldPredictedQuotaUsd)
 	}
@@ -30340,6 +30441,9 @@ func (m *OpenAIQuotaPeriodMutation) ClearField(name string) error {
 		return nil
 	case openaiquotaperiod.FieldResetAt:
 		m.ClearResetAt()
+		return nil
+	case openaiquotaperiod.FieldTokenCount:
+		m.ClearTokenCount()
 		return nil
 	case openaiquotaperiod.FieldPredictedQuotaUsd:
 		m.ClearPredictedQuotaUsd()
@@ -30366,6 +30470,9 @@ func (m *OpenAIQuotaPeriodMutation) ResetField(name string) error {
 		return nil
 	case openaiquotaperiod.FieldRequestCount:
 		m.ResetRequestCount()
+		return nil
+	case openaiquotaperiod.FieldTokenCount:
+		m.ResetTokenCount()
 		return nil
 	case openaiquotaperiod.FieldUsedUsd:
 		m.ResetUsedUsd()

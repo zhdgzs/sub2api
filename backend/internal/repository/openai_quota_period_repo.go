@@ -93,12 +93,16 @@ func (r *openAIQuotaPeriodRepository) Sync(ctx context.Context, snapshot service
 	}
 
 	var requestCount int64
+	var tokenCount int64
 	var usedUSD float64
 	if err := tx.QueryRowContext(ctx, `
-		SELECT COUNT(*), COALESCE(SUM(COALESCE(account_stats_cost, total_cost) * COALESCE(account_rate_multiplier, 1)), 0)
+		SELECT
+			COUNT(*),
+			COALESCE(SUM(input_tokens::bigint + output_tokens::bigint + cache_creation_tokens::bigint + cache_read_tokens::bigint), 0),
+			COALESCE(SUM(COALESCE(account_stats_cost, total_cost) * COALESCE(account_rate_multiplier, 1)), 0)
 		FROM usage_logs
 		WHERE account_id = $1 AND created_at >= $2
-	`, snapshot.AccountID, state.StartedAt).Scan(&requestCount, &usedUSD); err != nil {
+	`, snapshot.AccountID, state.StartedAt).Scan(&requestCount, &tokenCount, &usedUSD); err != nil {
 		return nil, err
 	}
 
@@ -119,6 +123,7 @@ func (r *openAIQuotaPeriodRepository) Sync(ctx context.Context, snapshot service
 		StartedAt:    state.StartedAt,
 		ResetAt:      snapshot.ResetAt,
 		RequestCount: requestCount,
+		TokenCount:   &tokenCount,
 		UsedUSD:      usedUSD,
 		UsedPercent:  snapshot.UsedPercent,
 		SnapshotAt:   snapshot.ObservedAt,
@@ -134,20 +139,23 @@ func (r *openAIQuotaPeriodRepository) Sync(ctx context.Context, snapshot service
 		}
 		if err := tx.QueryRowContext(ctx, `
 			INSERT INTO openai_quota_periods (
-				account_id, started_at, reset_at, request_count, used_usd,
+				account_id, started_at, reset_at, request_count, token_count, used_usd,
 				used_percent, predicted_quota_usd, snapshot_at, created_at, updated_at
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
 			ON CONFLICT (account_id, started_at) DO UPDATE SET
 				reset_at = EXCLUDED.reset_at,
 				request_count = EXCLUDED.request_count,
+				token_count = EXCLUDED.token_count,
 				used_usd = EXCLUDED.used_usd,
 				used_percent = EXCLUDED.used_percent,
 				predicted_quota_usd = EXCLUDED.predicted_quota_usd,
 				snapshot_at = EXCLUDED.snapshot_at,
 				updated_at = NOW()
 			RETURNING id, ended_at, created_at, updated_at
-		`, period.AccountID, period.StartedAt, period.ResetAt, period.RequestCount, period.UsedUSD,
-			period.UsedPercent, predicted, period.SnapshotAt).Scan(&period.ID, &period.EndedAt, &period.CreatedAt, &period.UpdatedAt); err != nil {
+		`, period.AccountID, period.StartedAt, period.ResetAt, period.RequestCount, tokenCount,
+			period.UsedUSD, period.UsedPercent, predicted, period.SnapshotAt).Scan(
+			&period.ID, &period.EndedAt, &period.CreatedAt, &period.UpdatedAt,
+		); err != nil {
 			return nil, err
 		}
 	}
@@ -189,7 +197,7 @@ func (r *openAIQuotaPeriodRepository) List(ctx context.Context, accountID int64,
 		return nil, nil, err
 	}
 	rows, err := r.db.QueryContext(ctx, `
-		SELECT id, account_id, started_at, ended_at, reset_at, request_count, used_usd,
+		SELECT id, account_id, started_at, ended_at, reset_at, request_count, token_count, used_usd,
 			used_percent, predicted_quota_usd, snapshot_at, created_at, updated_at
 		FROM openai_quota_periods
 		WHERE account_id = $1
@@ -205,7 +213,7 @@ func (r *openAIQuotaPeriodRepository) List(ctx context.Context, accountID int64,
 		var period service.OpenAIQuotaPeriod
 		if err := rows.Scan(
 			&period.ID, &period.AccountID, &period.StartedAt, &period.EndedAt, &period.ResetAt,
-			&period.RequestCount, &period.UsedUSD, &period.UsedPercent, &period.PredictedQuotaUSD,
+			&period.RequestCount, &period.TokenCount, &period.UsedUSD, &period.UsedPercent, &period.PredictedQuotaUSD,
 			&period.SnapshotAt, &period.CreatedAt, &period.UpdatedAt,
 		); err != nil {
 			return nil, nil, err

@@ -79,6 +79,11 @@ func RequestCount(v int64) predicate.OpenAIQuotaPeriod {
 	return predicate.OpenAIQuotaPeriod(sql.FieldEQ(FieldRequestCount, v))
 }
 
+// TokenCount applies equality check predicate on the "token_count" field. It's identical to TokenCountEQ.
+func TokenCount(v int64) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldEQ(FieldTokenCount, v))
+}
+
 // UsedUsd applies equality check predicate on the "used_usd" field. It's identical to UsedUsdEQ.
 func UsedUsd(v float64) predicate.OpenAIQuotaPeriod {
 	return predicate.OpenAIQuotaPeriod(sql.FieldEQ(FieldUsedUsd, v))
@@ -327,6 +332,56 @@ func RequestCountLT(v int64) predicate.OpenAIQuotaPeriod {
 // RequestCountLTE applies the LTE predicate on the "request_count" field.
 func RequestCountLTE(v int64) predicate.OpenAIQuotaPeriod {
 	return predicate.OpenAIQuotaPeriod(sql.FieldLTE(FieldRequestCount, v))
+}
+
+// TokenCountEQ applies the EQ predicate on the "token_count" field.
+func TokenCountEQ(v int64) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldEQ(FieldTokenCount, v))
+}
+
+// TokenCountNEQ applies the NEQ predicate on the "token_count" field.
+func TokenCountNEQ(v int64) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldNEQ(FieldTokenCount, v))
+}
+
+// TokenCountIn applies the In predicate on the "token_count" field.
+func TokenCountIn(vs ...int64) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldIn(FieldTokenCount, vs...))
+}
+
+// TokenCountNotIn applies the NotIn predicate on the "token_count" field.
+func TokenCountNotIn(vs ...int64) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldNotIn(FieldTokenCount, vs...))
+}
+
+// TokenCountGT applies the GT predicate on the "token_count" field.
+func TokenCountGT(v int64) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldGT(FieldTokenCount, v))
+}
+
+// TokenCountGTE applies the GTE predicate on the "token_count" field.
+func TokenCountGTE(v int64) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldGTE(FieldTokenCount, v))
+}
+
+// TokenCountLT applies the LT predicate on the "token_count" field.
+func TokenCountLT(v int64) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldLT(FieldTokenCount, v))
+}
+
+// TokenCountLTE applies the LTE predicate on the "token_count" field.
+func TokenCountLTE(v int64) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldLTE(FieldTokenCount, v))
+}
+
+// TokenCountIsNil applies the IsNil predicate on the "token_count" field.
+func TokenCountIsNil() predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldIsNull(FieldTokenCount))
+}
+
+// TokenCountNotNil applies the NotNil predicate on the "token_count" field.
+func TokenCountNotNil() predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldNotNull(FieldTokenCount))
 }
 
 // UsedUsdEQ applies the EQ predicate on the "used_usd" field.

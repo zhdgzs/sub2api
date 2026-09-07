@@ -1101,6 +1101,7 @@ var (
 		{Name: "ended_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
 		{Name: "reset_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
 		{Name: "request_count", Type: field.TypeInt64, Default: 0},
+		{Name: "token_count", Type: field.TypeInt64, Nullable: true},
 		{Name: "used_usd", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "numeric(20,8)"}},
 		{Name: "used_percent", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "numeric(8,4)"}},
 		{Name: "predicted_quota_usd", Type: field.TypeFloat64, Nullable: true, SchemaType: map[string]string{"postgres": "numeric(20,8)"}},

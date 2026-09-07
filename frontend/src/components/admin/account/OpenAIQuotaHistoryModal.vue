@@ -29,8 +29,10 @@
         <span>{{ t('admin.accounts.quotaHistoryEmpty') }}</span>
       </div>
 
-      <div v-else class="h-[24rem] min-h-[20rem] w-full">
-        <Bar :data="chartData" :options="chartOptions" />
+      <div v-else class="h-[24rem] min-h-[20rem] w-full overflow-x-auto">
+        <div class="h-full" :style="{ minWidth: chartMinWidth }">
+          <Bar :data="chartData" :options="chartOptions" />
+        </div>
       </div>
     </div>
 
@@ -104,6 +106,7 @@ const pagination = reactive({ page: 1, pageSize: 20, total: 0, pages: 1 })
 let requestSequence = 0
 
 const chronologicalPeriods = computed(() => [...periods.value].reverse())
+const chartMinWidth = computed(() => `${Math.max(720, chronologicalPeriods.value.length * 70)}px`)
 
 const periodLabel = (value: string) => {
   const date = new Date(value)
@@ -111,13 +114,21 @@ const periodLabel = (value: string) => {
   return new Intl.DateTimeFormat(undefined, {
     month: '2-digit',
     day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
+    hour: '2-digit'
   }).format(date)
 }
 
+const periodAxisLabel = (period: OpenAIQuotaPeriod) => {
+  const end = period.ended_at ?? period.reset_at
+  return [
+    periodLabel(period.started_at),
+    '-',
+    end ? periodLabel(end) : t('admin.accounts.quotaHistoryCurrent')
+  ]
+}
+
 const chartData = computed<ChartData<'bar'>>(() => ({
-  labels: chronologicalPeriods.value.map((period) => periodLabel(period.started_at)),
+  labels: chronologicalPeriods.value.map(periodAxisLabel),
   datasets: [
     {
       label: t('admin.accounts.quotaHistoryUsed'),
@@ -125,7 +136,9 @@ const chartData = computed<ChartData<'bar'>>(() => ({
       backgroundColor: 'rgba(13, 148, 136, 0.78)',
       borderColor: 'rgb(13, 148, 136)',
       borderWidth: 1,
-      borderRadius: 3
+      borderRadius: 2,
+      barThickness: 10,
+      maxBarThickness: 12
     },
     {
       label: t('admin.accounts.quotaHistoryPredicted'),
@@ -133,7 +146,9 @@ const chartData = computed<ChartData<'bar'>>(() => ({
       backgroundColor: 'rgba(245, 158, 11, 0.78)',
       borderColor: 'rgb(217, 119, 6)',
       borderWidth: 1,
-      borderRadius: 3
+      borderRadius: 2,
+      barThickness: 10,
+      maxBarThickness: 12
     }
   ]
 }))
@@ -143,7 +158,11 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => ({
   maintainAspectRatio: false,
   interaction: { mode: 'index', intersect: false },
   scales: {
-    x: { stacked: false, grid: { display: false } },
+    x: {
+      stacked: false,
+      grid: { display: false },
+      ticks: { autoSkip: false, maxRotation: 0, minRotation: 0, font: { size: 10 } }
+    },
     y: {
       stacked: false,
       beginAtZero: true,
@@ -157,10 +176,11 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => ({
         title: (items) => {
           const period = chronologicalPeriods.value[items[0]?.dataIndex ?? -1]
           if (!period) return ''
-          const end = period.ended_at
-            ? formatDateTime(period.ended_at)
+          const end = period.ended_at ?? period.reset_at
+          const endLabel = end
+            ? formatDateTime(end)
             : t('admin.accounts.quotaHistoryCurrent')
-          return `${formatDateTime(period.started_at)} - ${end}`
+          return `${formatDateTime(period.started_at)} - ${endLabel}`
         },
         label: (item) => `${item.dataset.label}: ${formatCurrency(Number(item.raw))}`,
         afterBody: (items) => {
@@ -168,7 +188,9 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => ({
           if (!period) return []
           return [
             `${t('admin.accounts.quotaHistoryUsed')}: ${formatCurrency(period.used_usd)}`,
-            `${t('admin.accounts.quotaHistoryPredicted')}: ${period.predicted_quota_usd == null ? t('admin.accounts.quotaHistoryNoPrediction') : formatCurrency(period.predicted_quota_usd)}`
+            `${t('admin.accounts.quotaHistoryPredicted')}: ${period.predicted_quota_usd == null ? t('admin.accounts.quotaHistoryNoPrediction') : formatCurrency(period.predicted_quota_usd)}`,
+            `${t('admin.accounts.quotaHistoryTokens')}: ${period.token_count == null ? '-' : period.token_count.toLocaleString()}`,
+            `${t('admin.accounts.quotaHistoryRequests')}: ${period.request_count.toLocaleString()}`
           ]
         }
       }

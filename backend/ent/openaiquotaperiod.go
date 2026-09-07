@@ -27,6 +27,8 @@ type OpenAIQuotaPeriod struct {
 	ResetAt *time.Time `json:"reset_at,omitempty"`
 	// RequestCount holds the value of the "request_count" field.
 	RequestCount int64 `json:"request_count,omitempty"`
+	// TokenCount holds the value of the "token_count" field.
+	TokenCount *int64 `json:"token_count,omitempty"`
 	// UsedUsd holds the value of the "used_usd" field.
 	UsedUsd float64 `json:"used_usd,omitempty"`
 	// UsedPercent holds the value of the "used_percent" field.
@@ -49,7 +51,7 @@ func (*OpenAIQuotaPeriod) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case openaiquotaperiod.FieldUsedUsd, openaiquotaperiod.FieldUsedPercent, openaiquotaperiod.FieldPredictedQuotaUsd:
 			values[i] = new(sql.NullFloat64)
-		case openaiquotaperiod.FieldID, openaiquotaperiod.FieldAccountID, openaiquotaperiod.FieldRequestCount:
+		case openaiquotaperiod.FieldID, openaiquotaperiod.FieldAccountID, openaiquotaperiod.FieldRequestCount, openaiquotaperiod.FieldTokenCount:
 			values[i] = new(sql.NullInt64)
 		case openaiquotaperiod.FieldStartedAt, openaiquotaperiod.FieldEndedAt, openaiquotaperiod.FieldResetAt, openaiquotaperiod.FieldSnapshotAt, openaiquotaperiod.FieldCreatedAt, openaiquotaperiod.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -105,6 +107,13 @@ func (_m *OpenAIQuotaPeriod) assignValues(columns []string, values []any) error 
 				return fmt.Errorf("unexpected type %T for field request_count", values[i])
 			} else if value.Valid {
 				_m.RequestCount = value.Int64
+			}
+		case openaiquotaperiod.FieldTokenCount:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field token_count", values[i])
+			} else if value.Valid {
+				_m.TokenCount = new(int64)
+				*_m.TokenCount = value.Int64
 			}
 		case openaiquotaperiod.FieldUsedUsd:
 			if value, ok := values[i].(*sql.NullFloat64); !ok {
@@ -197,6 +206,11 @@ func (_m *OpenAIQuotaPeriod) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("request_count=")
 	builder.WriteString(fmt.Sprintf("%v", _m.RequestCount))
+	builder.WriteString(", ")
+	if v := _m.TokenCount; v != nil {
+		builder.WriteString("token_count=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("used_usd=")
 	builder.WriteString(fmt.Sprintf("%v", _m.UsedUsd))

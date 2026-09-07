@@ -181,7 +181,7 @@ Sub2API is an AI API gateway platform designed to distribute and manage API quot
 ## Features
 
 - **Multi-Account Management** - Support multiple upstream account types (OAuth, API Key)
-- **OpenAI Weekly Quota Prediction** - Tracks local usage cost by period for Plus, Team, and Pro OAuth accounts. Predictions appear after usage exceeds 5%, with period history available as a bar chart in account management. Updates are throttled to 30 seconds per account after API usage is stored; a drop of more than 2 percentage points starts a new period (Free, 5h, and Spark-specific quotas are excluded)
+- **OpenAI Weekly Quota Prediction** - Tracks local usage cost, tokens, and request counts by period for Plus, Team, and Pro OAuth accounts. Predictions appear after usage exceeds 5%, with start/end times and usage details available in the account-management history chart. Updates are throttled to 30 seconds per account after API usage is stored; a drop of more than 2 percentage points starts a new period (Free, 5h, and Spark-specific quotas are excluded)
 - **API Key Distribution** - Generate and manage API Keys for users
 - **Precise Billing** - Token-level usage tracking and cost calculation
 - **Smart Scheduling** - Intelligent account selection with sticky sessions

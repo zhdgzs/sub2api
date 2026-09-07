@@ -23,6 +23,8 @@ const (
 	FieldResetAt = "reset_at"
 	// FieldRequestCount holds the string denoting the request_count field in the database.
 	FieldRequestCount = "request_count"
+	// FieldTokenCount holds the string denoting the token_count field in the database.
+	FieldTokenCount = "token_count"
 	// FieldUsedUsd holds the string denoting the used_usd field in the database.
 	FieldUsedUsd = "used_usd"
 	// FieldUsedPercent holds the string denoting the used_percent field in the database.
@@ -47,6 +49,7 @@ var Columns = []string{
 	FieldEndedAt,
 	FieldResetAt,
 	FieldRequestCount,
+	FieldTokenCount,
 	FieldUsedUsd,
 	FieldUsedPercent,
 	FieldPredictedQuotaUsd,
@@ -111,6 +114,11 @@ func ByResetAt(opts ...sql.OrderTermOption) OrderOption {
 // ByRequestCount orders the results by the request_count field.
 func ByRequestCount(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldRequestCount, opts...).ToFunc()
+}
+
+// ByTokenCount orders the results by the token_count field.
+func ByTokenCount(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTokenCount, opts...).ToFunc()
 }
 
 // ByUsedUsd orders the results by the used_usd field.

@@ -1412,6 +1412,7 @@ export interface OpenAIQuotaPeriod {
   ended_at?: string | null
   reset_at?: string | null
   request_count: number
+  token_count?: number | null
   used_usd: number
   used_percent: number
   predicted_quota_usd?: number | null

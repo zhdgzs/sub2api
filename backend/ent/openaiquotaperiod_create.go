@@ -76,6 +76,20 @@ func (_c *OpenAIQuotaPeriodCreate) SetNillableRequestCount(v *int64) *OpenAIQuot
 	return _c
 }
 
+// SetTokenCount sets the "token_count" field.
+func (_c *OpenAIQuotaPeriodCreate) SetTokenCount(v int64) *OpenAIQuotaPeriodCreate {
+	_c.mutation.SetTokenCount(v)
+	return _c
+}
+
+// SetNillableTokenCount sets the "token_count" field if the given value is not nil.
+func (_c *OpenAIQuotaPeriodCreate) SetNillableTokenCount(v *int64) *OpenAIQuotaPeriodCreate {
+	if v != nil {
+		_c.SetTokenCount(*v)
+	}
+	return _c
+}
+
 // SetUsedUsd sets the "used_usd" field.
 func (_c *OpenAIQuotaPeriodCreate) SetUsedUsd(v float64) *OpenAIQuotaPeriodCreate {
 	_c.mutation.SetUsedUsd(v)
@@ -282,6 +296,10 @@ func (_c *OpenAIQuotaPeriodCreate) createSpec() (*OpenAIQuotaPeriod, *sqlgraph.C
 		_spec.SetField(openaiquotaperiod.FieldRequestCount, field.TypeInt64, value)
 		_node.RequestCount = value
 	}
+	if value, ok := _c.mutation.TokenCount(); ok {
+		_spec.SetField(openaiquotaperiod.FieldTokenCount, field.TypeInt64, value)
+		_node.TokenCount = &value
+	}
 	if value, ok := _c.mutation.UsedUsd(); ok {
 		_spec.SetField(openaiquotaperiod.FieldUsedUsd, field.TypeFloat64, value)
 		_node.UsedUsd = value
@@ -439,6 +457,30 @@ func (u *OpenAIQuotaPeriodUpsert) UpdateRequestCount() *OpenAIQuotaPeriodUpsert 
 // AddRequestCount adds v to the "request_count" field.
 func (u *OpenAIQuotaPeriodUpsert) AddRequestCount(v int64) *OpenAIQuotaPeriodUpsert {
 	u.Add(openaiquotaperiod.FieldRequestCount, v)
+	return u
+}
+
+// SetTokenCount sets the "token_count" field.
+func (u *OpenAIQuotaPeriodUpsert) SetTokenCount(v int64) *OpenAIQuotaPeriodUpsert {
+	u.Set(openaiquotaperiod.FieldTokenCount, v)
+	return u
+}
+
+// UpdateTokenCount sets the "token_count" field to the value that was provided on create.
+func (u *OpenAIQuotaPeriodUpsert) UpdateTokenCount() *OpenAIQuotaPeriodUpsert {
+	u.SetExcluded(openaiquotaperiod.FieldTokenCount)
+	return u
+}
+
+// AddTokenCount adds v to the "token_count" field.
+func (u *OpenAIQuotaPeriodUpsert) AddTokenCount(v int64) *OpenAIQuotaPeriodUpsert {
+	u.Add(openaiquotaperiod.FieldTokenCount, v)
+	return u
+}
+
+// ClearTokenCount clears the value of the "token_count" field.
+func (u *OpenAIQuotaPeriodUpsert) ClearTokenCount() *OpenAIQuotaPeriodUpsert {
+	u.SetNull(openaiquotaperiod.FieldTokenCount)
 	return u
 }
 
@@ -666,6 +708,34 @@ func (u *OpenAIQuotaPeriodUpsertOne) AddRequestCount(v int64) *OpenAIQuotaPeriod
 func (u *OpenAIQuotaPeriodUpsertOne) UpdateRequestCount() *OpenAIQuotaPeriodUpsertOne {
 	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
 		s.UpdateRequestCount()
+	})
+}
+
+// SetTokenCount sets the "token_count" field.
+func (u *OpenAIQuotaPeriodUpsertOne) SetTokenCount(v int64) *OpenAIQuotaPeriodUpsertOne {
+	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
+		s.SetTokenCount(v)
+	})
+}
+
+// AddTokenCount adds v to the "token_count" field.
+func (u *OpenAIQuotaPeriodUpsertOne) AddTokenCount(v int64) *OpenAIQuotaPeriodUpsertOne {
+	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
+		s.AddTokenCount(v)
+	})
+}
+
+// UpdateTokenCount sets the "token_count" field to the value that was provided on create.
+func (u *OpenAIQuotaPeriodUpsertOne) UpdateTokenCount() *OpenAIQuotaPeriodUpsertOne {
+	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
+		s.UpdateTokenCount()
+	})
+}
+
+// ClearTokenCount clears the value of the "token_count" field.
+func (u *OpenAIQuotaPeriodUpsertOne) ClearTokenCount() *OpenAIQuotaPeriodUpsertOne {
+	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
+		s.ClearTokenCount()
 	})
 }
 
@@ -1073,6 +1143,34 @@ func (u *OpenAIQuotaPeriodUpsertBulk) AddRequestCount(v int64) *OpenAIQuotaPerio
 func (u *OpenAIQuotaPeriodUpsertBulk) UpdateRequestCount() *OpenAIQuotaPeriodUpsertBulk {
 	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
 		s.UpdateRequestCount()
+	})
+}
+
+// SetTokenCount sets the "token_count" field.
+func (u *OpenAIQuotaPeriodUpsertBulk) SetTokenCount(v int64) *OpenAIQuotaPeriodUpsertBulk {
+	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
+		s.SetTokenCount(v)
+	})
+}
+
+// AddTokenCount adds v to the "token_count" field.
+func (u *OpenAIQuotaPeriodUpsertBulk) AddTokenCount(v int64) *OpenAIQuotaPeriodUpsertBulk {
+	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
+		s.AddTokenCount(v)
+	})
+}
+
+// UpdateTokenCount sets the "token_count" field to the value that was provided on create.
+func (u *OpenAIQuotaPeriodUpsertBulk) UpdateTokenCount() *OpenAIQuotaPeriodUpsertBulk {
+	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
+		s.UpdateTokenCount()
+	})
+}
+
+// ClearTokenCount clears the value of the "token_count" field.
+func (u *OpenAIQuotaPeriodUpsertBulk) ClearTokenCount() *OpenAIQuotaPeriodUpsertBulk {
+	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
+		s.ClearTokenCount()
 	})
 }
 

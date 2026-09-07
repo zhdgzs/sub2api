@@ -22,6 +22,7 @@ type OpenAIQuotaPeriod struct {
 	EndedAt           *time.Time `json:"ended_at,omitempty"`
 	ResetAt           *time.Time `json:"reset_at,omitempty"`
 	RequestCount      int64      `json:"request_count"`
+	TokenCount        *int64     `json:"token_count,omitempty"`
 	UsedUSD           float64    `json:"used_usd"`
 	UsedPercent       float64    `json:"used_percent"`
 	PredictedQuotaUSD *float64   `json:"predicted_quota_usd,omitempty"`

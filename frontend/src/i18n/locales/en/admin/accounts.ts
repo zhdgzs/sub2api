@@ -1519,6 +1519,8 @@ export default {
       quotaHistoryTitle: '{name} - Quota history',
       quotaHistoryUsed: 'Used',
       quotaHistoryPredicted: 'Predicted',
+      quotaHistoryTokens: 'Tokens',
+      quotaHistoryRequests: 'Requests',
       quotaHistoryEmpty: 'No quota periods recorded',
       quotaHistoryCurrent: 'In progress',
       quotaHistoryNoPrediction: 'No prediction',
