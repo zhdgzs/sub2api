@@ -131,24 +131,22 @@ const chartData = computed<ChartData<'bar'>>(() => ({
     {
       label: t('admin.accounts.quotaHistoryPredicted'),
       data: chronologicalPeriods.value.map((period) => period.predicted_quota_usd ?? null),
-      backgroundColor: '#A5B4FC',
-      borderColor: '#818CF8',
-      borderWidth: 1,
+      backgroundColor: '#34D399',
+      borderWidth: 0,
       borderRadius: 3,
       categoryPercentage: 0.7,
-      barPercentage: 0.72,
-      maxBarThickness: 18
+      barPercentage: 0.9,
+      maxBarThickness: 30
     },
     {
       label: t('admin.accounts.quotaHistoryUsed'),
       data: chronologicalPeriods.value.map((period) => period.used_usd),
-      backgroundColor: '#4F46E5',
-      borderColor: '#4338CA',
-      borderWidth: 1,
+      backgroundColor: '#F59E0B',
+      borderWidth: 0,
       borderRadius: 3,
       categoryPercentage: 0.7,
-      barPercentage: 0.72,
-      maxBarThickness: 18
+      barPercentage: 0.9,
+      maxBarThickness: 30
     }
   ]
 }))
