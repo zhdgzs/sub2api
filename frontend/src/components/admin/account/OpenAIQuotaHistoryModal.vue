@@ -100,9 +100,11 @@ const quotaBarGapPlugin: Plugin<'bar'> = {
     for (let index = 0; index < count; index++) {
       const leftBar = leftMeta.data[index] as BarElement
       const rightBar = rightMeta.data[index] as BarElement
+      const leftWidth = leftBar.getProps(['width'], true).width
+      const rightWidth = rightBar.getProps(['width'], true).width
       const groupCenter = (leftBar.x + rightBar.x) / 2
-      leftBar.x = groupCenter - GROUPED_BAR_GAP / 2 - leftBar.width / 2
-      rightBar.x = groupCenter + GROUPED_BAR_GAP / 2 + rightBar.width / 2
+      leftBar.x = groupCenter - GROUPED_BAR_GAP / 2 - leftWidth / 2
+      rightBar.x = groupCenter + GROUPED_BAR_GAP / 2 + rightWidth / 2
     }
   }
 }
