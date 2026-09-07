@@ -24,6 +24,7 @@ import (
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/geminicli"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/openai"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/timezone"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/xai"
@@ -47,23 +48,24 @@ func NewOAuthHandler(oauthService *service.OAuthService) *OAuthHandler {
 
 // AccountHandler handles admin account management
 type AccountHandler struct {
-	adminService            service.AdminService
-	oauthService            *service.OAuthService
-	openaiOAuthService      *service.OpenAIOAuthService
-	geminiOAuthService      *service.GeminiOAuthService
-	antigravityOAuthService *service.AntigravityOAuthService
-	grokOAuthService        service.GrokOAuthTokenService
-	rateLimitService        *service.RateLimitService
-	accountUsageService     *service.AccountUsageService
-	accountTestService      *service.AccountTestService
-	concurrencyService      *service.ConcurrencyService
-	crsSyncService          *service.CRSSyncService
-	sessionLimitCache       service.SessionLimitCache
-	rpmCache                service.RPMCache
-	tokenCacheInvalidator   service.TokenCacheInvalidator
-	grokImportProber        grokImportProber
-	upstreamBillingProbe    *service.UpstreamBillingProbeService
-	ollamaCloudUsage        *service.OllamaCloudUsageService
+	adminService             service.AdminService
+	oauthService             *service.OAuthService
+	openaiOAuthService       *service.OpenAIOAuthService
+	geminiOAuthService       *service.GeminiOAuthService
+	antigravityOAuthService  *service.AntigravityOAuthService
+	grokOAuthService         service.GrokOAuthTokenService
+	rateLimitService         *service.RateLimitService
+	accountUsageService      *service.AccountUsageService
+	openAIQuotaPeriodService *service.OpenAIQuotaPeriodService
+	accountTestService       *service.AccountTestService
+	concurrencyService       *service.ConcurrencyService
+	crsSyncService           *service.CRSSyncService
+	sessionLimitCache        service.SessionLimitCache
+	rpmCache                 service.RPMCache
+	tokenCacheInvalidator    service.TokenCacheInvalidator
+	grokImportProber         grokImportProber
+	upstreamBillingProbe     *service.UpstreamBillingProbeService
+	ollamaCloudUsage         *service.OllamaCloudUsageService
 }
 
 // SetUpstreamBillingProbeService attaches the optional remote billing probe service.
@@ -194,9 +196,10 @@ type AccountWithConcurrency struct {
 	SchedulerScore     *AccountSchedulerScore       `json:"scheduler_score,omitempty"`
 	SchedulerScores    []AccountSchedulerGroupScore `json:"scheduler_scores,omitempty"`
 	// 以下字段仅对 Anthropic OAuth/SetupToken 账号有效，且仅在启用相应功能时返回
-	CurrentWindowCost *float64 `json:"current_window_cost,omitempty"` // 当前窗口费用
-	ActiveSessions    *int     `json:"active_sessions,omitempty"`     // 当前活跃会话数
-	CurrentRPM        *int     `json:"current_rpm,omitempty"`         // 当前分钟 RPM 计数
+	CurrentWindowCost            *float64 `json:"current_window_cost,omitempty"` // 当前窗口费用
+	ActiveSessions               *int     `json:"active_sessions,omitempty"`     // 当前活跃会话数
+	CurrentRPM                   *int     `json:"current_rpm,omitempty"`         // 当前分钟 RPM 计数
+	CurrentOpenAIQuotaPrediction *float64 `json:"current_openai_quota_prediction,omitempty"`
 }
 
 type AccountSchedulerScore struct {
@@ -556,6 +559,14 @@ func (h *AccountHandler) List(c *gin.Context) {
 	}
 
 	concurrencyCounts := make(map[int64]int)
+	quotaPredictions := make(map[int64]float64)
+	if h.openAIQuotaPeriodService != nil && len(accountIDs) > 0 {
+		quotaPredictions, err = h.openAIQuotaPeriodService.GetCurrentPredictions(c.Request.Context(), accountIDs)
+		if err != nil {
+			response.ErrorFrom(c, err)
+			return
+		}
+	}
 	var windowCosts map[int64]float64
 	var activeSessions map[int64]int
 	var rpmCounts map[int64]int
@@ -655,6 +666,9 @@ func (h *AccountHandler) List(c *gin.Context) {
 			CurrentConcurrency: concurrencyCounts[acc.ID],
 			SchedulerScore:     schedulerScores[acc.ID],
 			SchedulerScores:    schedulerGroupScores[acc.ID],
+		}
+		if predicted, ok := quotaPredictions[acc.ID]; ok && predicted != 0 {
+			item.CurrentOpenAIQuotaPrediction = &predicted
 		}
 
 		// 添加窗口费用（仅当启用时）
@@ -773,6 +787,43 @@ func (h *AccountHandler) GetByID(c *gin.Context) {
 	}
 
 	response.Success(c, h.buildAccountResponseWithRuntime(c.Request.Context(), account))
+}
+
+// ListOpenAIQuotaPeriods returns persisted long-window quota history.
+// GET /api/v1/admin/accounts/:id/openai-quota-periods
+func (h *AccountHandler) ListOpenAIQuotaPeriods(c *gin.Context) {
+	accountID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || accountID <= 0 {
+		response.BadRequest(c, "Invalid account ID")
+		return
+	}
+	account, err := h.adminService.GetAccount(c.Request.Context(), accountID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	if !service.SupportsOpenAIQuotaPeriods(account) {
+		response.BadRequest(c, "OpenAI quota history is only available for Plus, Team, and Pro OAuth accounts")
+		return
+	}
+	if h.openAIQuotaPeriodService == nil {
+		response.InternalError(c, "OpenAI quota history service is unavailable")
+		return
+	}
+
+	page, pageSize := response.ParsePagination(c)
+	if pageSize > 20 {
+		pageSize = 20
+	}
+	periods, result, err := h.openAIQuotaPeriodService.List(c.Request.Context(), accountID, pagination.PaginationParams{
+		Page:     page,
+		PageSize: pageSize,
+	})
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Paginated(c, periods, result.Total, result.Page, result.PageSize)
 }
 
 // CheckMixedChannel handles checking mixed channel risk for account-group binding.

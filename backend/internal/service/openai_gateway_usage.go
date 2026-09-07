@@ -428,7 +428,7 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 	}
 
 	if s.cfg != nil && s.cfg.RunMode == config.RunModeSimple {
-		writeUsageLogBestEffort(ctx, s.usageLogRepo, usageLog, "service.openai_gateway")
+		s.writeUsageLogAndTriggerQuotaPeriod(ctx, usageLog, "service.openai_gateway")
 		logger.LegacyPrintf("service.openai_gateway", "[SIMPLE MODE] Usage recorded (not billed): user=%d, tokens=%d", usageLog.UserID, usageLog.TotalTokens())
 		s.deferredService.ScheduleLastUsedUpdate(account.ID)
 		return nil
@@ -459,12 +459,21 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 
 	if billingErr != nil {
 		usageLog.ActualCost = 0
-		writeUsageLogBestEffort(ctx, s.usageLogRepo, usageLog, "service.openai_gateway")
+		s.writeUsageLogAndTriggerQuotaPeriod(ctx, usageLog, "service.openai_gateway")
 		return billingErr
 	}
-	writeUsageLogBestEffort(ctx, s.usageLogRepo, usageLog, "service.openai_gateway")
+	s.writeUsageLogAndTriggerQuotaPeriod(ctx, usageLog, "service.openai_gateway")
 
 	return nil
+}
+
+func (s *OpenAIGatewayService) writeUsageLogAndTriggerQuotaPeriod(ctx context.Context, usageLog *UsageLog, logKey string) {
+	if !writeUsageLogBestEffort(ctx, s.usageLogRepo, usageLog, logKey) {
+		return
+	}
+	if s.openAIQuotaPeriodService != nil {
+		s.openAIQuotaPeriodService.TriggerAfterUsage(usageLog.AccountID)
+	}
 }
 
 // hasIdentifiedOpenAIResponsePricing 判断上游自报的响应模型是否可以作为计费基准，

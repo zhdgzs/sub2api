@@ -190,6 +190,14 @@
           @account-updated="handleQuotaResetAccountUpdated"
         />
       </div>
+      <div
+        v-if="(account.current_openai_quota_prediction ?? 0) !== 0"
+        class="mt-1 border-t border-gray-100 pt-1 text-[10px] font-medium text-gray-600 dark:border-dark-700 dark:text-gray-300"
+      >
+        {{ t('admin.accounts.quotaPrediction') }}：{{
+          formatCurrency(account.current_openai_quota_prediction)
+        }}
+      </div>
     </template>
 
     <!-- Antigravity OAuth accounts: fetch usage from API -->
@@ -643,7 +651,7 @@ import { adminAPI } from '@/api/admin'
 import type { Account, AccountUsageInfo, GeminiCredentials, WindowStats } from '@/types'
 import { buildOpenAIUsageRefreshKey } from '@/utils/accountUsageRefresh'
 import { enqueueUsageRequest } from '@/utils/usageLoadQueue'
-import { formatCompactNumber } from '@/utils/format'
+import { formatCompactNumber, formatCurrency } from '@/utils/format'
 import UsageProgressBar from './UsageProgressBar.vue'
 import AccountQuotaInfo from './AccountQuotaInfo.vue'
 import OpenAIQuotaResetCell from './OpenAIQuotaResetCell.vue'

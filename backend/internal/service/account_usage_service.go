@@ -290,19 +290,20 @@ type ClaudeUsageFetcher interface {
 
 // AccountUsageService 账号使用量查询服务
 type AccountUsageService struct {
-	accountRepo             AccountRepository
-	usageLogRepo            UsageLogRepository
-	usageFetcher            ClaudeUsageFetcher
-	geminiQuotaService      *GeminiQuotaService
-	antigravityQuotaFetcher *AntigravityQuotaFetcher
-	grokQuotaFetcher        *GrokQuotaFetcher
-	grokQuotaService        *GrokQuotaService
-	openAIQuotaService      *OpenAIQuotaService
-	cache                   *UsageCache
-	identityCache           IdentityCache
-	tlsFPProfileService     *TLSFingerprintProfileService
-	agentIdentityTaskMu     sync.Mutex
-	agentIdentityWS         agentIdentityWSConnectionInvalidator
+	accountRepo              AccountRepository
+	usageLogRepo             UsageLogRepository
+	usageFetcher             ClaudeUsageFetcher
+	geminiQuotaService       *GeminiQuotaService
+	antigravityQuotaFetcher  *AntigravityQuotaFetcher
+	grokQuotaFetcher         *GrokQuotaFetcher
+	grokQuotaService         *GrokQuotaService
+	openAIQuotaService       *OpenAIQuotaService
+	openAIQuotaPeriodService *OpenAIQuotaPeriodService
+	cache                    *UsageCache
+	identityCache            IdentityCache
+	tlsFPProfileService      *TLSFingerprintProfileService
+	agentIdentityTaskMu      sync.Mutex
+	agentIdentityWS          agentIdentityWSConnectionInvalidator
 }
 
 // NewAccountUsageService 创建AccountUsageService实例
@@ -761,7 +762,20 @@ func (s *AccountUsageService) getOpenAIUsage(ctx context.Context, account *Accou
 		usage.FiveHour.WindowStats = windowStatsFromAccountStats(stats)
 	}
 
-	if stats, err := s.usageLogRepo.GetAccountWindowStats(ctx, account.ID, codexWindowStatsStart(usage.SevenDay, 7*24*time.Hour, now)); err == nil {
+	sevenDayStart := codexWindowStatsStart(usage.SevenDay, 7*24*time.Hour, now)
+	if trackedStart, ok := OpenAIQuotaPeriodStart(account); ok {
+		sevenDayStart = trackedStart
+	}
+	if s.openAIQuotaPeriodService != nil {
+		period, err := s.openAIQuotaPeriodService.SyncAccount(ctx, account)
+		if err != nil {
+			slog.Warn("openai_quota_period_sync_failed", "account_id", account.ID, "error", err)
+		} else if period != nil && !period.StartedAt.IsZero() {
+			sevenDayStart = period.StartedAt
+		}
+	}
+
+	if stats, err := s.usageLogRepo.GetAccountWindowStats(ctx, account.ID, sevenDayStart); err == nil {
 		if usage.SevenDay == nil {
 			usage.SevenDay = &UsageProgress{Utilization: 0}
 		}

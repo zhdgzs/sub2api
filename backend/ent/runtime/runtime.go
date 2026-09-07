@@ -24,6 +24,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/group"
 	"github.com/Wei-Shaw/sub2api/ent/idempotencyrecord"
 	"github.com/Wei-Shaw/sub2api/ent/identityadoptiondecision"
+	"github.com/Wei-Shaw/sub2api/ent/openaiquotaperiod"
 	"github.com/Wei-Shaw/sub2api/ent/paymentauditlog"
 	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
 	"github.com/Wei-Shaw/sub2api/ent/paymentproviderinstance"
@@ -1267,6 +1268,30 @@ func init() {
 	identityadoptiondecisionDescDecidedAt := identityadoptiondecisionFields[4].Descriptor()
 	// identityadoptiondecision.DefaultDecidedAt holds the default value on creation for the decided_at field.
 	identityadoptiondecision.DefaultDecidedAt = identityadoptiondecisionDescDecidedAt.Default.(func() time.Time)
+	openaiquotaperiodFields := schema.OpenAIQuotaPeriod{}.Fields()
+	_ = openaiquotaperiodFields
+	// openaiquotaperiodDescRequestCount is the schema descriptor for request_count field.
+	openaiquotaperiodDescRequestCount := openaiquotaperiodFields[4].Descriptor()
+	// openaiquotaperiod.DefaultRequestCount holds the default value on creation for the request_count field.
+	openaiquotaperiod.DefaultRequestCount = openaiquotaperiodDescRequestCount.Default.(int64)
+	// openaiquotaperiodDescUsedUsd is the schema descriptor for used_usd field.
+	openaiquotaperiodDescUsedUsd := openaiquotaperiodFields[5].Descriptor()
+	// openaiquotaperiod.DefaultUsedUsd holds the default value on creation for the used_usd field.
+	openaiquotaperiod.DefaultUsedUsd = openaiquotaperiodDescUsedUsd.Default.(float64)
+	// openaiquotaperiodDescUsedPercent is the schema descriptor for used_percent field.
+	openaiquotaperiodDescUsedPercent := openaiquotaperiodFields[6].Descriptor()
+	// openaiquotaperiod.DefaultUsedPercent holds the default value on creation for the used_percent field.
+	openaiquotaperiod.DefaultUsedPercent = openaiquotaperiodDescUsedPercent.Default.(float64)
+	// openaiquotaperiodDescCreatedAt is the schema descriptor for created_at field.
+	openaiquotaperiodDescCreatedAt := openaiquotaperiodFields[9].Descriptor()
+	// openaiquotaperiod.DefaultCreatedAt holds the default value on creation for the created_at field.
+	openaiquotaperiod.DefaultCreatedAt = openaiquotaperiodDescCreatedAt.Default.(func() time.Time)
+	// openaiquotaperiodDescUpdatedAt is the schema descriptor for updated_at field.
+	openaiquotaperiodDescUpdatedAt := openaiquotaperiodFields[10].Descriptor()
+	// openaiquotaperiod.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	openaiquotaperiod.DefaultUpdatedAt = openaiquotaperiodDescUpdatedAt.Default.(func() time.Time)
+	// openaiquotaperiod.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	openaiquotaperiod.UpdateDefaultUpdatedAt = openaiquotaperiodDescUpdatedAt.UpdateDefault.(func() time.Time)
 	paymentauditlogFields := schema.PaymentAuditLog{}.Fields()
 	_ = paymentauditlogFields
 	// paymentauditlogDescOrderID is the schema descriptor for order_id field.

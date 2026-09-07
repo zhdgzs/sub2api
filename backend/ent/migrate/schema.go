@@ -1093,6 +1093,34 @@ var (
 			},
 		},
 	}
+	// OpenaiQuotaPeriodsColumns holds the columns for the "openai_quota_periods" table.
+	OpenaiQuotaPeriodsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "account_id", Type: field.TypeInt64},
+		{Name: "started_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "ended_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "reset_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "request_count", Type: field.TypeInt64, Default: 0},
+		{Name: "used_usd", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "numeric(20,8)"}},
+		{Name: "used_percent", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "numeric(8,4)"}},
+		{Name: "predicted_quota_usd", Type: field.TypeFloat64, Nullable: true, SchemaType: map[string]string{"postgres": "numeric(20,8)"}},
+		{Name: "snapshot_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+	}
+	// OpenaiQuotaPeriodsTable holds the schema information for the "openai_quota_periods" table.
+	OpenaiQuotaPeriodsTable = &schema.Table{
+		Name:       "openai_quota_periods",
+		Columns:    OpenaiQuotaPeriodsColumns,
+		PrimaryKey: []*schema.Column{OpenaiQuotaPeriodsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "openaiquotaperiod_account_id_started_at",
+				Unique:  true,
+				Columns: []*schema.Column{OpenaiQuotaPeriodsColumns[1], OpenaiQuotaPeriodsColumns[2]},
+			},
+		},
+	}
 	// PaymentAuditLogsColumns holds the columns for the "payment_audit_logs" table.
 	PaymentAuditLogsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt64, Increment: true},
@@ -2102,6 +2130,7 @@ var (
 		GroupsTable,
 		IdempotencyRecordsTable,
 		IdentityAdoptionDecisionsTable,
+		OpenaiQuotaPeriodsTable,
 		PaymentAuditLogsTable,
 		PaymentOrdersTable,
 		PaymentProviderInstancesTable,
@@ -2198,6 +2227,9 @@ func init() {
 	IdentityAdoptionDecisionsTable.ForeignKeys[1].RefTable = PendingAuthSessionsTable
 	IdentityAdoptionDecisionsTable.Annotation = &entsql.Annotation{
 		Table: "identity_adoption_decisions",
+	}
+	OpenaiQuotaPeriodsTable.Annotation = &entsql.Annotation{
+		Table: "openai_quota_periods",
 	}
 	PaymentAuditLogsTable.Annotation = &entsql.Annotation{
 		Table: "payment_audit_logs",

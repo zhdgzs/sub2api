@@ -10,6 +10,7 @@ import type {
   UpdateAccountRequest,
   PaginatedResponse,
   AccountUsageInfo,
+  OpenAIQuotaPeriod,
   WindowStats,
   ClaudeModel,
   AccountUsageStatsResponse,
@@ -314,6 +315,18 @@ export async function getUsage(id: number, source?: 'passive' | 'active', force?
   const { data } = await apiClient.get<AccountUsageInfo>(`/admin/accounts/${id}/usage`, {
     params: Object.keys(params).length > 0 ? params : undefined
   })
+  return data
+}
+
+export async function getOpenAIQuotaPeriods(
+  id: number,
+  page: number = 1,
+  pageSize: number = 20
+): Promise<PaginatedResponse<OpenAIQuotaPeriod>> {
+  const { data } = await apiClient.get<PaginatedResponse<OpenAIQuotaPeriod>>(
+    `/admin/accounts/${id}/openai-quota-periods`,
+    { params: { page, page_size: pageSize } }
+  )
   return data
 }
 
@@ -1021,6 +1034,7 @@ export const accountsAPI = {
   getStats,
   clearError,
   getUsage,
+  getOpenAIQuotaPeriods,
   getBatchUsage,
   getTodayStats,
   getBatchTodayStats,

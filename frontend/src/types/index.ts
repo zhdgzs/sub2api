@@ -1237,6 +1237,7 @@ export interface Account {
   current_window_cost?: number | null // 当前窗口费用
   active_sessions?: number | null // 当前活跃会话数
   current_rpm?: number | null // 当前分钟 RPM 计数
+  current_openai_quota_prediction?: number | null
 
   // 影子账号关系（spark 维度影子）
   parent_account_id?: number | null
@@ -1402,6 +1403,21 @@ export interface CodexUsageSnapshot {
   codex_7d_window_minutes?: number // 7d window in minutes (should be ~10080)
 
   codex_usage_updated_at?: string // Last update timestamp
+}
+
+export interface OpenAIQuotaPeriod {
+  id: number
+  account_id: number
+  started_at: string
+  ended_at?: string | null
+  reset_at?: string | null
+  request_count: number
+  used_usd: number
+  used_percent: number
+  predicted_quota_usd?: number | null
+  snapshot_at: string
+  created_at: string
+  updated_at: string
 }
 
 export type OpenAICompactMode = 'auto' | 'force_on' | 'force_off'

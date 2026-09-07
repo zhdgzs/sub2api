@@ -31,6 +31,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/group"
 	"github.com/Wei-Shaw/sub2api/ent/idempotencyrecord"
 	"github.com/Wei-Shaw/sub2api/ent/identityadoptiondecision"
+	"github.com/Wei-Shaw/sub2api/ent/openaiquotaperiod"
 	"github.com/Wei-Shaw/sub2api/ent/paymentauditlog"
 	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
 	"github.com/Wei-Shaw/sub2api/ent/paymentproviderinstance"
@@ -83,6 +84,7 @@ const (
 	TypeGroup                         = "Group"
 	TypeIdempotencyRecord             = "IdempotencyRecord"
 	TypeIdentityAdoptionDecision      = "IdentityAdoptionDecision"
+	TypeOpenAIQuotaPeriod             = "OpenAIQuotaPeriod"
 	TypePaymentAuditLog               = "PaymentAuditLog"
 	TypePaymentOrder                  = "PaymentOrder"
 	TypePaymentProviderInstance       = "PaymentProviderInstance"
@@ -29338,6 +29340,1101 @@ func (m *IdentityAdoptionDecisionMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown IdentityAdoptionDecision edge %s", name)
+}
+
+// OpenAIQuotaPeriodMutation represents an operation that mutates the OpenAIQuotaPeriod nodes in the graph.
+type OpenAIQuotaPeriodMutation struct {
+	config
+	op                     Op
+	typ                    string
+	id                     *int64
+	account_id             *int64
+	addaccount_id          *int64
+	started_at             *time.Time
+	ended_at               *time.Time
+	reset_at               *time.Time
+	request_count          *int64
+	addrequest_count       *int64
+	used_usd               *float64
+	addused_usd            *float64
+	used_percent           *float64
+	addused_percent        *float64
+	predicted_quota_usd    *float64
+	addpredicted_quota_usd *float64
+	snapshot_at            *time.Time
+	created_at             *time.Time
+	updated_at             *time.Time
+	clearedFields          map[string]struct{}
+	done                   bool
+	oldValue               func(context.Context) (*OpenAIQuotaPeriod, error)
+	predicates             []predicate.OpenAIQuotaPeriod
+}
+
+var _ ent.Mutation = (*OpenAIQuotaPeriodMutation)(nil)
+
+// openaiquotaperiodOption allows management of the mutation configuration using functional options.
+type openaiquotaperiodOption func(*OpenAIQuotaPeriodMutation)
+
+// newOpenAIQuotaPeriodMutation creates new mutation for the OpenAIQuotaPeriod entity.
+func newOpenAIQuotaPeriodMutation(c config, op Op, opts ...openaiquotaperiodOption) *OpenAIQuotaPeriodMutation {
+	m := &OpenAIQuotaPeriodMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeOpenAIQuotaPeriod,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withOpenAIQuotaPeriodID sets the ID field of the mutation.
+func withOpenAIQuotaPeriodID(id int64) openaiquotaperiodOption {
+	return func(m *OpenAIQuotaPeriodMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *OpenAIQuotaPeriod
+		)
+		m.oldValue = func(ctx context.Context) (*OpenAIQuotaPeriod, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().OpenAIQuotaPeriod.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withOpenAIQuotaPeriod sets the old OpenAIQuotaPeriod of the mutation.
+func withOpenAIQuotaPeriod(node *OpenAIQuotaPeriod) openaiquotaperiodOption {
+	return func(m *OpenAIQuotaPeriodMutation) {
+		m.oldValue = func(context.Context) (*OpenAIQuotaPeriod, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m OpenAIQuotaPeriodMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m OpenAIQuotaPeriodMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *OpenAIQuotaPeriodMutation) ID() (id int64, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *OpenAIQuotaPeriodMutation) IDs(ctx context.Context) ([]int64, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int64{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().OpenAIQuotaPeriod.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetAccountID sets the "account_id" field.
+func (m *OpenAIQuotaPeriodMutation) SetAccountID(i int64) {
+	m.account_id = &i
+	m.addaccount_id = nil
+}
+
+// AccountID returns the value of the "account_id" field in the mutation.
+func (m *OpenAIQuotaPeriodMutation) AccountID() (r int64, exists bool) {
+	v := m.account_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAccountID returns the old "account_id" field's value of the OpenAIQuotaPeriod entity.
+// If the OpenAIQuotaPeriod object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OpenAIQuotaPeriodMutation) OldAccountID(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAccountID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAccountID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAccountID: %w", err)
+	}
+	return oldValue.AccountID, nil
+}
+
+// AddAccountID adds i to the "account_id" field.
+func (m *OpenAIQuotaPeriodMutation) AddAccountID(i int64) {
+	if m.addaccount_id != nil {
+		*m.addaccount_id += i
+	} else {
+		m.addaccount_id = &i
+	}
+}
+
+// AddedAccountID returns the value that was added to the "account_id" field in this mutation.
+func (m *OpenAIQuotaPeriodMutation) AddedAccountID() (r int64, exists bool) {
+	v := m.addaccount_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetAccountID resets all changes to the "account_id" field.
+func (m *OpenAIQuotaPeriodMutation) ResetAccountID() {
+	m.account_id = nil
+	m.addaccount_id = nil
+}
+
+// SetStartedAt sets the "started_at" field.
+func (m *OpenAIQuotaPeriodMutation) SetStartedAt(t time.Time) {
+	m.started_at = &t
+}
+
+// StartedAt returns the value of the "started_at" field in the mutation.
+func (m *OpenAIQuotaPeriodMutation) StartedAt() (r time.Time, exists bool) {
+	v := m.started_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStartedAt returns the old "started_at" field's value of the OpenAIQuotaPeriod entity.
+// If the OpenAIQuotaPeriod object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OpenAIQuotaPeriodMutation) OldStartedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStartedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStartedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStartedAt: %w", err)
+	}
+	return oldValue.StartedAt, nil
+}
+
+// ResetStartedAt resets all changes to the "started_at" field.
+func (m *OpenAIQuotaPeriodMutation) ResetStartedAt() {
+	m.started_at = nil
+}
+
+// SetEndedAt sets the "ended_at" field.
+func (m *OpenAIQuotaPeriodMutation) SetEndedAt(t time.Time) {
+	m.ended_at = &t
+}
+
+// EndedAt returns the value of the "ended_at" field in the mutation.
+func (m *OpenAIQuotaPeriodMutation) EndedAt() (r time.Time, exists bool) {
+	v := m.ended_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEndedAt returns the old "ended_at" field's value of the OpenAIQuotaPeriod entity.
+// If the OpenAIQuotaPeriod object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OpenAIQuotaPeriodMutation) OldEndedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEndedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEndedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEndedAt: %w", err)
+	}
+	return oldValue.EndedAt, nil
+}
+
+// ClearEndedAt clears the value of the "ended_at" field.
+func (m *OpenAIQuotaPeriodMutation) ClearEndedAt() {
+	m.ended_at = nil
+	m.clearedFields[openaiquotaperiod.FieldEndedAt] = struct{}{}
+}
+
+// EndedAtCleared returns if the "ended_at" field was cleared in this mutation.
+func (m *OpenAIQuotaPeriodMutation) EndedAtCleared() bool {
+	_, ok := m.clearedFields[openaiquotaperiod.FieldEndedAt]
+	return ok
+}
+
+// ResetEndedAt resets all changes to the "ended_at" field.
+func (m *OpenAIQuotaPeriodMutation) ResetEndedAt() {
+	m.ended_at = nil
+	delete(m.clearedFields, openaiquotaperiod.FieldEndedAt)
+}
+
+// SetResetAt sets the "reset_at" field.
+func (m *OpenAIQuotaPeriodMutation) SetResetAt(t time.Time) {
+	m.reset_at = &t
+}
+
+// ResetAt returns the value of the "reset_at" field in the mutation.
+func (m *OpenAIQuotaPeriodMutation) ResetAt() (r time.Time, exists bool) {
+	v := m.reset_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldResetAt returns the old "reset_at" field's value of the OpenAIQuotaPeriod entity.
+// If the OpenAIQuotaPeriod object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OpenAIQuotaPeriodMutation) OldResetAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldResetAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldResetAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldResetAt: %w", err)
+	}
+	return oldValue.ResetAt, nil
+}
+
+// ClearResetAt clears the value of the "reset_at" field.
+func (m *OpenAIQuotaPeriodMutation) ClearResetAt() {
+	m.reset_at = nil
+	m.clearedFields[openaiquotaperiod.FieldResetAt] = struct{}{}
+}
+
+// ResetAtCleared returns if the "reset_at" field was cleared in this mutation.
+func (m *OpenAIQuotaPeriodMutation) ResetAtCleared() bool {
+	_, ok := m.clearedFields[openaiquotaperiod.FieldResetAt]
+	return ok
+}
+
+// ResetResetAt resets all changes to the "reset_at" field.
+func (m *OpenAIQuotaPeriodMutation) ResetResetAt() {
+	m.reset_at = nil
+	delete(m.clearedFields, openaiquotaperiod.FieldResetAt)
+}
+
+// SetRequestCount sets the "request_count" field.
+func (m *OpenAIQuotaPeriodMutation) SetRequestCount(i int64) {
+	m.request_count = &i
+	m.addrequest_count = nil
+}
+
+// RequestCount returns the value of the "request_count" field in the mutation.
+func (m *OpenAIQuotaPeriodMutation) RequestCount() (r int64, exists bool) {
+	v := m.request_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRequestCount returns the old "request_count" field's value of the OpenAIQuotaPeriod entity.
+// If the OpenAIQuotaPeriod object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OpenAIQuotaPeriodMutation) OldRequestCount(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRequestCount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRequestCount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRequestCount: %w", err)
+	}
+	return oldValue.RequestCount, nil
+}
+
+// AddRequestCount adds i to the "request_count" field.
+func (m *OpenAIQuotaPeriodMutation) AddRequestCount(i int64) {
+	if m.addrequest_count != nil {
+		*m.addrequest_count += i
+	} else {
+		m.addrequest_count = &i
+	}
+}
+
+// AddedRequestCount returns the value that was added to the "request_count" field in this mutation.
+func (m *OpenAIQuotaPeriodMutation) AddedRequestCount() (r int64, exists bool) {
+	v := m.addrequest_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetRequestCount resets all changes to the "request_count" field.
+func (m *OpenAIQuotaPeriodMutation) ResetRequestCount() {
+	m.request_count = nil
+	m.addrequest_count = nil
+}
+
+// SetUsedUsd sets the "used_usd" field.
+func (m *OpenAIQuotaPeriodMutation) SetUsedUsd(f float64) {
+	m.used_usd = &f
+	m.addused_usd = nil
+}
+
+// UsedUsd returns the value of the "used_usd" field in the mutation.
+func (m *OpenAIQuotaPeriodMutation) UsedUsd() (r float64, exists bool) {
+	v := m.used_usd
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUsedUsd returns the old "used_usd" field's value of the OpenAIQuotaPeriod entity.
+// If the OpenAIQuotaPeriod object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OpenAIQuotaPeriodMutation) OldUsedUsd(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUsedUsd is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUsedUsd requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUsedUsd: %w", err)
+	}
+	return oldValue.UsedUsd, nil
+}
+
+// AddUsedUsd adds f to the "used_usd" field.
+func (m *OpenAIQuotaPeriodMutation) AddUsedUsd(f float64) {
+	if m.addused_usd != nil {
+		*m.addused_usd += f
+	} else {
+		m.addused_usd = &f
+	}
+}
+
+// AddedUsedUsd returns the value that was added to the "used_usd" field in this mutation.
+func (m *OpenAIQuotaPeriodMutation) AddedUsedUsd() (r float64, exists bool) {
+	v := m.addused_usd
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetUsedUsd resets all changes to the "used_usd" field.
+func (m *OpenAIQuotaPeriodMutation) ResetUsedUsd() {
+	m.used_usd = nil
+	m.addused_usd = nil
+}
+
+// SetUsedPercent sets the "used_percent" field.
+func (m *OpenAIQuotaPeriodMutation) SetUsedPercent(f float64) {
+	m.used_percent = &f
+	m.addused_percent = nil
+}
+
+// UsedPercent returns the value of the "used_percent" field in the mutation.
+func (m *OpenAIQuotaPeriodMutation) UsedPercent() (r float64, exists bool) {
+	v := m.used_percent
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUsedPercent returns the old "used_percent" field's value of the OpenAIQuotaPeriod entity.
+// If the OpenAIQuotaPeriod object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OpenAIQuotaPeriodMutation) OldUsedPercent(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUsedPercent is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUsedPercent requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUsedPercent: %w", err)
+	}
+	return oldValue.UsedPercent, nil
+}
+
+// AddUsedPercent adds f to the "used_percent" field.
+func (m *OpenAIQuotaPeriodMutation) AddUsedPercent(f float64) {
+	if m.addused_percent != nil {
+		*m.addused_percent += f
+	} else {
+		m.addused_percent = &f
+	}
+}
+
+// AddedUsedPercent returns the value that was added to the "used_percent" field in this mutation.
+func (m *OpenAIQuotaPeriodMutation) AddedUsedPercent() (r float64, exists bool) {
+	v := m.addused_percent
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetUsedPercent resets all changes to the "used_percent" field.
+func (m *OpenAIQuotaPeriodMutation) ResetUsedPercent() {
+	m.used_percent = nil
+	m.addused_percent = nil
+}
+
+// SetPredictedQuotaUsd sets the "predicted_quota_usd" field.
+func (m *OpenAIQuotaPeriodMutation) SetPredictedQuotaUsd(f float64) {
+	m.predicted_quota_usd = &f
+	m.addpredicted_quota_usd = nil
+}
+
+// PredictedQuotaUsd returns the value of the "predicted_quota_usd" field in the mutation.
+func (m *OpenAIQuotaPeriodMutation) PredictedQuotaUsd() (r float64, exists bool) {
+	v := m.predicted_quota_usd
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPredictedQuotaUsd returns the old "predicted_quota_usd" field's value of the OpenAIQuotaPeriod entity.
+// If the OpenAIQuotaPeriod object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OpenAIQuotaPeriodMutation) OldPredictedQuotaUsd(ctx context.Context) (v *float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPredictedQuotaUsd is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPredictedQuotaUsd requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPredictedQuotaUsd: %w", err)
+	}
+	return oldValue.PredictedQuotaUsd, nil
+}
+
+// AddPredictedQuotaUsd adds f to the "predicted_quota_usd" field.
+func (m *OpenAIQuotaPeriodMutation) AddPredictedQuotaUsd(f float64) {
+	if m.addpredicted_quota_usd != nil {
+		*m.addpredicted_quota_usd += f
+	} else {
+		m.addpredicted_quota_usd = &f
+	}
+}
+
+// AddedPredictedQuotaUsd returns the value that was added to the "predicted_quota_usd" field in this mutation.
+func (m *OpenAIQuotaPeriodMutation) AddedPredictedQuotaUsd() (r float64, exists bool) {
+	v := m.addpredicted_quota_usd
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearPredictedQuotaUsd clears the value of the "predicted_quota_usd" field.
+func (m *OpenAIQuotaPeriodMutation) ClearPredictedQuotaUsd() {
+	m.predicted_quota_usd = nil
+	m.addpredicted_quota_usd = nil
+	m.clearedFields[openaiquotaperiod.FieldPredictedQuotaUsd] = struct{}{}
+}
+
+// PredictedQuotaUsdCleared returns if the "predicted_quota_usd" field was cleared in this mutation.
+func (m *OpenAIQuotaPeriodMutation) PredictedQuotaUsdCleared() bool {
+	_, ok := m.clearedFields[openaiquotaperiod.FieldPredictedQuotaUsd]
+	return ok
+}
+
+// ResetPredictedQuotaUsd resets all changes to the "predicted_quota_usd" field.
+func (m *OpenAIQuotaPeriodMutation) ResetPredictedQuotaUsd() {
+	m.predicted_quota_usd = nil
+	m.addpredicted_quota_usd = nil
+	delete(m.clearedFields, openaiquotaperiod.FieldPredictedQuotaUsd)
+}
+
+// SetSnapshotAt sets the "snapshot_at" field.
+func (m *OpenAIQuotaPeriodMutation) SetSnapshotAt(t time.Time) {
+	m.snapshot_at = &t
+}
+
+// SnapshotAt returns the value of the "snapshot_at" field in the mutation.
+func (m *OpenAIQuotaPeriodMutation) SnapshotAt() (r time.Time, exists bool) {
+	v := m.snapshot_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSnapshotAt returns the old "snapshot_at" field's value of the OpenAIQuotaPeriod entity.
+// If the OpenAIQuotaPeriod object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OpenAIQuotaPeriodMutation) OldSnapshotAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSnapshotAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSnapshotAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSnapshotAt: %w", err)
+	}
+	return oldValue.SnapshotAt, nil
+}
+
+// ResetSnapshotAt resets all changes to the "snapshot_at" field.
+func (m *OpenAIQuotaPeriodMutation) ResetSnapshotAt() {
+	m.snapshot_at = nil
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *OpenAIQuotaPeriodMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *OpenAIQuotaPeriodMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the OpenAIQuotaPeriod entity.
+// If the OpenAIQuotaPeriod object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OpenAIQuotaPeriodMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *OpenAIQuotaPeriodMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *OpenAIQuotaPeriodMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *OpenAIQuotaPeriodMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the OpenAIQuotaPeriod entity.
+// If the OpenAIQuotaPeriod object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OpenAIQuotaPeriodMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *OpenAIQuotaPeriodMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// Where appends a list predicates to the OpenAIQuotaPeriodMutation builder.
+func (m *OpenAIQuotaPeriodMutation) Where(ps ...predicate.OpenAIQuotaPeriod) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the OpenAIQuotaPeriodMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *OpenAIQuotaPeriodMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.OpenAIQuotaPeriod, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *OpenAIQuotaPeriodMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *OpenAIQuotaPeriodMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (OpenAIQuotaPeriod).
+func (m *OpenAIQuotaPeriodMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *OpenAIQuotaPeriodMutation) Fields() []string {
+	fields := make([]string, 0, 11)
+	if m.account_id != nil {
+		fields = append(fields, openaiquotaperiod.FieldAccountID)
+	}
+	if m.started_at != nil {
+		fields = append(fields, openaiquotaperiod.FieldStartedAt)
+	}
+	if m.ended_at != nil {
+		fields = append(fields, openaiquotaperiod.FieldEndedAt)
+	}
+	if m.reset_at != nil {
+		fields = append(fields, openaiquotaperiod.FieldResetAt)
+	}
+	if m.request_count != nil {
+		fields = append(fields, openaiquotaperiod.FieldRequestCount)
+	}
+	if m.used_usd != nil {
+		fields = append(fields, openaiquotaperiod.FieldUsedUsd)
+	}
+	if m.used_percent != nil {
+		fields = append(fields, openaiquotaperiod.FieldUsedPercent)
+	}
+	if m.predicted_quota_usd != nil {
+		fields = append(fields, openaiquotaperiod.FieldPredictedQuotaUsd)
+	}
+	if m.snapshot_at != nil {
+		fields = append(fields, openaiquotaperiod.FieldSnapshotAt)
+	}
+	if m.created_at != nil {
+		fields = append(fields, openaiquotaperiod.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, openaiquotaperiod.FieldUpdatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *OpenAIQuotaPeriodMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case openaiquotaperiod.FieldAccountID:
+		return m.AccountID()
+	case openaiquotaperiod.FieldStartedAt:
+		return m.StartedAt()
+	case openaiquotaperiod.FieldEndedAt:
+		return m.EndedAt()
+	case openaiquotaperiod.FieldResetAt:
+		return m.ResetAt()
+	case openaiquotaperiod.FieldRequestCount:
+		return m.RequestCount()
+	case openaiquotaperiod.FieldUsedUsd:
+		return m.UsedUsd()
+	case openaiquotaperiod.FieldUsedPercent:
+		return m.UsedPercent()
+	case openaiquotaperiod.FieldPredictedQuotaUsd:
+		return m.PredictedQuotaUsd()
+	case openaiquotaperiod.FieldSnapshotAt:
+		return m.SnapshotAt()
+	case openaiquotaperiod.FieldCreatedAt:
+		return m.CreatedAt()
+	case openaiquotaperiod.FieldUpdatedAt:
+		return m.UpdatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *OpenAIQuotaPeriodMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case openaiquotaperiod.FieldAccountID:
+		return m.OldAccountID(ctx)
+	case openaiquotaperiod.FieldStartedAt:
+		return m.OldStartedAt(ctx)
+	case openaiquotaperiod.FieldEndedAt:
+		return m.OldEndedAt(ctx)
+	case openaiquotaperiod.FieldResetAt:
+		return m.OldResetAt(ctx)
+	case openaiquotaperiod.FieldRequestCount:
+		return m.OldRequestCount(ctx)
+	case openaiquotaperiod.FieldUsedUsd:
+		return m.OldUsedUsd(ctx)
+	case openaiquotaperiod.FieldUsedPercent:
+		return m.OldUsedPercent(ctx)
+	case openaiquotaperiod.FieldPredictedQuotaUsd:
+		return m.OldPredictedQuotaUsd(ctx)
+	case openaiquotaperiod.FieldSnapshotAt:
+		return m.OldSnapshotAt(ctx)
+	case openaiquotaperiod.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case openaiquotaperiod.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown OpenAIQuotaPeriod field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *OpenAIQuotaPeriodMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case openaiquotaperiod.FieldAccountID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAccountID(v)
+		return nil
+	case openaiquotaperiod.FieldStartedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStartedAt(v)
+		return nil
+	case openaiquotaperiod.FieldEndedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEndedAt(v)
+		return nil
+	case openaiquotaperiod.FieldResetAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetResetAt(v)
+		return nil
+	case openaiquotaperiod.FieldRequestCount:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRequestCount(v)
+		return nil
+	case openaiquotaperiod.FieldUsedUsd:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUsedUsd(v)
+		return nil
+	case openaiquotaperiod.FieldUsedPercent:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUsedPercent(v)
+		return nil
+	case openaiquotaperiod.FieldPredictedQuotaUsd:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPredictedQuotaUsd(v)
+		return nil
+	case openaiquotaperiod.FieldSnapshotAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSnapshotAt(v)
+		return nil
+	case openaiquotaperiod.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case openaiquotaperiod.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown OpenAIQuotaPeriod field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *OpenAIQuotaPeriodMutation) AddedFields() []string {
+	var fields []string
+	if m.addaccount_id != nil {
+		fields = append(fields, openaiquotaperiod.FieldAccountID)
+	}
+	if m.addrequest_count != nil {
+		fields = append(fields, openaiquotaperiod.FieldRequestCount)
+	}
+	if m.addused_usd != nil {
+		fields = append(fields, openaiquotaperiod.FieldUsedUsd)
+	}
+	if m.addused_percent != nil {
+		fields = append(fields, openaiquotaperiod.FieldUsedPercent)
+	}
+	if m.addpredicted_quota_usd != nil {
+		fields = append(fields, openaiquotaperiod.FieldPredictedQuotaUsd)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *OpenAIQuotaPeriodMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case openaiquotaperiod.FieldAccountID:
+		return m.AddedAccountID()
+	case openaiquotaperiod.FieldRequestCount:
+		return m.AddedRequestCount()
+	case openaiquotaperiod.FieldUsedUsd:
+		return m.AddedUsedUsd()
+	case openaiquotaperiod.FieldUsedPercent:
+		return m.AddedUsedPercent()
+	case openaiquotaperiod.FieldPredictedQuotaUsd:
+		return m.AddedPredictedQuotaUsd()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *OpenAIQuotaPeriodMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case openaiquotaperiod.FieldAccountID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddAccountID(v)
+		return nil
+	case openaiquotaperiod.FieldRequestCount:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRequestCount(v)
+		return nil
+	case openaiquotaperiod.FieldUsedUsd:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddUsedUsd(v)
+		return nil
+	case openaiquotaperiod.FieldUsedPercent:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddUsedPercent(v)
+		return nil
+	case openaiquotaperiod.FieldPredictedQuotaUsd:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddPredictedQuotaUsd(v)
+		return nil
+	}
+	return fmt.Errorf("unknown OpenAIQuotaPeriod numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *OpenAIQuotaPeriodMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(openaiquotaperiod.FieldEndedAt) {
+		fields = append(fields, openaiquotaperiod.FieldEndedAt)
+	}
+	if m.FieldCleared(openaiquotaperiod.FieldResetAt) {
+		fields = append(fields, openaiquotaperiod.FieldResetAt)
+	}
+	if m.FieldCleared(openaiquotaperiod.FieldPredictedQuotaUsd) {
+		fields = append(fields, openaiquotaperiod.FieldPredictedQuotaUsd)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *OpenAIQuotaPeriodMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *OpenAIQuotaPeriodMutation) ClearField(name string) error {
+	switch name {
+	case openaiquotaperiod.FieldEndedAt:
+		m.ClearEndedAt()
+		return nil
+	case openaiquotaperiod.FieldResetAt:
+		m.ClearResetAt()
+		return nil
+	case openaiquotaperiod.FieldPredictedQuotaUsd:
+		m.ClearPredictedQuotaUsd()
+		return nil
+	}
+	return fmt.Errorf("unknown OpenAIQuotaPeriod nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *OpenAIQuotaPeriodMutation) ResetField(name string) error {
+	switch name {
+	case openaiquotaperiod.FieldAccountID:
+		m.ResetAccountID()
+		return nil
+	case openaiquotaperiod.FieldStartedAt:
+		m.ResetStartedAt()
+		return nil
+	case openaiquotaperiod.FieldEndedAt:
+		m.ResetEndedAt()
+		return nil
+	case openaiquotaperiod.FieldResetAt:
+		m.ResetResetAt()
+		return nil
+	case openaiquotaperiod.FieldRequestCount:
+		m.ResetRequestCount()
+		return nil
+	case openaiquotaperiod.FieldUsedUsd:
+		m.ResetUsedUsd()
+		return nil
+	case openaiquotaperiod.FieldUsedPercent:
+		m.ResetUsedPercent()
+		return nil
+	case openaiquotaperiod.FieldPredictedQuotaUsd:
+		m.ResetPredictedQuotaUsd()
+		return nil
+	case openaiquotaperiod.FieldSnapshotAt:
+		m.ResetSnapshotAt()
+		return nil
+	case openaiquotaperiod.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case openaiquotaperiod.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown OpenAIQuotaPeriod field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *OpenAIQuotaPeriodMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *OpenAIQuotaPeriodMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *OpenAIQuotaPeriodMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *OpenAIQuotaPeriodMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *OpenAIQuotaPeriodMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *OpenAIQuotaPeriodMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *OpenAIQuotaPeriodMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown OpenAIQuotaPeriod unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *OpenAIQuotaPeriodMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown OpenAIQuotaPeriod edge %s", name)
 }
 
 // PaymentAuditLogMutation represents an operation that mutates the PaymentAuditLog nodes in the graph.
