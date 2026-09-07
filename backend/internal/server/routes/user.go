@@ -100,6 +100,7 @@ func RegisterUserRoutes(
 		subscriptionAccounts.Use(panelRateLimiter.Heavy())
 		{
 			subscriptionAccounts.GET("", h.SubscriptionAccount.List)
+			subscriptionAccounts.GET("/:id/openai-quota-periods", h.SubscriptionAccount.ListOpenAIQuotaPeriods)
 		}
 
 		// 使用记录（聚合统计属重查询，叠加更严格的按用户限流）

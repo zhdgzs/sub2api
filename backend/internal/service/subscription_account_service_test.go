@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,7 +20,17 @@ func (s *subscriptionAccountUserSubRepoStub) ListActiveByUserID(context.Context,
 type subscriptionAccountRepoStub struct {
 	AccountRepository
 	byGroup map[int64][]Account
+	byID    map[int64]*Account
 	calls   []int64
+}
+
+func (s *subscriptionAccountRepoStub) GetByID(_ context.Context, id int64) (*Account, error) {
+	account, ok := s.byID[id]
+	if !ok {
+		return nil, ErrAccountNotFound
+	}
+	copyAccount := *account
+	return &copyAccount, nil
 }
 
 func (s *subscriptionAccountRepoStub) ListAllWithFilters(
@@ -51,7 +62,7 @@ func TestSubscriptionAccountServiceListFiltersAndDeduplicates(t *testing.T) {
 		40: {{ID: 4, Name: "Inactive", Platform: PlatformOpenAI}},
 	}}
 
-	svc := NewSubscriptionAccountService(subRepo, accountRepo, nil, nil, nil, nil)
+	svc := NewSubscriptionAccountService(subRepo, accountRepo, nil, nil, nil, nil, nil)
 	result, err := svc.List(context.Background(), 7, SubscriptionAccountListOptions{Page: 1, PageSize: 20})
 
 	require.NoError(t, err)
@@ -70,7 +81,7 @@ func TestSubscriptionAccountServiceListRejectsUnsubscribedGroupFilter(t *testing
 	group := &Group{ID: 10, Name: "Pro", Platform: PlatformOpenAI, Status: StatusActive, SubscriptionType: SubscriptionTypeSubscription}
 	subRepo := &subscriptionAccountUserSubRepoStub{subs: []UserSubscription{{GroupID: 10, Group: group}}}
 	accountRepo := &subscriptionAccountRepoStub{byGroup: map[int64][]Account{10: {{ID: 1, Name: "Visible"}}}}
-	svc := NewSubscriptionAccountService(subRepo, accountRepo, nil, nil, nil, nil)
+	svc := NewSubscriptionAccountService(subRepo, accountRepo, nil, nil, nil, nil, nil)
 
 	result, err := svc.List(context.Background(), 7, SubscriptionAccountListOptions{GroupID: 999})
 
@@ -89,7 +100,7 @@ func TestSubscriptionAccountServiceListSearchAndPagination(t *testing.T) {
 			{ID: 3, Name: "Gamma", Platform: PlatformOpenAI, Type: AccountTypeOAuth},
 		},
 	}}
-	svc := NewSubscriptionAccountService(subRepo, accountRepo, nil, nil, nil, nil)
+	svc := NewSubscriptionAccountService(subRepo, accountRepo, nil, nil, nil, nil, nil)
 
 	result, err := svc.List(context.Background(), 7, SubscriptionAccountListOptions{
 		Page: 2, PageSize: 1, Search: "openai",
@@ -99,4 +110,81 @@ func TestSubscriptionAccountServiceListSearchAndPagination(t *testing.T) {
 	require.Equal(t, int64(2), result.Total)
 	require.Len(t, result.Items, 1)
 	require.Equal(t, "Gamma", result.Items[0].Account.Name)
+}
+
+type subscriptionAccountQuotaPeriodRepoStub struct {
+	OpenAIQuotaPeriodRepository
+	predictions     map[int64]float64
+	periods         []OpenAIQuotaPeriod
+	listedAccountID int64
+}
+
+func (s *subscriptionAccountQuotaPeriodRepoStub) GetCurrentPredictions(
+	context.Context,
+	[]int64,
+) (map[int64]float64, error) {
+	return s.predictions, nil
+}
+
+func (s *subscriptionAccountQuotaPeriodRepoStub) List(
+	_ context.Context,
+	accountID int64,
+	params pagination.PaginationParams,
+) ([]OpenAIQuotaPeriod, *pagination.PaginationResult, error) {
+	s.listedAccountID = accountID
+	return s.periods, &pagination.PaginationResult{
+		Total:    int64(len(s.periods)),
+		Page:     params.Page,
+		PageSize: params.PageSize,
+	}, nil
+}
+
+func TestSubscriptionAccountServiceListAddsCurrentOpenAIQuotaPrediction(t *testing.T) {
+	group := &Group{ID: 10, Name: "Pro", Platform: PlatformOpenAI, Status: StatusActive, SubscriptionType: SubscriptionTypeSubscription}
+	subRepo := &subscriptionAccountUserSubRepoStub{subs: []UserSubscription{{GroupID: 10, Group: group}}}
+	accountRepo := &subscriptionAccountRepoStub{byGroup: map[int64][]Account{
+		10: {{ID: 1, Name: "OpenAI Pro", Platform: PlatformOpenAI, Type: AccountTypeOAuth}},
+	}}
+	quotaRepo := &subscriptionAccountQuotaPeriodRepoStub{predictions: map[int64]float64{1: 123.45}}
+	quotaService := &OpenAIQuotaPeriodService{repo: quotaRepo}
+	svc := NewSubscriptionAccountService(subRepo, accountRepo, nil, nil, nil, nil, quotaService)
+
+	result, err := svc.List(context.Background(), 7, SubscriptionAccountListOptions{})
+
+	require.NoError(t, err)
+	require.Len(t, result.Items, 1)
+	require.NotNil(t, result.Items[0].CurrentOpenAIQuotaPrediction)
+	require.Equal(t, 123.45, *result.Items[0].CurrentOpenAIQuotaPrediction)
+}
+
+func TestSubscriptionAccountServiceListOpenAIQuotaPeriodsRequiresSubscriptionAccess(t *testing.T) {
+	group := &Group{ID: 10, Name: "Pro", Platform: PlatformOpenAI, Status: StatusActive, SubscriptionType: SubscriptionTypeSubscription}
+	subRepo := &subscriptionAccountUserSubRepoStub{subs: []UserSubscription{{GroupID: 10, Group: group}}}
+	allowedAccount := &Account{
+		ID: 1, Name: "OpenAI Pro", Platform: PlatformOpenAI, Type: AccountTypeOAuth,
+		Credentials: map[string]any{"plan_type": "pro"}, GroupIDs: []int64{10},
+	}
+	deniedAccount := &Account{
+		ID: 2, Name: "Other Pro", Platform: PlatformOpenAI, Type: AccountTypeOAuth,
+		Credentials: map[string]any{"plan_type": "pro"}, GroupIDs: []int64{20},
+	}
+	accountRepo := &subscriptionAccountRepoStub{byID: map[int64]*Account{
+		1: allowedAccount,
+		2: deniedAccount,
+	}}
+	quotaRepo := &subscriptionAccountQuotaPeriodRepoStub{periods: []OpenAIQuotaPeriod{{ID: 9, AccountID: 1}}}
+	quotaService := &OpenAIQuotaPeriodService{repo: quotaRepo}
+	svc := NewSubscriptionAccountService(subRepo, accountRepo, nil, nil, nil, nil, quotaService)
+
+	periods, _, err := svc.ListOpenAIQuotaPeriods(
+		context.Background(), 7, 1, pagination.PaginationParams{Page: 1, PageSize: 20},
+	)
+	require.NoError(t, err)
+	require.Len(t, periods, 1)
+	require.Equal(t, int64(1), quotaRepo.listedAccountID)
+
+	_, _, err = svc.ListOpenAIQuotaPeriods(
+		context.Background(), 7, 2, pagination.PaginationParams{Page: 1, PageSize: 20},
+	)
+	require.ErrorIs(t, err, ErrAccountNotFound)
 }

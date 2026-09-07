@@ -35,6 +35,7 @@ function makeAccount(): SubscriptionAccount {
       seven_day: null,
       seven_day_sonnet: null,
     },
+    supports_openai_quota_history: false,
     rate_multiplier: 1,
     created_at: '2026-08-15T00:00:00Z',
   }

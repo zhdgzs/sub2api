@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -19,14 +20,15 @@ type SubscriptionAccountGroup struct {
 
 // SubscriptionAccountItem 聚合订阅账号页面所需的账号及全局运行数据。
 type SubscriptionAccountItem struct {
-	Account            *Account
-	Groups             []SubscriptionAccountGroup
-	CurrentConcurrency int
-	CurrentWindowCost  *float64
-	ActiveSessions     *int
-	CurrentRPM         *int
-	TodayStats         *WindowStats
-	Usage              *UsageInfo
+	Account                      *Account
+	Groups                       []SubscriptionAccountGroup
+	CurrentConcurrency           int
+	CurrentWindowCost            *float64
+	ActiveSessions               *int
+	CurrentRPM                   *int
+	TodayStats                   *WindowStats
+	Usage                        *UsageInfo
+	CurrentOpenAIQuotaPrediction *float64
 }
 
 type SubscriptionAccountListOptions struct {
@@ -52,6 +54,7 @@ type SubscriptionAccountService struct {
 	concurrency       *ConcurrencyService
 	sessionLimitCache SessionLimitCache
 	rpmCache          RPMCache
+	openAIQuotaPeriod *OpenAIQuotaPeriodService
 }
 
 func NewSubscriptionAccountService(
@@ -61,6 +64,7 @@ func NewSubscriptionAccountService(
 	concurrency *ConcurrencyService,
 	sessionLimitCache SessionLimitCache,
 	rpmCache RPMCache,
+	openAIQuotaPeriod *OpenAIQuotaPeriodService,
 ) *SubscriptionAccountService {
 	return &SubscriptionAccountService{
 		userSubRepo:       userSubRepo,
@@ -69,6 +73,7 @@ func NewSubscriptionAccountService(
 		concurrency:       concurrency,
 		sessionLimitCache: sessionLimitCache,
 		rpmCache:          rpmCache,
+		openAIQuotaPeriod: openAIQuotaPeriod,
 	}
 }
 
@@ -78,31 +83,10 @@ func (s *SubscriptionAccountService) List(
 	opts SubscriptionAccountListOptions,
 ) (*SubscriptionAccountListResult, error) {
 	page, pageSize := normalizeSubscriptionAccountPagination(opts.Page, opts.PageSize)
-	subs, err := s.userSubRepo.ListActiveByUserID(ctx, userID)
+	groups, allowedGroups, err := s.listAllowedGroups(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
-
-	groups := make([]SubscriptionAccountGroup, 0, len(subs))
-	allowedGroups := make(map[int64]SubscriptionAccountGroup, len(subs))
-	for i := range subs {
-		group := subs[i].Group
-		if group == nil || !group.IsActive() || !group.IsSubscriptionType() {
-			continue
-		}
-		if _, exists := allowedGroups[group.ID]; exists {
-			continue
-		}
-		ref := SubscriptionAccountGroup{ID: group.ID, Name: group.Name, Platform: group.Platform}
-		allowedGroups[group.ID] = ref
-		groups = append(groups, ref)
-	}
-	sort.Slice(groups, func(i, j int) bool {
-		if groups[i].Name == groups[j].Name {
-			return groups[i].ID < groups[j].ID
-		}
-		return strings.ToLower(groups[i].Name) < strings.ToLower(groups[j].Name)
-	})
 
 	if opts.GroupID > 0 {
 		if group, ok := allowedGroups[opts.GroupID]; ok {
@@ -172,6 +156,79 @@ func (s *SubscriptionAccountService) List(
 		Page:   page,
 		Size:   pageSize,
 	}, nil
+}
+
+func (s *SubscriptionAccountService) listAllowedGroups(
+	ctx context.Context,
+	userID int64,
+) ([]SubscriptionAccountGroup, map[int64]SubscriptionAccountGroup, error) {
+	subs, err := s.userSubRepo.ListActiveByUserID(ctx, userID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	groups := make([]SubscriptionAccountGroup, 0, len(subs))
+	allowedGroups := make(map[int64]SubscriptionAccountGroup, len(subs))
+	for i := range subs {
+		group := subs[i].Group
+		if group == nil || !group.IsActive() || !group.IsSubscriptionType() {
+			continue
+		}
+		if _, exists := allowedGroups[group.ID]; exists {
+			continue
+		}
+		ref := SubscriptionAccountGroup{ID: group.ID, Name: group.Name, Platform: group.Platform}
+		allowedGroups[group.ID] = ref
+		groups = append(groups, ref)
+	}
+	sort.Slice(groups, func(i, j int) bool {
+		if groups[i].Name == groups[j].Name {
+			return groups[i].ID < groups[j].ID
+		}
+		return strings.ToLower(groups[i].Name) < strings.ToLower(groups[j].Name)
+	})
+	return groups, allowedGroups, nil
+}
+
+// ListOpenAIQuotaPeriods 仅返回当前用户有效订阅分组内账号的额度历史。
+func (s *SubscriptionAccountService) ListOpenAIQuotaPeriods(
+	ctx context.Context,
+	userID int64,
+	accountID int64,
+	params pagination.PaginationParams,
+) ([]OpenAIQuotaPeriod, *pagination.PaginationResult, error) {
+	_, allowedGroups, err := s.listAllowedGroups(ctx, userID)
+	if err != nil {
+		return nil, nil, err
+	}
+	account, err := s.accountRepo.GetByID(ctx, accountID)
+	if err != nil {
+		return nil, nil, err
+	}
+	if !subscriptionAccountInAllowedGroup(account, allowedGroups) || !SupportsOpenAIQuotaPeriods(account) {
+		return nil, nil, ErrAccountNotFound
+	}
+	return s.openAIQuotaPeriod.List(ctx, accountID, params)
+}
+
+func subscriptionAccountInAllowedGroup(
+	account *Account,
+	allowedGroups map[int64]SubscriptionAccountGroup,
+) bool {
+	if account == nil {
+		return false
+	}
+	for _, groupID := range account.GroupIDs {
+		if _, ok := allowedGroups[groupID]; ok {
+			return true
+		}
+	}
+	for _, accountGroup := range account.AccountGroups {
+		if _, ok := allowedGroups[accountGroup.GroupID]; ok {
+			return true
+		}
+	}
+	return false
 }
 
 func normalizeSubscriptionAccountPagination(page, pageSize int) (int, int) {
@@ -246,6 +303,16 @@ func (s *SubscriptionAccountService) enrichRuntime(ctx context.Context, items []
 			for id, value := range usage {
 				if index, ok := indexByID[id]; ok {
 					items[index].Usage = value
+				}
+			}
+		}
+	}
+	if s.openAIQuotaPeriod != nil {
+		if predictions, err := s.openAIQuotaPeriod.GetCurrentPredictions(ctx, accountIDs); err == nil {
+			for id, prediction := range predictions {
+				if index, ok := indexByID[id]; ok {
+					value := prediction
+					items[index].CurrentOpenAIQuotaPrediction = &value
 				}
 			}
 		}

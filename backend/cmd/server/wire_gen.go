@@ -178,7 +178,7 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	openAIQuotaService := service.ProvideOpenAIQuotaService(accountRepository, proxyRepository, openAITokenProvider, privacyClientFactory, openAIGatewayService)
 	usageCache := service.NewUsageCache()
 	accountUsageService := service.ProvideAccountUsageService(accountRepository, usageLogRepository, claudeUsageFetcher, geminiQuotaService, antigravityQuotaFetcher, grokQuotaFetcher, grokQuotaService, openAIQuotaService, usageCache, identityCache, tlsFingerprintProfileService, openAIGatewayService, openAIQuotaPeriodService)
-	subscriptionAccountService := service.NewSubscriptionAccountService(userSubscriptionRepository, accountRepository, accountUsageService, concurrencyService, sessionLimitCache, rpmCache)
+	subscriptionAccountService := service.NewSubscriptionAccountService(userSubscriptionRepository, accountRepository, accountUsageService, concurrencyService, sessionLimitCache, rpmCache, openAIQuotaPeriodService)
 	subscriptionAccountHandler := handler.NewSubscriptionAccountHandler(subscriptionAccountService)
 	announcementRepository := repository.NewAnnouncementRepository(client)
 	announcementReadRepository := repository.NewAnnouncementReadRepository(client)

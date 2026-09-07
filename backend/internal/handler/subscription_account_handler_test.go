@@ -12,17 +12,19 @@ import (
 func TestUserSubscriptionAccountFieldWhitelist(t *testing.T) {
 	now := time.Now().UTC()
 	rate := 1.25
+	prediction := 120.5
 	account := &service.Account{
 		ID: 8, Name: "pool-8", Platform: service.PlatformOpenAI, Type: service.AccountTypeOAuth,
-		Credentials: map[string]any{"access_token": "secret-token"},
+		Credentials: map[string]any{"access_token": "secret-token", "plan_type": "pro"},
 		Extra:       map[string]any{"validation_url": "https://internal.example", "private": "secret-extra"},
 		ProxyID:     int64Pointer(99), ErrorMessage: "internal upstream failure",
 		Concurrency: 5, RateMultiplier: &rate, Status: service.StatusActive, Schedulable: true,
 		LastUsedAt: &now, CreatedAt: now,
 	}
 	item := &service.SubscriptionAccountItem{
-		Account: account,
-		Groups:  []service.SubscriptionAccountGroup{{ID: 3, Name: "Pro", Platform: service.PlatformOpenAI}},
+		Account:                      account,
+		Groups:                       []service.SubscriptionAccountGroup{{ID: 3, Name: "Pro", Platform: service.PlatformOpenAI}},
+		CurrentOpenAIQuotaPrediction: &prediction,
 		Usage: &service.UsageInfo{
 			FiveHour:        &service.UsageProgress{Utilization: 42},
 			Error:           "secret usage error",
@@ -39,6 +41,8 @@ func TestUserSubscriptionAccountFieldWhitelist(t *testing.T) {
 	require.Contains(t, jsonText, `"name":"pool-8"`)
 	require.Contains(t, jsonText, `"rate_multiplier":1.25`)
 	require.Contains(t, jsonText, `"five_hour":{"utilization":42`)
+	require.Contains(t, jsonText, `"current_openai_quota_prediction":120.5`)
+	require.Contains(t, jsonText, `"supports_openai_quota_history":true`)
 	require.NotContains(t, jsonText, "secret-token")
 	require.NotContains(t, jsonText, "secret-extra")
 	require.NotContains(t, jsonText, "internal upstream failure")

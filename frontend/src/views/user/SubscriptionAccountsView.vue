@@ -103,6 +103,19 @@
             </span>
           </template>
 
+          <template #cell-actions="{ row }">
+            <button
+              v-if="row.supports_openai_quota_history"
+              type="button"
+              class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-amber-50 hover:text-amber-700 dark:hover:bg-amber-900/20 dark:hover:text-amber-300"
+              :title="t('admin.accounts.quotaHistory')"
+              @click="openQuotaHistory(row)"
+            >
+              <Icon name="chartBar" size="sm" />
+              <span class="text-xs">{{ t('admin.accounts.quotaHistory') }}</span>
+            </button>
+          </template>
+
           <template #empty>
             <div class="flex flex-col items-center py-4">
               <Icon name="server" size="xl" class="mb-3 h-12 w-12 text-gray-300 dark:text-dark-500" />
@@ -124,6 +137,12 @@
         />
       </template>
     </TablePageLayout>
+    <OpenAIQuotaHistoryModal
+      :show="showQuotaHistory"
+      :account="quotaHistoryAccount"
+      :fetch-periods="subscriptionAccountsAPI.getOpenAIQuotaPeriods"
+      @close="closeQuotaHistory"
+    />
   </AppLayout>
 </template>
 
@@ -142,6 +161,7 @@ import SubscriptionAccountCapacity from '@/components/subscription-account/Subsc
 import SubscriptionAccountStatus from '@/components/subscription-account/SubscriptionAccountStatus.vue'
 import SubscriptionAccountTodayStats from '@/components/subscription-account/SubscriptionAccountTodayStats.vue'
 import SubscriptionAccountUsageWindows from '@/components/subscription-account/SubscriptionAccountUsageWindows.vue'
+import OpenAIQuotaHistoryModal from '@/components/admin/account/OpenAIQuotaHistoryModal.vue'
 import { toReadonlyAccount } from '@/components/subscription-account/accountView'
 import subscriptionAccountsAPI, { type SubscriptionAccount } from '@/api/subscriptionAccounts'
 import { useSubscriptionStore } from '@/stores/subscriptions'
@@ -160,6 +180,8 @@ const searchDraft = ref('')
 const appliedSearch = ref('')
 const groupFilter = ref('')
 const pagination = reactive({ page: 1, pageSize: 20, total: 0 })
+const showQuotaHistory = ref(false)
+const quotaHistoryAccount = ref<SubscriptionAccount | null>(null)
 let controller: AbortController | null = null
 
 const columns = computed(() => [
@@ -173,6 +195,7 @@ const columns = computed(() => [
   { key: 'rate_multiplier', label: t('subscriptionAccounts.columns.rateMultiplier'), sortable: false },
   { key: 'last_used_at', label: t('subscriptionAccounts.columns.lastUsed'), sortable: false },
   { key: 'created_at', label: t('subscriptionAccounts.columns.createdAt'), sortable: false },
+  { key: 'actions', label: t('common.actions'), sortable: false },
 ])
 
 const subscriptionGroups = computed(() => {
@@ -249,6 +272,16 @@ function changePageSize(pageSize: number) {
   pagination.pageSize = pageSize
   pagination.page = 1
   loadAccounts()
+}
+
+function openQuotaHistory(account: SubscriptionAccount) {
+  quotaHistoryAccount.value = account
+  showQuotaHistory.value = true
+}
+
+function closeQuotaHistory() {
+  showQuotaHistory.value = false
+  quotaHistoryAccount.value = null
 }
 
 onMounted(async () => {

@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/xai"
 	"github.com/Wei-Shaw/sub2api/internal/server/middleware"
@@ -78,22 +79,24 @@ type userSubscriptionAccountUsage struct {
 }
 
 type userSubscriptionAccount struct {
-	ID                     int64                           `json:"id"`
-	Name                   string                          `json:"name"`
-	Platform               string                          `json:"platform"`
-	Type                   string                          `json:"type"`
-	Capacity               userSubscriptionAccountCapacity `json:"capacity"`
-	Status                 string                          `json:"status"`
-	Schedulable            bool                            `json:"schedulable"`
-	RateLimitResetAt       *time.Time                      `json:"rate_limit_reset_at,omitempty"`
-	OverloadUntil          *time.Time                      `json:"overload_until,omitempty"`
-	TempUnschedulableUntil *time.Time                      `json:"temp_unschedulable_until,omitempty"`
-	TodayStats             *service.WindowStats            `json:"today_stats,omitempty"`
-	Groups                 []userSubscriptionAccountGroup  `json:"groups"`
-	Usage                  *userSubscriptionAccountUsage   `json:"usage,omitempty"`
-	RateMultiplier         float64                         `json:"rate_multiplier"`
-	LastUsedAt             *time.Time                      `json:"last_used_at,omitempty"`
-	CreatedAt              time.Time                       `json:"created_at"`
+	ID                           int64                           `json:"id"`
+	Name                         string                          `json:"name"`
+	Platform                     string                          `json:"platform"`
+	Type                         string                          `json:"type"`
+	Capacity                     userSubscriptionAccountCapacity `json:"capacity"`
+	Status                       string                          `json:"status"`
+	Schedulable                  bool                            `json:"schedulable"`
+	RateLimitResetAt             *time.Time                      `json:"rate_limit_reset_at,omitempty"`
+	OverloadUntil                *time.Time                      `json:"overload_until,omitempty"`
+	TempUnschedulableUntil       *time.Time                      `json:"temp_unschedulable_until,omitempty"`
+	TodayStats                   *service.WindowStats            `json:"today_stats,omitempty"`
+	Groups                       []userSubscriptionAccountGroup  `json:"groups"`
+	Usage                        *userSubscriptionAccountUsage   `json:"usage,omitempty"`
+	CurrentOpenAIQuotaPrediction *float64                        `json:"current_openai_quota_prediction,omitempty"`
+	SupportsOpenAIQuotaHistory   bool                            `json:"supports_openai_quota_history"`
+	RateMultiplier               float64                         `json:"rate_multiplier"`
+	LastUsedAt                   *time.Time                      `json:"last_used_at,omitempty"`
+	CreatedAt                    time.Time                       `json:"created_at"`
 }
 
 // List 返回当前登录用户有效订阅分组内的账号。
@@ -138,6 +141,36 @@ func (h *SubscriptionAccountHandler) List(c *gin.Context) {
 	response.Paginated(c, items, result.Total, result.Page, result.Size)
 }
 
+// ListOpenAIQuotaPeriods 返回当前用户可访问订阅账号的 OpenAI 周额度历史。
+// GET /api/v1/subscription-accounts/:id/openai-quota-periods
+func (h *SubscriptionAccountHandler) ListOpenAIQuotaPeriods(c *gin.Context) {
+	subject, ok := middleware.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	accountID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || accountID <= 0 {
+		response.BadRequest(c, "Invalid account ID")
+		return
+	}
+	page, pageSize := response.ParsePagination(c)
+	if pageSize > 20 {
+		pageSize = 20
+	}
+	periods, result, err := h.service.ListOpenAIQuotaPeriods(
+		c.Request.Context(),
+		subject.UserID,
+		accountID,
+		pagination.PaginationParams{Page: page, PageSize: pageSize},
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Paginated(c, periods, result.Total, result.Page, result.PageSize)
+}
+
 func userSubscriptionAccountFromService(item *service.SubscriptionAccountItem) userSubscriptionAccount {
 	account := item.Account
 	groups := make([]userSubscriptionAccountGroup, 0, len(item.Groups))
@@ -148,22 +181,24 @@ func userSubscriptionAccountFromService(item *service.SubscriptionAccountItem) u
 	}
 
 	return userSubscriptionAccount{
-		ID:                     account.ID,
-		Name:                   account.Name,
-		Platform:               account.Platform,
-		Type:                   account.Type,
-		Capacity:               userSubscriptionAccountCapacityFromService(account, item),
-		Status:                 account.Status,
-		Schedulable:            account.Schedulable,
-		RateLimitResetAt:       account.RateLimitResetAt,
-		OverloadUntil:          account.OverloadUntil,
-		TempUnschedulableUntil: account.TempUnschedulableUntil,
-		TodayStats:             item.TodayStats,
-		Groups:                 groups,
-		Usage:                  userSubscriptionAccountUsageFromService(item.Usage),
-		RateMultiplier:         account.BillingRateMultiplier(),
-		LastUsedAt:             account.LastUsedAt,
-		CreatedAt:              account.CreatedAt,
+		ID:                           account.ID,
+		Name:                         account.Name,
+		Platform:                     account.Platform,
+		Type:                         account.Type,
+		Capacity:                     userSubscriptionAccountCapacityFromService(account, item),
+		Status:                       account.Status,
+		Schedulable:                  account.Schedulable,
+		RateLimitResetAt:             account.RateLimitResetAt,
+		OverloadUntil:                account.OverloadUntil,
+		TempUnschedulableUntil:       account.TempUnschedulableUntil,
+		TodayStats:                   item.TodayStats,
+		Groups:                       groups,
+		Usage:                        userSubscriptionAccountUsageFromService(item.Usage),
+		CurrentOpenAIQuotaPrediction: item.CurrentOpenAIQuotaPrediction,
+		SupportsOpenAIQuotaHistory:   service.SupportsOpenAIQuotaPeriods(account),
+		RateMultiplier:               account.BillingRateMultiplier(),
+		LastUsedAt:                   account.LastUsedAt,
+		CreatedAt:                    account.CreatedAt,
 	}
 }
 

@@ -24,4 +24,16 @@ describe('subscription accounts API', () => {
     })
     expect(result).toBe(payload)
   })
+
+  it('loads quota history from the user subscription route', async () => {
+    const payload = { items: [], total: 0, page: 2, page_size: 20, pages: 0 }
+    get.mockResolvedValue({ data: payload })
+
+    const result = await subscriptionAccountsAPI.getOpenAIQuotaPeriods(8, 2, 20)
+
+    expect(get).toHaveBeenCalledWith('/subscription-accounts/8/openai-quota-periods', {
+      params: { page: 2, page_size: 20 },
+    })
+    expect(result).toBe(payload)
+  })
 })

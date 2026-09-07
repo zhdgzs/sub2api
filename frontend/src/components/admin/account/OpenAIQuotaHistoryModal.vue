@@ -81,11 +81,10 @@ import {
   type Plugin
 } from 'chart.js'
 import { Bar } from 'vue-chartjs'
-import { adminAPI } from '@/api/admin'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import Icon from '@/components/icons/Icon.vue'
-import type { Account, OpenAIQuotaPeriod } from '@/types'
+import type { OpenAIQuotaPeriod, PaginatedResponse } from '@/types'
 import { formatCurrency, formatDateTime } from '@/utils/format'
 
 const GROUPED_BAR_GAP = 4
@@ -120,7 +119,12 @@ const compactTokenFormatter = new Intl.NumberFormat('en-US', {
 
 const props = defineProps<{
   show: boolean
-  account: Account | null
+  account: { id: number; name: string } | null
+  fetchPeriods: (
+    id: number,
+    page: number,
+    pageSize: number
+  ) => Promise<PaginatedResponse<OpenAIQuotaPeriod>>
 }>()
 
 const emit = defineEmits<{
@@ -246,7 +250,7 @@ const loadPeriods = async () => {
   loading.value = true
   error.value = false
   try {
-    const result = await adminAPI.accounts.getOpenAIQuotaPeriods(
+    const result = await props.fetchPeriods(
       props.account.id,
       pagination.page,
       pagination.pageSize

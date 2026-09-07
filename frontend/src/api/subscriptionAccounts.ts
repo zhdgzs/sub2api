@@ -3,6 +3,7 @@ import type {
   AccountPlatform,
   AccountType,
   AccountUsageInfo,
+  OpenAIQuotaPeriod,
   PaginatedResponse,
   WindowStats,
 } from '@/types'
@@ -44,6 +45,8 @@ export interface SubscriptionAccount {
   today_stats?: WindowStats
   groups: SubscriptionAccountGroup[]
   usage?: AccountUsageInfo
+  current_openai_quota_prediction?: number | null
+  supports_openai_quota_history: boolean
   rate_multiplier: number
   last_used_at?: string
   created_at: string
@@ -67,4 +70,16 @@ export async function list(
   return data
 }
 
-export default { list }
+export async function getOpenAIQuotaPeriods(
+  id: number,
+  page: number = 1,
+  pageSize: number = 20,
+): Promise<PaginatedResponse<OpenAIQuotaPeriod>> {
+  const { data } = await apiClient.get<PaginatedResponse<OpenAIQuotaPeriod>>(
+    `/subscription-accounts/${id}/openai-quota-periods`,
+    { params: { page, page_size: pageSize } },
+  )
+  return data
+}
+
+export default { list, getOpenAIQuotaPeriods }

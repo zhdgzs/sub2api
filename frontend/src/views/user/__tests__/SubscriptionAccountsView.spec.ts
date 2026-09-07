@@ -1,14 +1,15 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { list, fetchActiveSubscriptions, showError } = vi.hoisted(() => ({
+const { list, getOpenAIQuotaPeriods, fetchActiveSubscriptions, showError } = vi.hoisted(() => ({
   list: vi.fn(),
+  getOpenAIQuotaPeriods: vi.fn(),
   fetchActiveSubscriptions: vi.fn(),
   showError: vi.fn(),
 }))
 
 vi.mock('@/api/subscriptionAccounts', () => ({
-  default: { list },
+  default: { list, getOpenAIQuotaPeriods },
 }))
 
 vi.mock('@/stores/subscriptions', () => ({
@@ -38,6 +39,13 @@ const passthrough = { template: '<div><slot /><slot name="filters" /><slot name=
 describe('SubscriptionAccountsView', () => {
   beforeEach(() => {
     list.mockReset().mockResolvedValue({ items: [], total: 0, page: 1, page_size: 20, pages: 1 })
+    getOpenAIQuotaPeriods.mockReset().mockResolvedValue({
+      items: [],
+      total: 0,
+      page: 1,
+      page_size: 20,
+      pages: 0,
+    })
     fetchActiveSubscriptions.mockReset().mockResolvedValue([])
     showError.mockReset()
   })
@@ -58,6 +66,7 @@ describe('SubscriptionAccountsView', () => {
           SubscriptionAccountStatus: true,
           SubscriptionAccountTodayStats: true,
           SubscriptionAccountUsageWindows: true,
+          OpenAIQuotaHistoryModal: true,
         },
       },
     })
