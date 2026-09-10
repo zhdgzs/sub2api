@@ -203,7 +203,7 @@ func TestOpenAIWSHTTPBridgeLaterTurn429RetriesCurrentTurnOnReplacementAccount(t 
 	defer func() { _ = clientConn.CloseNow() }()
 
 	writeCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	err = clientConn.Write(writeCtx, websocket.MessageText, []byte(`{"type":"response.create","model":"gpt-5.6-sol","input":[{"role":"user","content":"first"}]}`))
+	err = clientConn.Write(writeCtx, websocket.MessageText, []byte(`{"type":"response.create","model":"gpt-5.6-sol","client_metadata":{"session_id":"client-session","thread_id":"client-thread"},"input":[{"role":"user","content":"first"}]}`))
 	cancel()
 	require.NoError(t, err)
 

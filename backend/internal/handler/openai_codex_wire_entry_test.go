@@ -229,12 +229,10 @@ func TestCodexWireEntryCompact(t *testing.T) {
 		extra map[string]any
 		// 投影开启时保留并做账号隔离；未开启时删除，维持既有出站形态。
 		wantCacheKey bool
-		// 双开走真客户端的连字符会话头形态；未开启时仍是历史的下划线别名。
-		wantHyphenSession bool
 	}{
-		{name: "双开", extra: codexWireConverged, wantCacheKey: true, wantHyphenSession: true},
-		{name: "仅device", extra: codexWireDeviceOnly, wantCacheKey: false, wantHyphenSession: false},
-		{name: "纯OAuth", extra: map[string]any{}, wantCacheKey: false, wantHyphenSession: false},
+		{name: "双开", extra: codexWireConverged, wantCacheKey: true},
+		{name: "仅device", extra: codexWireDeviceOnly, wantCacheKey: false},
+		{name: "纯OAuth", extra: map[string]any{}, wantCacheKey: false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -264,15 +262,14 @@ func TestCodexWireEntryCompact(t *testing.T) {
 				require.False(t, key.Exists(), "投影未开时维持既有出站形态：删掉")
 			}
 
-			if tc.wantHyphenSession {
-				require.NotEmpty(t, got.header.Get("session-id"))
-				require.NotEmpty(t, got.header.Get("thread-id"))
+			require.NotEmpty(t, got.header.Get("session-id"))
+			require.NotEmpty(t, got.header.Get("thread-id"))
+			require.Empty(t, got.header.Get("session_id"))
+			if tc.wantCacheKey {
+				require.Empty(t, got.header.Get("x-client-request-id"))
 			} else {
-				require.Empty(t, got.header.Get("session-id"))
-				require.NotEmpty(t, got.header.Get("session_id"), "未开投影仍走下划线旧别名")
+				require.Equal(t, got.header.Get("thread-id"), got.header.Get("x-client-request-id"))
 			}
-			// 真实 compact 的构造链没有 stream_request 那一步，任何形态都不该发该头。
-			require.Empty(t, got.header.Get("x-client-request-id"))
 			require.NotEmpty(t, got.header.Get("x-codex-installation-id"),
 				"compact 是唯一发独立安装头的端点")
 		})
@@ -450,13 +447,14 @@ func TestCodexWireEntryFailoverDoesNotLeakPreviousAccountIdentity(t *testing.T) 
 	lastInstall := gjson.GetBytes(last.body, "client_metadata.x-codex-installation-id").String()
 	require.NotEmpty(t, firstInstall)
 	require.NotEqual(t, firstInstall, lastInstall, "换号后不得沿用上一账号的收敛设备身份")
-	require.Equal(t, codexWireInboundInst, lastInstall, "未开收敛的账号应保持客户端原值")
-	require.Equal(t, codexWireInboundInst, last.header.Get("x-codex-installation-id"))
+	require.NotEqual(t, codexWireInboundInst, lastInstall, "未开收敛仍须按凭据隔离")
+	require.Equal(t, lastInstall, last.header.Get("x-codex-installation-id"))
 
-	// 会话头形态也必须跟着新账号走：收敛账号是连字符形态，未开的是下划线别名。
+	// 切换到 off 账号仍使用规范头名，且不得沿用旧账号的会话。
 	require.NotEmpty(t, first.header.Get("session-id"))
-	require.Empty(t, last.header.Get("session-id"))
-	require.NotEmpty(t, last.header.Get("session_id"))
+	require.NotEmpty(t, last.header.Get("session-id"))
+	require.NotEqual(t, first.header.Get("session-id"), last.header.Get("session-id"))
+	require.Empty(t, last.header.Get("session_id"))
 }
 
 // TestCodexWireEntryNonOAuthAccountUntouched：收敛开关只对 OAuth 类账号生效

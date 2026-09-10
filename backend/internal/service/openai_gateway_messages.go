@@ -234,16 +234,18 @@ func (s *OpenAIGatewayService) ForwardAsAnthropic(
 		if codexResult.PromptCacheKey != "" {
 			promptCacheKey = codexResult.PromptCacheKey
 		}
-		applyCodexAccountIdentityClientMetadataMap(reqBody, codexAccountIdentitySource(c, account), apiKeyID)
+		normalizeCodexSessionIdentityMap(c, codexAccountIdentitySource(c, account), reqBody)
 		// 指纹收敛：与 /responses 走同一套解析与暂存。此前 Messages 桥没有这一步，
 		// 同一个账号在两个端点上会报出两套不同的设备身份（体内是按账号命名空间哈希
 		// 客户端原值得到的，而 /responses 是收敛值）。暂存后 buildUpstreamRequest 里的
 		// applyStagedCodexFingerprintHeaders / applyCodexDeviceWireProfile 才能生效。
 		fpIDs := resolveCodexFingerprintIDsWithBody(c, account, nil, reqBody["client_metadata"])
+		applyCodexAccountIdentityClientMetadataMap(reqBody, codexAccountIdentitySource(c, account), apiKeyID)
 		if fpIDs != nil {
 			applyCodexFingerprintClientMetadata(reqBody, fpIDs)
 		}
 		stageCodexFingerprintIDs(c, fpIDs)
+		stageCodexConvergenceBodyIdentityMap(c, codexAccountIdentitySource(c, account), reqBody)
 		delete(reqBody, "prompt_cache_key")
 		if shouldAutoInjectPromptCacheKeyForCompat(upstreamModel) {
 			compatTurnState = s.getOpenAICompatSessionTurnState(ctx, c, account, promptCacheKey)
@@ -346,10 +348,8 @@ func (s *OpenAIGatewayService) ForwardAsAnthropic(
 	// Override session_id with a deterministic UUID derived from the isolated
 	// session key, ensuring different API keys produce different upstream sessions.
 	//
-	// 双开账号跳过：真实 Codex 只发连字符会话头，下划线别名是网关的历史形态。写进去
-	// 会让同一账号同时带两套取值不同的会话标识（连字符那套已由收敛按账号+密钥派生，
-	// 隔离性不依赖这里）。
-	if account.Platform != PlatformGrok && promptCacheKey != "" && !codexDeviceWireProfileEnabled(c, account) {
+	// Codex 的会话头已统一完成，不能在桥接出口重新写入另一套下划线会话标识。
+	if account.Platform != PlatformGrok && promptCacheKey != "" && !account.UsesOpenAICodexProtocol() {
 		isolatedSessionID := generateSessionUUID(isolateOpenAIUpstreamSessionID(apiKeyID, codexAccountIdentitySource(c, account), promptCacheKey))
 		upstreamReq.Header.Set("session_id", isolatedSessionID)
 		if upstreamReq.Header.Get("conversation_id") != "" {

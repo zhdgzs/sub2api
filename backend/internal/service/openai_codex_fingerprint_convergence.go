@@ -11,8 +11,8 @@ package service
 //  3. 入站没有连字符会话头时（apikey 中继会剥掉它们），依次从请求体 client_metadata、出站
 //     x-codex-turn-metadata 里那一份已派生的 session_id / thread_id / parent_thread_id 重建，
 //     与直连形态逐字节相同。
-//  4. 补出 session-id 后，不再发真客户端不存在的 session_id / conversation_id 下划线别名；
-//     仍补不出（体内也没有）时保留上游别名，否则请求会零会话身份出站。
+//  4. session-id 统一取代 session_id / conversation_id 下划线别名；仅有缓存亲和值时
+//     保留既有隔离值并规范头名，不将缓存键伪装成体内会话证据。
 //  5. root_turn_id / parent_turn_id 与 turn_id 同类派生；parent_thread_id / forked_from_thread_id 与
 //     thread 同类；context_window_id 单独一类（core/src/session/mod.rs current_window：它是
 //     AutoCompactWindowIds.window_id，v7）；x-codex-window-id / window_id 真实形态是
@@ -21,8 +21,8 @@ package service
 //  6. 原始值为 UUIDv7 时派生结果保持 v7 并保留 48 位时间戳（codex 的 session/thread/turn/window
 //     均为 Uuid::now_v7；installation_id 为 v4，派生仍为 v4）。
 //
-// 开关控制额外身份字段、会话头补齐及 UUIDv7 保留；会话族同源派生、复合 ID 结构和
-// 逐帧窗口修复始终生效。切换开关会改变该账号的 v7 类身份派生值。
+// 开关控制额外身份字段及 UUIDv7 保留；会话头与 metadata 一致性、会话族同源派生、
+// 复合 ID 结构和逐帧窗口修复始终生效。切换开关会改变该账号的 v7 类身份派生值。
 
 import (
 	"crypto/sha256"
@@ -302,7 +302,7 @@ type codexConvergenceStagedBodyIdentity struct {
 // stageCodexConvergenceBodyIdentityMap 在 applyCodexAccountIdentityClientMetadataMap 之后调用
 // （非透传路径）。传入的必须是已命名空间化的 body。
 func stageCodexConvergenceBodyIdentityMap(c *gin.Context, account *Account, body map[string]any) {
-	if !codexFingerprintConvergenceEnabled(account) || body == nil {
+	if codexAccountIdentityNamespace(account) == "" || body == nil {
 		stageCodexConvergenceBodyIdentity(c, account, nil)
 		return
 	}
@@ -324,7 +324,7 @@ func stageCodexConvergenceBodyIdentityMap(c *gin.Context, account *Account, body
 // stageCodexConvergenceBodyIdentityRaw 是透传/WS 热路径的等价物：gjson 只取这几个字段，
 // 不整体 Unmarshal 可能有数 MB 的请求体。
 func stageCodexConvergenceBodyIdentityRaw(c *gin.Context, account *Account, body []byte) {
-	if !codexFingerprintConvergenceEnabled(account) || len(body) == 0 {
+	if codexAccountIdentityNamespace(account) == "" || len(body) == 0 {
 		stageCodexConvergenceBodyIdentity(c, account, nil)
 		return
 	}
@@ -433,14 +433,39 @@ func codexConvergenceTurnMetadataIdentity(headers http.Header) map[string]string
 // Resolve raw session evidence, then scope and project exactly once per WS request.
 // Both WS entries and subsequent response.create frames must use this same sequence.
 func applyCodexIdentityToWSPayload(c *gin.Context, account *Account, payload []byte) ([]byte, error) {
+	if account == nil || !account.IsOpenAIOAuthLike() {
+		return payload, nil
+	}
+	// session.update 的身份在 session 对象内，与 response.create 共用校验和派生。
+	if gjson.GetBytes(payload, "type").String() == "session.update" {
+		if session := gjson.GetBytes(payload, "session"); session.IsObject() {
+			next, err := applyCodexIdentityToWSRequest(c, account, []byte(session.Raw))
+			if err != nil {
+				return payload, err
+			}
+			updated, err := sjson.SetRawBytes(payload, "session", next)
+			if err != nil || !gjson.GetBytes(payload, "client_metadata").Exists() {
+				return updated, err
+			}
+			payload = updated
+		}
+	}
+	return applyCodexIdentityToWSRequest(c, account, payload)
+}
+
+func applyCodexIdentityToWSRequest(c *gin.Context, account *Account, payload []byte) ([]byte, error) {
 	stageCodexFingerprintIDs(c, nil)
 	source := codexAccountIdentitySource(c, account)
 	stageCodexConvergenceBodyIdentity(c, source, nil)
-	var ids *codexFingerprintIDs
-	if codexFingerprintConvergenceEnabled(source) {
-		ids = resolveCodexFingerprintIDsWithBody(c, account, nil, gjson.GetBytes(payload, "client_metadata"))
+	normalized, _, err := normalizeCodexSessionIdentityRaw(c, source, payload)
+	if err != nil {
+		return payload, err
 	}
-	next, _, err := applyCodexAccountIdentityClientMetadataRaw(payload, source, getAPIKeyIDFromContext(c))
+	if err := bindCodexWSSessionIdentity(c, source, normalized); err != nil {
+		return payload, err
+	}
+	ids := resolveCodexFingerprintIDsWithBody(c, account, nil, gjson.GetBytes(normalized, "client_metadata"))
+	next, _, err := applyCodexAccountIdentityClientMetadataRaw(normalized, source, getAPIKeyIDFromContext(c))
 	if err != nil {
 		return payload, err
 	}
@@ -461,7 +486,7 @@ func applyCodexIdentityToWSPayload(c *gin.Context, account *Account, payload []b
 // applyCodexFingerprintConvergenceHeaders 在 applyStagedCodexFingerprintHeaders 之后、终态身份收口
 // 之前调用（HTTP / 透传 / WS 三处相同相对位置）。
 func applyCodexFingerprintConvergenceHeaders(c *gin.Context, account *Account, headers http.Header) {
-	if headers == nil || !codexFingerprintConvergenceEnabled(account) || codexAccountIdentityNamespace(account) == "" {
+	if headers == nil || codexAccountIdentityNamespace(account) == "" {
 		return
 	}
 	apiKeyID := getAPIKeyIDFromContext(c)
@@ -471,16 +496,24 @@ func applyCodexFingerprintConvergenceHeaders(c *gin.Context, account *Account, h
 	}
 	staged := stagedCodexConvergenceBodyIdentity(c, account)
 	fromTurnMetadata := codexConvergenceTurnMetadataIdentity(headers)
-	// 1) 补齐被丢弃的头；WS 路径已转发并派生过的保持不动。
-	// 取值顺序：入站头 > 请求体暂存 > 出站 turn-metadata。后两者都是已派生的值，直接复用；
-	// 它们存在的意义是中继会剥掉连字符头（现网 31.108 的 apikey 中继就剥 session-id /
-	// thread-id / x-codex-parent-thread-id，只留体内 client_metadata 和 turn-metadata）。
-	// turn-metadata 这一路不依赖任何调用点接线，所以某条路径漏接暂存时仍然能补出头来。
+	// 已派生的 body 为权威来源；无 body 的 compact 等请求才从现有头和入站头补齐。
 	for _, field := range codexConvergenceInboundHeaders {
+		if field.name != "session-id" && field.name != "thread-id" && !codexFingerprintConvergenceEnabled(account) {
+			continue
+		}
+		// 请求体已经完成统一和指纹投影，必须覆盖旧头，不能只补缺失值。
+		if value := staged[field.name]; value != "" {
+			headers.Set(field.name, value)
+			continue
+		}
 		if headers.Get(field.name) != "" {
 			continue
 		}
-		if raw := strings.TrimSpace(inbound.Get(field.name)); raw != "" {
+		raw := strings.TrimSpace(inbound.Get(field.name))
+		if raw == "" && field.name == "session-id" {
+			raw = strings.TrimSpace(inbound.Get("session_id"))
+		}
+		if raw != "" {
 			if field.kind == "" {
 				headers.Set(field.name, raw)
 			} else {
@@ -488,21 +521,26 @@ func applyCodexFingerprintConvergenceHeaders(c *gin.Context, account *Account, h
 			}
 			continue
 		}
-		if value := staged[field.name]; value != "" {
-			headers.Set(field.name, value)
-			continue
-		}
 		if value := fromTurnMetadata[field.name]; value != "" {
 			headers.Set(field.name, value)
 		}
 	}
+	if headers.Get("session-id") == "" {
+		legacy := headers.Get("session_id")
+		if legacy == "" {
+			legacy = headers.Get("conversation_id")
+		}
+		if legacy != "" {
+			// 只有缓存亲和键的兼容请求沿用既有隔离值，仅规范头名。
+			headers.Set("session-id", legacy)
+		}
+	}
+	syncCodexSessionIdentityHeaderMetadata(headers)
 	// 2) x-client-request-id == thread-id
 	if threadID := strings.TrimSpace(headers.Get("thread-id")); threadID != "" {
 		headers.Set("x-client-request-id", threadID)
 	}
-	// 3) 真客户端没有的下划线别名。仅在确实补出了 session-id 时才删：入站和请求体都拿不到
-	// 会话身份时补不出连字符头，此时删别名会让请求零会话身份出站——真 Codex 客户端不存在
-	// 这种形态，且上游据此做缓存亲和，删掉会打散路由（现网 pro1 HTTP 命中率 96% → 22%）。
+	// 会话与缓存亲和值均已投影到规范头，删除重复别名。
 	if strings.TrimSpace(headers.Get("session-id")) != "" {
 		headers.Del("session_id")
 		headers.Del("conversation_id")

@@ -624,7 +624,7 @@ export default {
         codexFingerprintMode: 'Codex fingerprint convergence',
         codexFingerprintModeDesc: 'When multiple users share the same OAuth account, converge device/session identifiers to account-level stable values to reduce upstream-visible device and session count. Off by default (client identifiers pass through as-is); opt in explicitly when needed. Some accounts reported quota shrinkage after enabling convergence, so choose based on your own measurements.',
         codexFingerprintConvergence: 'Experimental fingerprint convergence (klno)',
-        codexFingerprintConvergenceDesc: 'Complete HTTP/WS session identity for this account and preserve UUIDv7. Off by default; toggling changes affected session identifiers. Combine with Device only mode for endpoint protocol adjustments. Consistent session/cache-key derivation, composite ID structure, and per-frame window fixes always apply.',
+        codexFingerprintConvergenceDesc: 'Correlate parent/child threads and turns and preserve UUIDv7 for this account. Off by default; toggling changes affected session identifiers. Combine with Device only mode for endpoint protocol adjustments. Header/metadata consistency, session/cache-key derivation, composite ID structure, and per-frame window fixes always apply.',
         codexFingerprintOff: 'Off (passthrough, default)',
         codexFingerprintDevice: 'Device only',
         codexFingerprintSession: 'Device + Session',

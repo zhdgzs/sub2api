@@ -238,7 +238,7 @@ func resolveConvergedInstallationID(account *Account, seed string) string {
 	if seed == "" {
 		return ""
 	}
-	return deriveStableUUIDv4("sub2api:codex-install-id:v2:" + seed)
+	return deriveStableUUIDv4("zhdgzscust:codex-install-id:v2:" + seed)
 }
 
 // resolveConvergedSessionID 返回账号级恒定的 session_id。
@@ -246,7 +246,7 @@ func resolveConvergedSessionID(seed string) string {
 	if seed == "" {
 		return ""
 	}
-	return deriveStableUUIDv4("sub2api:codex-session-id:v2:" + seed)
+	return deriveStableUUIDv4("zhdgzscust:codex-session-id:v2:" + seed)
 }
 
 // resolveConvergedThreadID 按客户端原始 session-id 确定性派生 thread_id。
@@ -256,7 +256,7 @@ func resolveConvergedThreadID(seed, clientSessionID string) string {
 	if seed == "" || clientSessionID == "" {
 		return ""
 	}
-	return deriveStableUUIDv4("sub2api:codex-thread-id:v2:" + seed + ":" + clientSessionID)
+	return deriveStableUUIDv4("zhdgzscust:codex-thread-id:v2:" + seed + ":" + clientSessionID)
 }
 
 // codexFingerprintIDs 收敛后的完整 ID 集合。
@@ -401,16 +401,13 @@ func resolveCodexFingerprintIDsWithBody(c *gin.Context, account *Account, client
 	if clientHeaders == nil && c != nil && c.Request != nil {
 		clientHeaders = c.Request.Header
 	}
-	clientSessionID := ""
+	clientSessionID := codexFingerprintSessionEvidence(rawClientMetadata, true)
 	source := codexAccountIdentitySource(c, account)
 	convergence := codexFingerprintConvergenceEnabled(source)
-	if clientHeaders != nil {
+	if clientSessionID == "" && clientHeaders != nil {
 		clientSessionID = extractClientSessionID(clientHeaders)
 	}
-	if clientSessionID == "" && convergence {
-		clientSessionID = codexFingerprintSessionEvidence(rawClientMetadata, true)
-	}
-	if clientSessionID == "" && convergence && clientHeaders != nil {
+	if clientSessionID == "" && clientHeaders != nil {
 		clientSessionID = codexConvergenceMetadataString(gjson.Parse(clientHeaders.Get(openAIWSTurnMetadataHeader)), "session_id")
 	}
 	// 后续 WS 帧的窗口会递增，握手头却固定不变；当前 body 优先，头仅兜底。
@@ -484,6 +481,11 @@ func rewriteCodexTurnMetadataFields(h http.Header, fields map[string]any, ids *c
 	for k, v := range fields {
 		metadata[k] = v
 	}
+	for _, field := range codexSessionIdentityFields {
+		if value, ok := fields[field[0]].(string); ok {
+			setCodexSessionIdentityValue(metadata, field, value)
+		}
+	}
 	rebuilt, err := json.Marshal(metadata)
 	if err != nil {
 		return
@@ -539,8 +541,8 @@ func applyCodexFingerprintToClientMetadataMap(existing map[string]any, ids *code
 
 	// session / full 模式
 	preserveCodexConvergenceRootTurn(existing, ids)
-	existing["session_id"] = ids.sessionID
-	existing["thread_id"] = ids.threadID
+	setCodexSessionIdentityValue(existing, codexSessionIdentityFields[0], ids.sessionID)
+	setCodexSessionIdentityValue(existing, codexSessionIdentityFields[1], ids.threadID)
 	existing["turn_id"] = ids.turnID
 	existing["x-codex-window-id"] = ids.windowID
 
@@ -753,6 +755,11 @@ func rewriteClientMetadataEmbeddedTurnMetadata(clientMetadata map[string]any, fi
 	preserveCodexConvergenceRootTurn(metadata, ids)
 	for k, v := range fields {
 		metadata[k] = v
+	}
+	for _, field := range codexSessionIdentityFields {
+		if value, ok := fields[field[0]].(string); ok {
+			setCodexSessionIdentityValue(metadata, field, value)
+		}
 	}
 	if rebuilt, err := json.Marshal(metadata); err == nil {
 		clientMetadata["x-codex-turn-metadata"] = string(rebuilt)

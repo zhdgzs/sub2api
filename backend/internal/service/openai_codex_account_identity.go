@@ -50,8 +50,9 @@ func codexAccountIdentitySource(c *gin.Context, fallback *Account) *Account {
 // Multiple local rows that use the same ChatGPT account intentionally share the
 // same namespace. Setup tokens use an irreversible bearer fingerprint because
 // they have no refresh lifecycle or imported account metadata. Refreshable OAuth
-// otherwise falls back only to a persistent fingerprint seed: local row IDs are
-// deployment-relative and must never become upstream identity.
+// prefers a persistent seed, falling back to a bearer fingerprint when imported
+// credentials lack both account metadata and a seed. That fallback rotates on
+// token refresh; deployment-relative local row IDs never become upstream identity.
 func codexAccountIdentityNamespace(account *Account) string {
 	if account == nil || !account.IsOpenAIOAuthLike() {
 		return ""
@@ -70,6 +71,10 @@ func codexAccountIdentityNamespace(account *Account) string {
 			sum := sha256.Sum256([]byte("openai-setup-token:" + token))
 			return fmt.Sprintf("setup-token:%x", sum[:16])
 		}
+	}
+	if token := strings.TrimSpace(account.GetOpenAIAccessToken()); token != "" {
+		sum := sha256.Sum256([]byte("openai-oauth-token:" + token))
+		return fmt.Sprintf("oauth-token:%x", sum[:16])
 	}
 	return ""
 }
@@ -102,7 +107,7 @@ func scopeCodexAccountIdentityValue(account *Account, apiKeyID int64, kind, raw 
 		return derived
 	}
 	seed := fmt.Sprintf(
-		"sub2api:codex-account-identity:%s:user:%d:account:%s:kind:%s:value:%s",
+		"zhdgzscust:codex-account-identity:%s:user:%d:account:%s:kind:%s:value:%s",
 		codexAccountIdentityNamespaceVersion,
 		apiKeyID,
 		namespace,

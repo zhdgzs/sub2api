@@ -285,9 +285,8 @@ func TestCodexFingerprintConvergence_WSHandshakeForwardsCompatibilityHeaders(t *
 	}
 }
 
-// 开关关闭：出站与上游 v0.2.2 完全一致（HTTP 不带三个头、下划线别名走旧隔离哈希、
-// x-client-request-id 独立派生、root_turn_id 原样、派生一律 v4）。
-func TestCodexFingerprintConvergence_OffMatchesUpstream(t *testing.T) {
+// 开关关闭仍统一会话头；额外轮次字段和 UUIDv7 保留继续受实验开关控制。
+func TestCodexFingerprintConvergence_OffKeepsSessionConsistency(t *testing.T) {
 	svc := &OpenAIGatewayService{}
 	account := convTestAccount(false)
 	rawBody := convTestBody(t)
@@ -307,19 +306,19 @@ func TestCodexFingerprintConvergence_OffMatchesUpstream(t *testing.T) {
 	c := newConvTestContext(t, rawBody)
 	httpReq, err := svc.buildUpstreamRequest(context.Background(), c, account, scopedBody, "tok", true, convTestSession, true)
 	require.NoError(t, err)
-	require.Empty(t, httpReq.Header.Get("session-id"), "关闭时 HTTP 白名单不放行 session-id")
-	require.Empty(t, httpReq.Header.Get("thread-id"))
-	require.Empty(t, httpReq.Header.Get("x-client-request-id"))
-	require.Equal(t, isolateOpenAIUpstreamSessionID(77, account, convTestSession), httpReq.Header.Get("session_id"), "关闭时别名走旧隔离哈希")
+	require.Equal(t, cm.Get("session_id").String(), httpReq.Header.Get("session-id"))
+	require.Equal(t, cm.Get("thread_id").String(), httpReq.Header.Get("thread-id"))
+	require.Equal(t, httpReq.Header.Get("thread-id"), httpReq.Header.Get("x-client-request-id"))
+	require.Empty(t, httpReq.Header.Get("session_id"))
 
 	c = newConvTestContext(t, rawBody)
 	wsHeaders, _, err := svc.buildOpenAIWSHeaders(context.Background(), c, account, "tok",
 		OpenAIWSProtocolDecision{Transport: OpenAIUpstreamTransportResponsesWebsocketV2},
 		true, "", convTestTurnMetadata(), convTestSession, "", "")
 	require.NoError(t, err)
-	require.Equal(t, scopeCodexAccountIdentityValue(account, 77, "request", convTestThread), wsHeaders.Get("x-client-request-id"), "关闭时 x-client-request-id 独立派生")
-	require.NotEqual(t, wsHeaders.Get("thread-id"), wsHeaders.Get("x-client-request-id"))
-	require.Equal(t, isolateOpenAIUpstreamSessionID(77, account, convTestSession), wsHeaders.Get("session_id"))
+	require.Equal(t, wsHeaders.Get("thread-id"), wsHeaders.Get("x-client-request-id"))
+	require.Equal(t, httpReq.Header.Get("session-id"), wsHeaders.Get("session-id"))
+	require.Empty(t, wsHeaders.Get("session_id"))
 }
 
 func TestCodexFingerprintConvergence_SwitchParsing(t *testing.T) {
@@ -761,6 +760,8 @@ func convRunPassthrough(t *testing.T, account *Account, body []byte, stripInboun
 			c.Request.Header.Del(name)
 		}
 	}
+	body, _, normalizeErr := normalizeCodexSessionIdentityRaw(c, account, body)
+	require.NoError(t, normalizeErr)
 	fp := resolveCodexFingerprintIDsWithBody(c, account, nil, gjson.GetBytes(body, "client_metadata"))
 	scoped, _, err := applyCodexAccountIdentityClientMetadataRaw(body, account, 77)
 	require.NoError(t, err)

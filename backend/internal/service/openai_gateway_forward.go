@@ -510,6 +510,9 @@ func (s *OpenAIGatewayService) Forward(ctx context.Context, c *gin.Context, acco
 				markDecodedModified()
 			}
 		} else {
+			if normalizeCodexSessionIdentityMap(c, codexAccountIdentitySource(c, account), decoded) {
+				markDecodedModified()
+			}
 			fpIDs = resolveCodexFingerprintIDsWithBody(c, account, nil, decoded["client_metadata"])
 		}
 		if !isCompactRequest && applyCodexAccountIdentityClientMetadataMap(decoded, codexAccountIdentitySource(c, account), getAPIKeyIDFromContext(c)) {
@@ -525,6 +528,7 @@ func (s *OpenAIGatewayService) Forward(ctx context.Context, c *gin.Context, acco
 		// 无条件覆写（含 nil）：failover 从收敛账号切到 off 账号时，上一
 		// 账号的 IDs 不得残留（stageCodexFingerprintIDs 注释）。
 		stageCodexFingerprintIDs(c, fpIDs)
+		stageCodexConvergenceBodyIdentity(c, codexAccountIdentitySource(c, account), nil)
 		if !isCompactRequest {
 			// klno 指纹收敛：暂存体内已派生的会话身份，供出站头在入站没有连字符会话头时
 			// 重建。排在指纹改写之后，否则 session/full 模式会存下一份过期的 session。

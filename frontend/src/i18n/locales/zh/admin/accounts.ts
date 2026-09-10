@@ -720,7 +720,7 @@ export default {
         codexFingerprintMode: 'Codex 指纹收敛',
         codexFingerprintModeDesc: '多人共享同一 OAuth 账号时，将各用户的设备/会话标识收敛为账号级恒定值，减少上游可见的设备数和会话数。默认关闭（原样透传客户端标识），需要时再显式开启；部分账号开启收敛后出现过额度缩水，请按自己的实测结果选择。',
         codexFingerprintConvergence: '实验性指纹收敛（klno）',
-        codexFingerprintConvergenceDesc: '按账号补齐 HTTP / WS 会话身份并保留 UUIDv7。默认关闭；切换会改变相关会话标识。配合“仅设备”模式启用端点协议适配。会话与缓存键同源派生、复合 ID 结构及逐帧窗口修复始终生效。',
+        codexFingerprintConvergenceDesc: '按账号关联父子线程与轮次并保留 UUIDv7。默认关闭；切换会改变相关会话标识。配合“仅设备”模式启用端点协议适配。会话头与 metadata 一致性、会话与缓存键同源派生、复合 ID 结构及逐帧窗口修复始终生效。',
         codexFingerprintOff: '关闭（透传，默认）',
         codexFingerprintDevice: '仅设备',
         codexFingerprintSession: '设备+会话',

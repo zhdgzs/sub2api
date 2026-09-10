@@ -26,6 +26,7 @@ func convRunMap(t *testing.T, account *Account, raw []byte, stripInbound bool) (
 	var body map[string]any
 	require.NoError(t, json.Unmarshal(raw, &body))
 	originalKey, _ := body["prompt_cache_key"].(string)
+	normalizeCodexSessionIdentityMap(c, account, body)
 	ids := resolveCodexFingerprintIDsWithBody(c, account, nil, body["client_metadata"])
 	applyCodexAccountIdentityClientMetadataMap(body, account, 77)
 	applyCodexFingerprintClientMetadata(body, ids)
@@ -135,8 +136,9 @@ func TestCodexFingerprintConvergence_UnprovenCacheKeyIsNotSession(t *testing.T) 
 					headers := make(http.Header)
 					headers.Set("session_id", "existing-cache-affinity")
 					applyCodexFingerprintConvergenceHeaders(c, account, headers)
-					require.Empty(t, headers.Get("session-id"), "unknown cache key must not manufacture a client session")
-					require.Equal(t, "existing-cache-affinity", headers.Get("session_id"))
+					require.Equal(t, "existing-cache-affinity", headers.Get("session-id"), "preserve affinity while canonicalizing the header name")
+					require.Empty(t, headers.Get("session_id"))
+					require.False(t, gjson.GetBytes(finalBody, "client_metadata.session_id").Exists(), "cache keys are not body session evidence")
 				}
 			})
 		}
@@ -298,16 +300,13 @@ func TestCodexFingerprintConvergence_WSEntriesKeepIdentityAcrossTurns(t *testing
 									t.Fatal("missing upstream handshake")
 								}
 							}
-							wantInstallation := scopeCodexAccountIdentityValue(account, 77, "installation", convTestInstallation)
-							if enabled {
-								wantInstallation = resolveConvergedInstallationID(account, seed)
-							}
+							wantInstallation := resolveConvergedInstallationID(account, seed)
 							if enabled && mode == "device" {
 								require.Empty(t, headers.Get("x-codex-installation-id"), "device identity belongs in the frame/turn-metadata")
 							} else {
 								require.Equal(t, wantInstallation, headers.Get("x-codex-installation-id"), "legacy handshake")
 							}
-							if enabled && mode == "session" {
+							if mode == "session" {
 								require.Equal(t, resolveConvergedThreadID(seed, convTestSession), headers.Get("thread-id"), "body-only and direct clients must resolve the same per-session thread")
 							}
 							require.Equal(t, wantInstallation, gjson.GetBytes(forwarded, "client_metadata.x-codex-installation-id").String(), "turn %d installation", turn)

@@ -189,6 +189,11 @@ func (s *OpenAIGatewayService) forwardOpenAIPassthrough(
 		if isOpenAIResponsesCompactPath(c) {
 			fpIDs = resolveCodexFingerprintIDsFromRequest(c, account, nil)
 		} else {
+			normalizedIdentity, _, identityErr := normalizeCodexSessionIdentityRaw(c, codexAccountIdentitySource(c, account), body)
+			if identityErr != nil {
+				return nil, identityErr
+			}
+			body = normalizedIdentity
 			fpIDs = resolveCodexFingerprintIDsWithBody(c, account, nil, gjson.GetBytes(body, "client_metadata"))
 		}
 		// handler 的 compact 白名单已放行 prompt_cache_key（真实 CompactionInput 带它）。

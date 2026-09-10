@@ -31,7 +31,11 @@
 移植自 [KlN-4096/sub2api](https://github.com/KlN-4096/sub2api) 的 `7b9dd30`、`b25a062` 和 `863dbd0`，统一 HTTP、透传、WebSocket、Messages 桥接、compact、图片和搜索路径中的身份处理，保留当前 WS 帧的轮次与窗口序号。
 
 - 在管理后台编辑 OpenAI OAuth 账号，勾选“实验性指纹收敛（klno）”；默认关闭，对应账号 `extra.codex_experimental_fingerprint_convergence: true`，关闭时删除该键。影子账号的实验开关以凭据父账号为准。
-- 实验开关补齐会话头、关联父子线程与轮次，并在派生时保留 UUIDv7 的类型和时间戳。与“Codex 指纹收敛”的“仅设备”（`codex_fingerprint_mode: device`）同时开启时，进一步按端点调整设备头、兼容头和 compact 缓存键。
+- 实验开关关联父子线程与轮次，并在派生时保留 UUIDv7 的类型和时间戳。与“Codex 指纹收敛”的“仅设备”（`codex_fingerprint_mode: device`）同时开启时，进一步按端点调整设备头、兼容头和 compact 缓存键。
+- Codex SSE、WS、Messages 和 Chat Completions 桥接始终使用 `session-id` 出站头，不再发送 `session_id` / `conversation_id` 头；JSON 内仍使用 `session_id`。会话和线程身份按请求体字段、体内嵌入 metadata、入站头、头部 metadata 的顺序取值，统一后再隔离和投影，保证头与 metadata 一致。独立缓存键保留原有语义；只有缓存亲和值时仅规范头名。
+- WS 首帧确定连接的会话和线程；后续帧省略身份时继承首帧，显式更换身份会关闭连接并提示重连，`session.update` 同样受此限制。轮次和窗口仍可逐帧更新。
+- OAuth 凭据缺少上游账号 ID 和持久化指纹种子时，使用访问令牌的不可逆哈希作为隔离兜底；此类账号刷新令牌后会重新建立会话和缓存关联。
+- 本分支的 Codex 身份、compact 探测会话及长工具调用 ID 派生前缀统一为 `zhdgzscust:`，替代原来的 `sub2api:`，无需配置或重置数据库中的指纹种子。部署后相关派生 ID 会改变，既有会话、缓存及工具调用关联可能需要重新建立。
 - 会话、线程及缓存键的同源派生、复合 ID 结构保留和逐帧窗口修复始终生效，不受实验开关控制。升级或切换开关可能改变既有身份值，使缓存亲和或会话关联重新建立；关闭实验开关不会还原为未经修复的官方行为。
 - 此功能用于协议与身份一致性，不承诺改善上游额度、过载或账号风控结果。无需数据库结构变更。
 
