@@ -17,3 +17,4 @@
 | `v0.1.178-zhdgzs.1` | `2026-08-18` | 停用 GitHub Actions 监控与容器自动更新。 | `db07fd9be` chore: 停用 GitHub Actions 监控与容器自动更新 |
 | `v0.1.183-zhdgzs.1` | `2026-08-26` | 默认使用中文 README 并补充开发规范。 | `57cd61bce` docs: 默认使用中文 README 并补充开发规范 |
 | `v0.1.183-zhdgzs.2` | `2026-09-10` | 迁移 Codex 身份收敛、多端点协议一致性及 WS 逐帧窗口修复，增加账号实验开关并同步文档；基于当前 cust 远程构建，未同步上游 main。 | `05d15507d` feat(codex): 迁移身份收敛与多端点协议一致性修复 |
+| `v0.1.183-zhdgzs.3` | `2026-09-11` | 统一 SSE/WS 会话头与 metadata，修复 Messages/Chat 桥接会话覆盖，限制 WS 连接内切换会话，补充 OAuth 凭据隔离兜底，并将 Codex 派生前缀改为 zhdgzscust:；基于当前 cust 远程构建，未同步上游 main。 | `367003abf` fix(codex): 统一会话身份并更新定制指纹派生前缀 |
