@@ -18,6 +18,15 @@ English | [中文](README.md) | [日本語](README_JA.md)
 
 </div>
 
+## Codex Outbound Identity
+
+This fork ports `7b9dd30`, `b25a062`, and `863dbd0` from [KlN-4096/sub2api](https://github.com/KlN-4096/sub2api). Identity handling covers HTTP, passthrough, WebSocket, Messages bridging, compact, images, and search, preserving each WS frame's turn and window number.
+
+- Edit an OpenAI OAuth account and enable **Experimental fingerprint convergence (klno)**. It is off by default and stored as `extra.codex_experimental_fingerprint_convergence: true`; disabling removes the key. Shadow accounts use the credential parent's experimental setting.
+- The switch completes session headers, correlates parent/child threads and turns, and preserves UUIDv7 version and timestamps during derivation. Combine it with **Device only** (`codex_fingerprint_mode: device`) for endpoint-specific device/header handling and compact cache keys.
+- Consistent session/thread/cache-key derivation, composite ID structure, and per-frame window fixes always apply. Upgrading or toggling the setting can change existing identities and require cache affinity or session correlation to be re-established. Disabling the experiment does not restore unpatched upstream behavior.
+- This feature addresses protocol consistency, with no guarantee of improved quotas, overload handling, or account risk outcomes. No database schema migration is required.
+
 ## ⚠️ Important Notice
 
 Please read the following carefully before using this project:

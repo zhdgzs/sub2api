@@ -154,6 +154,17 @@ func startPassthroughLifecycleServer(
 	account *Account,
 ) (*httptest.Server, <-chan error) {
 	t.Helper()
+	return startPassthroughLifecycleServerWithHooks(t, controlCtx, svc, account, nil)
+}
+
+func startPassthroughLifecycleServerWithHooks(
+	t *testing.T,
+	controlCtx context.Context,
+	svc *OpenAIGatewayService,
+	account *Account,
+	hooksFactory func(*gin.Context) *OpenAIWSIngressHooks,
+) (*httptest.Server, <-chan error) {
+	t.Helper()
 	serverErr := make(chan error, 1)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		conn, err := coderws.Accept(w, r, &coderws.AcceptOptions{CompressionMode: coderws.CompressionContextTakeover})
@@ -184,7 +195,11 @@ func startPassthroughLifecycleServer(
 		req := r.Clone(controlCtx)
 		req.Header = req.Header.Clone()
 		ginCtx.Request = req
-		serverErr <- svc.ProxyResponsesWebSocketFromClient(controlCtx, ginCtx, conn, account, "sk-test", firstMessage, nil)
+		var hooks *OpenAIWSIngressHooks
+		if hooksFactory != nil {
+			hooks = hooksFactory(ginCtx)
+		}
+		serverErr <- svc.ProxyResponsesWebSocketFromClient(controlCtx, ginCtx, conn, account, "sk-test", firstMessage, hooks)
 	}))
 	return server, serverErr
 }

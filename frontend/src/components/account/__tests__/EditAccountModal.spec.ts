@@ -328,6 +328,62 @@ describe('EditAccountModal', () => {
     authIsSimpleMode.value = true
   })
 
+  it('saves experimental convergence independently of the fingerprint mode', async () => {
+    const account = buildOpenAIOAuthParentAccount()
+    account.extra = { codex_fingerprint_mode: 'device', unrelated_setting: 'keep' }
+    updateAccountMock.mockReset().mockResolvedValue(account)
+    checkMixedChannelRiskMock.mockReset().mockResolvedValue({ has_risk: false })
+    const wrapper = mountModal(account)
+    const toggle = wrapper.get<HTMLInputElement>('[data-testid="edit-codex-fingerprint-convergence"]')
+
+    expect(toggle.element.checked).toBe(false)
+    await toggle.setValue(true)
+    await wrapper.get('form#edit-account-form').trigger('submit.prevent')
+
+    expect(updateAccountMock).toHaveBeenCalledTimes(1)
+    expect(updateAccountMock.mock.calls[0]?.[1]?.extra).toMatchObject({
+      codex_experimental_fingerprint_convergence: true,
+      codex_fingerprint_mode: 'device',
+      unrelated_setting: 'keep'
+    })
+    wrapper.unmount()
+  })
+
+  it('loads the experimental setting and removes only that key when disabled', async () => {
+    const account = buildOpenAIOAuthParentAccount()
+    account.extra = {
+      codex_experimental_fingerprint_convergence: true,
+      codex_fingerprint_mode: 'device'
+    }
+    updateAccountMock.mockReset().mockResolvedValue(account)
+    checkMixedChannelRiskMock.mockReset().mockResolvedValue({ has_risk: false })
+    const wrapper = mountModal(account)
+    const toggle = wrapper.get<HTMLInputElement>('[data-testid="edit-codex-fingerprint-convergence"]')
+
+    expect(toggle.element.checked).toBe(true)
+    await toggle.setValue(false)
+    await wrapper.get('form#edit-account-form').trigger('submit.prevent')
+
+    expect(updateAccountMock).toHaveBeenCalledTimes(1)
+    expect(updateAccountMock.mock.calls[0]?.[1]?.extra).not.toHaveProperty('codex_experimental_fingerprint_convergence')
+    expect(updateAccountMock.mock.calls[0]?.[1]?.extra?.codex_fingerprint_mode).toBe('device')
+    wrapper.unmount()
+  })
+
+  it('rehydrates the experimental setting when switching accounts and hides it for API keys', async () => {
+    const account = buildOpenAIOAuthParentAccount()
+    account.extra = { codex_experimental_fingerprint_convergence: true }
+    const wrapper = mountModal(account)
+    const selector = '[data-testid="edit-codex-fingerprint-convergence"]'
+    expect(wrapper.get<HTMLInputElement>(selector).element.checked).toBe(true)
+
+    await wrapper.setProps({ account: { ...buildOpenAIOAuthParentAccount(), id: 8 } })
+    expect(wrapper.get<HTMLInputElement>(selector).element.checked).toBe(false)
+    await wrapper.setProps({ account: buildAccount() })
+    expect(wrapper.find(selector).exists()).toBe(false)
+    wrapper.unmount()
+  })
+
   it('reopening the same account rehydrates the OpenAI whitelist from props', async () => {
     const account = buildAccount()
     updateAccountMock.mockReset()
