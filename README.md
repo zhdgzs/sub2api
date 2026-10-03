@@ -23,7 +23,8 @@
 本仓库基于 [Wei-Shaw/sub2api](https://github.com/Wei-Shaw/sub2api) 维护，并定期同步上游 `main`。除下列定制外，其余功能和行为以对应上游版本为准：
 
 - **用户侧订阅账号只读查询**：普通用户可在后台查看分配给自己的订阅账号状态和用量；支持的 OpenAI 账号同时展示周额度预测和周期历史，但不能修改账号配置，且只能读取当前有效订阅分组内的账号。
-- **独立发布版本与镜像**：发行版本使用 `-zhdgzs.N` 后缀，并通过本仓库的 GitHub Actions 构建 Docker 镜像。
+- **独立发布版本与镜像**：发行版本使用 `-zhdgzs.N` 后缀，并通过本仓库的 GitHub Actions 构建 Docker 镜像。远程 Docker 构建在后端编译前从合并后的 Ent schema 和 Wire provider 重新生成代码，无需在本地运行生成或构建工具。
+- **账号优先级行内编辑**：管理后台账号列表支持直接输入整数优先级并在回车或失焦时保存，也可通过上下箭头步进调整；数值越小越优先，最低为 1。
 - **前端查询条件保存**：管理后台账号列表会在浏览器本地保存平台、账号类型、状态、隐私模式、分组和关键词筛选条件，重新进入页面后自动恢复；URL 中的 `search` 参数优先。
 
 ### Codex 出站身份一致性
@@ -70,8 +71,8 @@
 </tr>
 
 <tr>
-<td width="180"><a href="https://apikey.fun/register?aff=SUB2API"><img src="assets/partners/logos/apikey-fun.png" alt="APIKEY.FUN" width="150"></a></td>
-<td>感谢 APIKEY.FUN 赞助了本项目！<a href="https://apikey.fun/register?aff=SUB2API">APIKEY.FUN</a> 是 sub2api 开源项目的核心贡献者之一，致力于提供开放、稳定、高性价比的 AI API 接入服务。平台支持 Claude、OpenAI、Gemini 等热门模型的 API 中转服务，价格低至官方原价的 7%。通过专属链接 <a href="https://apikey.fun/register?aff=SUB2API">APIKEY</a> 注册，可享受充值最高 95 折优惠。</td>
+<td width="180"><a href="https://apikey.fan/register?aff=SUB2API"><img src="assets/partners/logos/apikey-fun.png" alt="APIKEY.FUN" width="150"></a></td>
+<td>感谢 APIKEY.FUN 赞助了本项目！<a href="https://apikey.fan/register?aff=SUB2API">APIKEY.FUN</a> 是 sub2api 开源项目的核心贡献者之一，致力于提供开放、稳定、高性价比的 AI API 接入服务。平台支持 Claude、OpenAI、Gemini 等热门模型的 API 中转服务，价格低至官方原价的 7%。通过专属链接 <a href="https://apikey.fan/register?aff=SUB2API">APIKEY</a> 注册，可享受充值最高 95 折优惠。</td>
 </tr>
 
 <tr>
@@ -120,22 +121,8 @@
 </tr>
 
 <tr>
-<td width="180"><a href="https://sui-xiang.com/"><img src="assets/partners/logos/sui-xiang.jpg" alt="sui-xiang" width="150"></a></td>
-<td>感谢 随想AI网关 赞助本项目！<a href="https://sui-xiang.com/">随想AI网关</a>  是一家可靠高效的 API 中继服务提供商，提供 Claude、Codex、Gemini 等的中继服务。注重隐私的中转站·无数据倒卖·无模型掺水，隐私，透明，极速售后。新账户注册每日签到就送 0.5 元测试额度，充值额度 1:1，无需订阅，按量付费。多线路冗余、跨区域容灾、自动故障切换,长链路 SSE 不中断。99.9% 可用性,关键调用从不掉队。
-</td>
-</tr>
-
-<tr>
 <td width="180"><a href="https://www.proxy4free.com/?keyword=4yjqecpc"><img src="assets/partners/logos/proxy4free.png" alt="proxy4free" width="150"></a></td>
 <td>感谢 Proxy4Free 赞助本项目！Proxy4Free 是面向开发者和 AI 应用的数据代理服务商，提供住宅代理、静态住宅代理、ISP 代理及数据中心代理等多种代理解决方案，适用于 Web Scraping、Browser Automation、AI Agent 等场景。支持全球 IP 资源、稳定连接与灵活切换，帮助开发者提升数据采集成功率，降低 IP 封禁风险。通过<a href="https://www.proxy4free.com/?keyword=4yjqecpc">此链接注册</a>即可开始体验，轻松构建更稳定、高效的自动化工作流。
-</td>
-</tr>
-
-<tr>
-<td width="180"><a href="http://www.fastaitoken.com/register"><img src="assets/partners/logos/fastaitoken.jpg" alt="fastaitoken" width="150"></a></td>
-<td>🎉 感谢 FastAIToken 对本项目的赞助！ <a href="http://www.fastaitoken.com/register">FastAIToken</a> 是面向开发者的 AI API 聚合平台，支持 OpenAI、Claude、Gemini 等主流大模型，充值 1:1，1 元 = 1 美元 API 额度，让开发者以更低成本、更便捷地使用全球领先的大模型服务。<br>
-
-🚀 平台提供多种渠道自由选择：超级低价的0.02x OpenAI 福利分组（限时）、低至 0.25x OpenAI 分组、0.7x Claude 95%固定缓存、1.2x Claude Max 渠道；同时提供公开状态页，实时展示各分组的可用率、延迟及运行状态，服务透明可靠，并提供 7×24 小时真人技术支持（非机器人），快速响应开发者需求。
 </td>
 </tr>
 
@@ -148,11 +135,6 @@
 <tr>
 <td width="180"><a href="https://nagora.ai/"><img src="assets/partners/logos/nagora.png" alt="Nagora" width="150"></a></td>
 <td><a href="https://nagora.ai/">Nagora</a> 是专为开发者和团队打造的多模型 AI API 网关。通过一个账户和一枚 API Key，即可统一调用 26+ 款主流文本与图像模型，兼容 OpenAI、Anthropic 与 Gemini 协议，并可无缝接入 Claude Code、Codex、Gemini CLI 等开发工具。平台提供智能路由、自动故障转移、透明计费与统一账单，同时支持预算、限速、并发控制，让个人开发、团队协作和生产环境中的 AI 调用更稳定、更可控。无需改造现有应用，只需替换 Base URL 与 API Key，最快 1 分钟即可完成接入。</td>
-</tr>
-
-<tr>
-<td width="180"><a href="https://www.novada.com/?sub2api/"><img src="assets/partners/logos/novada.png" alt="Novada" width="150"></a></td>
-<td>感谢 <a href="https://www.novada.com/?sub2api/">Novada</a> 赞助本项目！Novada 为构建 AI 应用与自动化工作流的开发者提供住宅代理、ISP 代理、数据中心代理与移动代理，以及 Web Unlocker 和 Scraper API。凭借全球 IP 覆盖、灵活的轮换与粘性会话以及精准的地理定位，Novada 帮助团队在 AI Agent 工作流、跨区域测试、网络调研与浏览器自动化等场景中稳定获取网络数据。立即体验 Novada，构建更稳定、更可扩展的 AI 工作流。</td>
 </tr>
 
 <tr>
@@ -195,6 +177,21 @@
 <td>感谢 APIMart 赞助了本项目！<a href="https://go.apimart.ai/gh-sub2api">APIMart</a> 是专注于 AI 图片/视频生成的低价 API 平台，GPT-Image-2 低至 $0.006/张，1 美元可生成 160+ 张图片。图片、视频一套异步 API 通吃：提交任务获取 ID，通过轮询或回调获取结果；批量生成上万张图片也不会超时，切换模型无需修改代码。按量付费、无月费，通过<a href="https://go.apimart.ai/gh-sub2api">此注册链接</a>注册即可开始使用。</td>
 </tr>
 
+<tr>
+<td width="180"><a href="https://www.axisnow.io/"><img src="assets/partners/logos/axisnow.jpg" alt="AxisNow" width="150"></a></td>
+<td>感谢 AxisNow 赞助了本项目！<a href="https://www.axisnow.io/">AxisNow</a> 保护并加速网站与 API，兼顾中国大陆及全球的访问体验，并通过客户端 SDK，将加速与安全能力延伸至原生/移动 App — <strong>自建私有部署 CDN</strong>｜<strong>订阅式高防 CDN</strong>｜<strong>自主可控、灵活组合的 CDN 网络</strong>。</td>
+</tr>
+
+<tr>
+<td width="180"><a href="https://pp.dog/register?aff=SUB2API"><img src="assets/partners/logos/ppdog.png" alt="PP.dog" width="150"></a></td>
+<td><a href="https://pp.dog/register?aff=SUB2API">PP.dog</a> 是自建账号池的源头 API 网关，专注为下游中转站与高频开发者提供 API 网关中继服务，帮您省去自建号池的一切麻烦——✅ 源头直供：自持海量账号池，无中间商赚差价；🧧 成本屠夫：综合倍率低至 0.03x，成本仅为官方的千分之3.5；🚀 极速体验：首 Token 延迟 < 1s，流畅媲美官方原生 API。<a href="https://www.pp.dog/register?aff=SUB2API">立即接入PP.dog</a></td>
+</tr>
+
+<tr>
+<td width="180"><a href="https://colaproxy.com/?utm_source=sub2api&utm_medium=sub2api&ref=sub2api"><img src="assets/partners/logos/cola-proxy.jpg" alt="ColaProxy" width="150"></a></td>
+<td>ColaProxy 提供专为网页抓取、自动化和多账号管理打造的高质量住宅代理。免费试用，流量永不过期，价格低至 $0.3/GB，支持无限并发连接和智能 IP 轮换，带来更流畅、更稳定的代理体验。使用优惠码 COLA10 立享 9 折优惠，立即开始使用可靠的住宅代理扩展您的项目。<a href="https://colaproxy.com/?utm_source=sub2api&utm_medium=sub2api&ref=sub2api">立即开始使用 ColaProxy</a></td>
+</tr>
+
 </table>
 
 ## 项目概述
@@ -212,6 +209,7 @@ Sub2API 是一个 AI API 网关平台，用于分发和管理 AI 产品订阅的
 - **速率限制** - 可配置的请求和 Token 速率限制
 - **内置支付系统** - 支持 EasyPay 易支付、支付宝官方、微信官方、Stripe，用户自助充值，无需独立部署支付服务（[配置指南](docs/PAYMENT_CN.md)）
 - **管理后台** - Web 界面进行监控和管理
+- **复合分组** - 管理员可为多平台分组配置模型到具体提供商的路由（[运维指南](docs/COMPOSITE_GROUPS.md)）
 - **外部系统集成** - 支持通过 iframe 嵌入外部系统（如工单等），扩展管理后台功能
 
 ## 生态项目
@@ -243,6 +241,32 @@ underscores_in_headers on;
 ```
 
 Nginx 默认会丢弃名称中含下划线的请求头（如 `session_id`），这会导致多账号环境下的粘性会话功能失效。
+
+---
+
+## Codex Fast/Flex 策略说明
+
+管理员后台的 `系统设置 -> 网关服务 -> OpenAI Fast/Flex 策略` 只负责处理请求体中的 `service_tier`，不会修改 Codex 客户端的模型目录，也不会让 Codex UI 自动出现 Speed 或 `/fast` 选项。
+
+策略支持以下处理方式：
+
+- `pass`：保留客户端传入的 `service_tier`；`fast` 会规范为上游使用的 `priority`。
+- `filter`：移除 `service_tier`，按普通优先级请求。
+- `block`：拒绝匹配的 Fast/Flex 请求。
+- `force_priority`：将匹配请求强制设置为 `priority`，会按 Priority/Fast 价格计费。为避免升级后改变既有规则语义，`all` 只匹配显式存在的 tier；如需让省略 `service_tier` 的 OpenAI 请求也强制升级，必须新增 `service_tier=missing + force_priority` 规则。非 OpenAI 平台不会执行缺省 tier 注入。这种方式可以让请求实际使用 Fast，但 Codex UI 仍可能不显示 Fast 状态。
+
+Codex 的 Fast 入口由客户端模型目录驱动。只有当前模型目录声明了 `additional_speed_tiers: ["fast"]` 和对应的 `service_tiers`，Codex 才会显示 `/fast`。通过 API Key 或自定义模型提供商连接 Sub2API 时，如果模型目录没有这些字段，即使后台配置了 `force_priority`，重启 Codex 后也不会出现 Speed 选项。
+
+客户端可在 `~/.codex/config.toml` 中直接指定默认请求级别：
+
+```toml
+service_tier = "fast"
+
+[features]
+fast_mode = true
+```
+
+其中 `service_tier = "fast"` 会让请求携带 Fast 设置；`features.fast_mode` 只启用客户端 Fast 功能。模型目录没有声明 Fast 能力时，`/fast` 仍可能不显示。可通过 Sub2API 使用记录确认最终 `service_tier` 是否为 `priority`。
 
 ---
 
@@ -539,6 +563,8 @@ pnpm run build
 
 # 4. 编译后端（嵌入前端）
 cd ../backend
+go generate ./ent
+go generate -tags wireinject ./cmd/server
 VERSION="$(./scripts/resolve-version.sh)"
 go build -tags embed -ldflags="-X main.Version=${VERSION}" -o sub2api ./cmd/server
 
@@ -652,6 +678,24 @@ Invalid base URL: invalid url scheme: http
 - 强制仅允许 TLS 出站
 - 在反向代理层移除敏感响应头
 
+#### OpenAI Responses WebSocket 接入限制
+
+`gateway.openai_ws` 可独立限制客户端 Responses WebSocket 连接的生命周期与数量，不影响每轮之间释放的用户/账号并发槽位：
+
+```yaml
+gateway:
+  openai_ws:
+    client_first_message_timeout_seconds: 30
+    ingress_inter_turn_idle_timeout_seconds: 300
+    max_ingress_connections_per_api_key: 64
+    mode_router_v2_enabled: true
+    force_http: false
+```
+
+首帧超时涵盖读取和解压总时间，发生在 HTTP 桥接路由前；慢链路上的大上下文或图片请求可提高至 120-300 秒。轮次间空闲超时和每密钥连接上限均可设为 `0` 关闭。连接上限通过 Redis 协调，租约为 60 秒、每 20 秒续租；完整租期内无法确认租约时会关闭本地连接。
+
+账号级 `http_bridge`（客户端 WebSocket、上游 HTTP/SSE）需要启用 `mode_router_v2_enabled`，也可设置 `GATEWAY_OPENAI_WS_MODE_ROUTER_V2_ENABLED=true`。若出口代理导致上游反复重连，可在持久化 `config.yaml` 设置 `force_http: true`，或在 Compose / Apple container 的 `.env` 设置 `GATEWAY_OPENAI_WS_FORCE_HTTP=true`。此全局回退不依赖 v2 路由，也不改变客户端协议。它不会强制 HTTP/1.1；HTTP/2 不兼容时需另设 `gateway.openai_http2.enabled: false` 或 `GATEWAY_OPENAI_HTTP2_ENABLED=false`。配置必须保存到部署文件，确保更新或重建容器后仍生效。
+
 #### ⚠️ 重要：创建管理员账号
 
 初始管理员账号**只能通过 setup 向导创建**（首次启动时访问 `http://<host>:8080`）。`config.yaml` 中的 `default.admin_email` / `default.admin_password` 字段**不会被用来创建管理员**——它们只是出于历史原因保留在模板里。
@@ -704,6 +748,7 @@ websocat -H="Sec-WebSocket-Protocol: sub2api-admin, jwt.<ADMIN_TOKEN>" ws://loca
 ```bash
 # 后端（支持热重载）
 cd backend
+make generate
 go run ./cmd/server
 
 # 前端（支持热重载）
@@ -713,13 +758,29 @@ pnpm run dev
 
 #### 代码生成
 
-修改 `backend/ent/schema` 后，需要重新生成 Ent + Wire：
+首次源码构建或修改 `backend/ent/schema`、Wire provider 后，需要先重新生成 Ent + Wire。`wire_gen.go` 不再提交到版本库；生成依赖 Go 及模块网络访问，工具版本由 `backend/go.mod` 固定。`make -C backend build` 和后端 Make 测试入口自动生成；直接使用 `go build`、`go test` 或 `go run` 前须先运行以下命令：
 
 ```bash
 cd backend
 go generate ./ent
-go generate ./cmd/server
+go generate -tags wireinject ./cmd/server
 ```
+
+根 `Dockerfile` 自动在后端编译前执行同样的生成步骤。`remote-docker` 发布仅推送 `cust`，由 GitHub Actions 远程生成、编译和推送镜像；本地不运行测试、类型检查或构建，不等待 Actions，也不自动重启生产。发布流程见 [cust 维护与发布规范](docs/SYNC_UPSTREAM_CN.md)。
+
+---
+
+## OpenAI 图片模型
+
+支持 `gpt-image-2.5-flare`、`gpt-image-2.5-sunburst` 及其 `2026-09-08` 日期快照，可通过 `/v1/images/generations`、`/v1/images/edits` 调用。`quality` 支持 `xhigh`、`max`、`auto`，合法自定义尺寸和图片 usage 明细保持透传。
+
+OAuth / Setup Token 图片请求使用 Responses 主控模型调用 `image_generation` 工具，默认主控为 `gpt-5.6-luna`。可设置 `SUB2API_IMAGES_MAIN_MODEL` 切换为账号支持的文本模型；Docker Compose 用户修改 `.env` 后执行 `docker compose up -d` 重建容器。该配置不会替换所选图片模型，也不会覆盖 `/v1/responses` 请求中已经提供的文本主控模型。
+
+升级后，无模型限制的账号自动支持新模型。已有显式账号映射或分组白名单需要加入两个 2.5 模型（日期快照按需加入）；升级不会自动扩大管理员设置的模型权限。新模型内置价格包含官方文本输入、图片输入和图片输出 token 费率，远端价格表尚未更新时使用内置 2.5 价格；实际按次或按 token 计费仍由既有分组/渠道配置决定。
+
+## 异步图片任务
+
+耗时较长的 OpenAI/Grok 图片生成和编辑可通过 `/v1/images/generations/async` 或 `/v1/images/edits/async` 提交，再通过 `/v1/images/tasks/{task_id}` 轮询结果，避免长时间占用 CDN 连接。请求与响应示例见[异步图片任务](docs/ASYNC_IMAGE_TASKS.md)。
 
 ---
 
@@ -728,8 +789,126 @@ go generate ./cmd/server
 简易模式适合个人开发者或内部团队快速使用，不依赖完整 SaaS 功能。
 
 - 启用方式：设置环境变量 `RUN_MODE=simple`
-- 功能差异：隐藏 SaaS 相关功能，跳过计费流程
+- 默认每次启动会补齐默认分组。设置 `SIMPLE_MODE_AUTO_CREATE_DEFAULT_GROUPS=false`（或 YAML `simple_mode.auto_create_default_groups: false`）可自行管理分组。默认值为 `true`；关闭后不删除已有分组，不改变运行时自动绑定或管理员并发设置。
+- 功能差异：隐藏 SaaS 相关功能，跳过余额和订阅扣费
+- 可选密钥窗口：设置 `SIMPLE_MODE_KEY_RATE_LIMIT_ENABLED=true` 后，按每个 API Key 配置的 5 小时、1 天、7 天消费窗口进行限制，默认值为 `false`；启用后仍跳过余额和订阅扣费。
+- 窗口限制以数据库为准，只记录 API Key 窗口用量。它在请求完成后记账，并发中的请求可能以各自最终费用超过窗口上限。启用前的历史用量不会自动补算。
 - 安全注意事项：生产环境需同时设置 `SIMPLE_MODE_CONFIRM=true` 才允许启动
+
+请将设置保存到服务环境或部署 `.env`。修改后重启二进制/服务；Compose 用户执行 `docker compose up -d` 重建容器，仅重启容器不会重新加载 `.env`。YAML 部署也可设置 `simple_mode_key_rate_limit_enabled: true` 启用密钥窗口。
+
+---
+
+## Grok / xAI 使用说明
+
+Sub2API 支持通过 xAI OAuth 接入 Grok 订阅账户，也支持标准 xAI API Key 账户。两种账号均可将 OpenAI 兼容的 Responses 请求转发给 xAI。
+
+### 支持范围
+
+- 平台：`grok`
+- 账号类型：OAuth 订阅账户与 xAI API Key 账户
+- Responses 端点：`/v1/responses`、`/responses`、`/backend-api/codex/responses`；OAuth 账户转发至 Grok 订阅代理，API Key 账户转发至 `https://api.x.ai/v1/responses`
+- Claude 兼容端点：`/v1/messages`；请求转换为 xAI Responses，响应转换为 Anthropic Messages，适用于 Claude CLI 类客户端
+- Chat Completions 端点：`/v1/chat/completions`、`/chat/completions`，按账号类型转发到对应 xAI 上游
+- Responses 端点接受 Codex CLI 类客户端的 WebSocket 接入，并桥接至 xAI HTTP/SSE 上游
+- 文本模型：`grok-4.5`、`grok-4.3`、`grok-build-0.1`、`grok-composer-2.5-fast`、`grok-4.20-0309-reasoning`、`grok-4.20-0309-non-reasoning`、`grok-4.20-multi-agent-0309`
+- Grok 分组的媒体端点：`/v1/images/generations`、`/images/generations`、`/v1/images/edits`、`/images/edits`、`/v1/videos/generations`、`/videos/generations`、`/v1/videos/edits`、`/videos/edits`、`/v1/videos/extensions`、`/videos/extensions`、`/v1/videos/{request_id}`、`/videos/{request_id}`。生成、编辑与扩展请求需要开启分组的图片生成权限。
+- 媒体模型：`grok-imagine`、`grok-imagine-image-quality`、`grok-imagine-image`、`grok-imagine-image-2.0`、`grok-imagine-edit`、`grok-imagine-video`、`grok-imagine-video-1.5`
+- JSON 图片编辑和视频生成请求可在 `image`、`images`、`reference_images`、`mask` 对象中提供图片引用。xAI 兼容载荷使用 `url`；旧版 `image_url` 仍可使用，转发前会规范为 `url`。
+- 不支持：TTS、语音转录、浏览器自动化、Cookie 接入或 Grok 网页抓取
+
+### OAuth 配置
+
+Grok OAuth 使用 PKCE，无需提交私有密钥。默认客户端参数遵循兼容客户端使用的公开 xAI OAuth 流程，均可通过环境变量覆盖：
+
+| 变量 | 默认值 |
+|------|--------|
+| `XAI_OAUTH_CLIENT_ID` | 公开的 xAI OAuth 客户端 ID |
+| `XAI_OAUTH_SCOPE` | `openid profile email offline_access grok-cli:access api:access` |
+| `XAI_OAUTH_REDIRECT_URI` | `http://127.0.0.1:56121/callback` |
+| `XAI_OAUTH_AUTHORIZE_URL` | `https://auth.x.ai/oauth2/authorize` |
+| `XAI_OAUTH_TOKEN_URL` | `https://auth.x.ai/oauth2/token` |
+| `XAI_BASE_URL` | `https://api.x.ai/v1`；仅覆盖运行时诊断地址，请求转发由账号的 `base_url` 控制 |
+| `XAI_GROK_CLI_VERSION` | `0.2.114`；可覆盖发往 `cli-chat-proxy.grok.com` 的客户端身份版本，但低于此固定最低版本的设置会被忽略 |
+
+管理员可在后台创建 Grok OAuth 或 API Key 账户，也可通过管理 API 完成 OAuth 授权与重新授权：
+
+| 端点 | 用途 |
+|------|------|
+| `POST /api/v1/admin/grok/oauth/auth-url` | 生成 xAI OAuth 授权链接 |
+| `POST /api/v1/admin/grok/oauth/exchange-code` | 将回调 URL、查询字符串或授权码换取 OAuth 凭据 |
+| `POST /api/v1/admin/grok/oauth/refresh-token` | 校验或刷新 Grok refresh token |
+| `POST /api/v1/admin/grok/accounts/:id/refresh` | 刷新已有 Grok 账户 |
+
+OAuth 凭据复用账号 JSON 字段：`access_token`、`refresh_token`、`token_type`、`expires_at`、`base_url`、可选的 `email`、可选的 `subscription_tier` 及 `entitlement_status`。OAuth 推理默认使用 `https://cli-chat-proxy.grok.com/v1`；已有 OAuth 账号如保存了旧默认地址 `https://api.x.ai/v1`，运行时会改用订阅代理。显式自定义的上游地址保持不变。
+
+API Key 账户在创建窗口中选择 **Grok -> API Key**。官方默认地址为 `https://api.x.ai/v1`，凭据使用已有的 `base_url`、`api_key` 字段；OAuth 账户仍走上述订阅流程。
+
+### Grok Build CLI 配置
+
+1. 在管理后台添加 `grok` OAuth 账户并完成 xAI 授权，或添加 Grok API Key 账户。
+2. 创建 Grok 分组并关联账号，再创建绑定该分组的 Sub2API API Key。
+3. 在用户 API Key 页面点击“使用密钥”，选择 **Grok CLI**，可生成适用于 macOS/Linux 或 Windows 的配置文件和地址；**OpenCode** 标签页还提供 OpenCode 配置。
+4. 手动配置时，将以下内容合并至 `~/.grok/config.toml`（Windows：`%USERPROFILE%\.grok\config.toml`）：
+
+```toml
+[models]
+default = "grok"
+web_search = "grok"
+
+[model."grok"]
+model = "grok-4.5"
+base_url = "https://your-sub2api.example.com/v1"
+name = "Grok 4.5"
+api_key = "sk-your-sub2api-key"
+api_backend = "responses"
+context_window = 1000000
+supports_backend_search = true
+```
+
+合并前请备份已有的 `config.toml`。文件中包含 Sub2API API Key，请妥善保管，并在支持的系统上限制文件权限。可用以下命令检查生效配置并验证请求：
+
+```bash
+grok inspect
+grok -p "Reply with sub2api-ok" -m grok
+```
+
+上述 `base_url` 是以 `/v1` 结尾的 Sub2API 对外地址，不是 `api.x.ai` 或内部 xAI OAuth 代理地址。
+
+### 用量与额度显示
+
+xAI 额度采用被动观测：只有上游在成功或限流响应中返回限流头时，Sub2API 才记录白名单内的头部，不会自行推测订阅额度。首次可用上游响应前，后台显示额度未知，但仍展示 Sub2API 本地用量。
+
+`401` 会临时将凭据失效账号移出调度；`403` 按访问或权益失败处理，不会反复刷新令牌；`429` 按 `Retry-After` 或短暂冷却将账号临时移出调度。
+
+新的 Grok 图片和视频生成请求会检查媒体专用资格。API Key 账号仍可参与；OAuth 账号如明确显示 Free 或权限被拒绝，则不参与新媒体生成。缺失或格式异常的观测会在转发前探测；成功但信息不完整的账单响应标记为 `billing_inconclusive`，为兼容既有行为仍可参与，因为未知账单结构不代表没有媒体权益。管理员可通过 `extra.grok_media_eligible=false` 排除已知不可用账号，或用 `true` 强制启用已验证账号。导入时会主动优先探测账单。聊天与视频状态查询不受此媒体隔离影响；无合格账号时返回 HTTP `503`，错误类型为 `grok_media_no_eligible_account`。
+
+管理员可在账号创建/更新 API 中设置 `extra.grok_media_eligible`：`false` 排除、`true` 强制可用；更新时传 `null` 删除覆盖并恢复自动探测，省略字段则保留现有设置。仅有每周额度周期不视为付费层级证据。成功的图片响应必须包含至少一个实际图片输出；空的 HTTP `200` 响应会切换账号，不会作为成功生成返回或计数。
+
+---
+
+## TypeSafe / Jev 使用说明
+
+Sub2API 支持使用 TypeSafe API Key 账户，通过 Jev 原生、非流式的 System One 协议调用模型。
+
+- 平台：`typesafe`；账号类型：API Key
+- 默认上游：`https://api.typesafe.ai`
+- 对外端点：`POST /v1/systemone`
+- 模型：`jev-latest`，TypeSafe 分组的 `/v1/models` 也会返回该模型
+- 问题类型：`noul`、`choice`、`score`
+
+请求和成功响应保持 System One 原生 JSON 结构。该端点不兼容 Chat Completions、Responses、Anthropic Messages 或流式客户端。
+
+问题校验遵循 TypeSafe OpenAPI 的线上协议 schema（SDK v0.5.7 也使用该 schema）。所有问题的 `instructions` 都可以省略或为 `null`。Noul 的 `criteria` 可以省略或为 `null`，其中 `true`/`false` 的描述和 Choice 描述支持字符串、对象、数组或 `null`。Score 的 `criteria` 必须是至少包含一档描述的数组，每档支持字符串、对象或数组；单档也合法。SDK 的整数键 Score 映射会由 SDK 在发送前转换为数组。
+
+```bash
+curl https://your-sub2api.example.com/v1/systemone \
+  -H 'Authorization: Bearer sk-your-sub2api-key' \
+  -H 'Content-Type: application/json' \
+  --data '{"model":"jev-latest","state":"待评估文本","questions":{"safety":{"type":"noul","instructions":"评估文本是否不安全"}}}'
+```
+
+`jev-latest` 内置价格为输入 `$0.042/百万 tokens`、输出 `$0`，渠道定价可以覆盖。凭据、欠费、权限、限流、过载、服务端和网络错误（`401`、`402`、`403`、`429`、`529`、`5xx`、传输错误）沿用现有账号错误策略（含自定义错误码与临时不可调度规则）并切换账号；请求错误（`400`、`413`、`422`）不会切换账号重试，也不会改变账号状态。TypeSafe 分组（以及路由到 TypeSafe 的 Composite 请求）调用 Messages、Chat Completions、Responses、count_tokens 时返回 `404`。
 
 ---
 

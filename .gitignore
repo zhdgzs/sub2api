@@ -16,6 +16,9 @@ backend/server
 backend/sub2api
 backend/main
 
+# Wire output is regenerated from provider definitions.
+/backend/cmd/server/wire_gen.go
+
 # Go 测试二进制
 *.test
 
@@ -147,17 +150,21 @@ docs/*
 !docs/PLUGIN_DEVELOPMENT.md
 !docs/OPENAI_QUOTA_PERIOD_ESTIMATION_DESIGN.md
 !docs/channel-monitor-v2-safe-defaults.md
+!docs/codex-credits.md
 !docs/legal/
 !docs/legal/*.md
 !docs/screenshots/
 docs/screenshots/*
 !docs/screenshots/mobile-account-actions-menu.png
+!docs/screenshots/codex-referral-dialog.png
+!docs/screenshots/codex-referral-success.png
 .serena/
 .codex/
 frontend/coverage/
 aicodex
 output/
 .codegraph/
+issues/
 
 # Vitest / Vite cache at repo root
 .vite/

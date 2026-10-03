@@ -18,6 +18,12 @@
 
 </div>
 
+## 上流版との差分
+
+本フォークは [Wei-Shaw/sub2api](https://github.com/Wei-Shaw/sub2api) の `main` を定期的に取り込みます。独自の `-zhdgzs.N` リリースと Docker イメージを提供し、管理者のアカウント一覧フィルターをブラウザに保存します（URL の `search` が優先）。一般ユーザーは有効なサブスクリプショングループのアカウント状態・使用量・対応する OpenAI 週間予測履歴を読み取り専用で参照できますが、設定は変更できません。
+
+アカウント一覧では整数の優先度を直接入力して Enter またはフォーカスを外すと保存でき、矢印ボタンでも調整できます。数値が小さいほど優先され、最小値は 1 です。リモート Docker ビルドは、統合後の Ent schema と Wire provider からコードを生成してからバックエンドをコンパイルします。リリース agent はローカルで生成・ビルドを実行しません。
+
 ## Codex の送信 ID
 
 [KlN-4096/sub2api](https://github.com/KlN-4096/sub2api) の `7b9dd30`、`b25a062`、`863dbd0` を移植しました。HTTP、透過転送、WebSocket、Messages ブリッジ、compact、画像、検索の ID 処理を統一し、各 WS フレームのターンとウィンドウ番号を保持します。
@@ -62,8 +68,8 @@
 </tr>
 
 <tr>
-<td width="180"><a href="https://apikey.fun/register?aff=SUB2API"><img src="assets/partners/logos/apikey-fun.png" alt="APIKEY.FUN" width="150"></a></td>
-<td>APIKEY.FUN のご支援に感謝します！<a href="https://apikey.fun/register?aff=SUB2API">APIKEY.FUN</a> は sub2api オープンソースプロジェクトのコアコントリビューターの一つであり、オープンで安定した、コストパフォーマンスに優れた AI API アクセスサービスの提供に取り組んでいます。プラットフォームは Claude、OpenAI、Gemini など人気モデルの API 中継サービスをサポートし、価格は公式料金のわずか 7% から。専用リンク <a href="https://apikey.fun/register?aff=SUB2API">APIKEY</a> から登録すると、すべてのチャージで永久 5% 割引をご利用いただけます。</td>
+<td width="180"><a href="https://apikey.fan/register?aff=SUB2API"><img src="assets/partners/logos/apikey-fun.png" alt="APIKEY.FUN" width="150"></a></td>
+<td>APIKEY.FUN のご支援に感謝します！<a href="https://apikey.fan/register?aff=SUB2API">APIKEY.FUN</a> は sub2api オープンソースプロジェクトのコアコントリビューターの一つであり、オープンで安定した、コストパフォーマンスに優れた AI API アクセスサービスの提供に取り組んでいます。プラットフォームは Claude、OpenAI、Gemini など人気モデルの API 中継サービスをサポートし、価格は公式料金のわずか 7% から。専用リンク <a href="https://apikey.fan/register?aff=SUB2API">APIKEY</a> から登録すると、すべてのチャージで永久 5% 割引をご利用いただけます。</td>
 </tr>
 
 <tr>
@@ -112,22 +118,8 @@
 </tr>
 
 <tr>
-<td width="180"><a href="https://sui-xiang.com/"><img src="assets/partners/logos/sui-xiang.jpg" alt="sui-xiang" width="150"></a></td>
-<td>随想AI ゲートウェイのご支援に感謝します！<a href="https://sui-xiang.com/">随想AI ゲートウェイ</a> は信頼性と効率に優れた API 中継サービスプロバイダーで、Claude、Codex、Gemini などの中継サービスを提供しています。プライバシー重視の中継ステーション・データ転売なし・モデル水増しなし、プライバシー・透明性・超高速アフターサービス。新規アカウント登録後、毎日サインインで 0.5 元のテストクレジットがもらえ、チャージは 1:1、サブスクリプション不要、従量課金。マルチライン冗長、クロスリージョン災害復旧、自動フェイルオーバー、長時間 SSE 接続が途切れません。99.9% の可用性、重要な呼び出しは決して遅れません。
-</td>
-</tr>
-
-<tr>
 <td width="180"><a href="https://www.proxy4free.com/?keyword=4yjqecpc"><img src="assets/partners/logos/proxy4free.png" alt="proxy4free" width="150"></a></td>
 <td>Proxy4Free のご支援に感謝します！Proxy4Free は開発者と AI アプリケーション向けのデータプロキシサービスプロバイダーで、住宅プロキシ、静的住宅プロキシ、ISP プロキシ、データセンタープロキシなど多様なプロキシソリューションを提供しており、Web Scraping、Browser Automation、AI Agent などのシナリオに適しています。グローバル IP リソース、安定した接続、柔軟な切り替えをサポートし、開発者のデータ収集成功率の向上と IP ブロックリスクの低減を支援します。<a href="https://www.proxy4free.com/?keyword=4yjqecpc">こちらのリンクから登録</a>して、より安定した効率的な自動化ワークフローを簡単に構築しましょう。
-</td>
-</tr>
-
-<tr>
-<td width="180"><a href="http://www.fastaitoken.com/register"><img src="assets/partners/logos/fastaitoken.jpg" alt="fastaitoken" width="150"></a></td>
-<td>🎉 FastAIToken のご支援に感謝します！<a href="http://www.fastaitoken.com/register">FastAIToken</a> は開発者向けの AI API アグリゲーションプラットフォームで、OpenAI、Claude、Gemini などの主要な大規模モデルに対応しています。チャージは 1:1（1 元 = 1 米ドル分の API クレジット）で、開発者がより低コスト・より手軽に世界トップクラスの大規模モデルサービスを利用できます。<br>
-
-🚀 プラットフォームでは多彩なチャネルを自由に選択できます：超低価格の 0.02x OpenAI 特典グループ（期間限定）、最低 0.25x の OpenAI グループ、0.7x Claude（95% 固定キャッシュ）、1.2x Claude Max チャネル。さらに、各グループの可用率・レイテンシ・稼働状況をリアルタイムで表示する公開ステータスページを提供し、透明で信頼できるサービスを実現。7×24 時間の有人テクニカルサポート（ボットではありません）により、開発者のニーズに迅速に対応します。
 </td>
 </tr>
 
@@ -140,11 +132,6 @@
 <tr>
 <td width="180"><a href="https://nagora.ai/"><img src="assets/partners/logos/nagora.png" alt="Nagora" width="150"></a></td>
 <td><a href="https://nagora.ai/">Nagora</a>は、開発者やチーム向けに設計されたマルチモデルAI APIゲートウェイです。1つのアカウントと1つのAPIキーだけで、26種類以上の主要なテキストモデルおよび画像モデルを一元的に利用できます。OpenAI、Anthropic、Geminiの各プロトコルに対応し、Claude Code、Codex、Gemini CLIなどの開発ツールにもシームレスに接続できます。 プラットフォームには、インテリジェントルーティング、自動フェイルオーバー、透明性の高い料金体系、請求の一元管理に加え、予算管理、レート制限、同時実行数の制御機能が備わっています。これにより、個人開発、チームでの共同作業、本番環境におけるAI APIの利用を、より安定的かつ柔軟に管理できます。 既存のアプリケーションを改修する必要はありません。Base URLとAPIキーを置き換えるだけで、最短1分で導入を完了できます。</td>
-</tr>
-
-<tr>
-<td width="180"><a href="https://www.novada.com/?sub2api/"><img src="assets/partners/logos/novada.png" alt="Novada" width="150"></a></td>
-<td>Novada のご支援に感謝します！<a href="https://www.novada.com/?sub2api/">Novada</a> は、AI アプリケーションや自動化ワークフローを構築する開発者向けに、レジデンシャル、ISP、データセンター、モバイルプロキシに加え、Web Unlocker と Scraper API を提供しています。グローバルな IP カバレッジ、柔軟なローテーション／スティッキーセッション、精密なジオターゲティングにより、AI エージェントワークフロー、クロスリージョンテスト、Web リサーチ、ブラウザ自動化などのシーンで、チームが Web データへ確実にアクセスできるよう支援します。Novada で、より安定しスケーラブルな AI ワークフローを構築しましょう。</td>
 </tr>
 
 <tr>
@@ -187,6 +174,21 @@
 <td>APIMart のご支援に感謝します！<a href="https://go.apimart.ai/gh-sub2api">APIMart</a> は AI 画像・動画生成に特化した低価格 API プラットフォームです。GPT-Image-2 は 1 枚 $0.006 から、1 ドルで 160 枚以上の画像を生成できます。画像と動画の両方に対応する非同期 API を 1 つで利用でき、タスクを送信して ID を取得し、ポーリングまたはコールバックで結果を取得できます。数万枚規模のバッチ処理でもタイムアウトせず、モデルを変更してもコードの変更は不要です。月額料金なしの従量課金制で、<a href="https://go.apimart.ai/gh-sub2api">こちらの登録リンク</a>からすぐに利用を開始できます。</td>
 </tr>
 
+<tr>
+<td width="180"><a href="https://www.axisnow.io/"><img src="assets/partners/logos/axisnow.jpg" alt="AxisNow" width="150"></a></td>
+<td>AxisNow のご支援に感謝します！<a href="https://www.axisnow.io/">AxisNow</a> はウェブサイトと API を保護・高速化し、中国本土および世界中で快適なアクセス体験を実現します。クライアント SDK により、ネイティブ／モバイルアプリにも高速化・セキュリティ機能を拡張できます — <strong>自社構築・プライベートデプロイ CDN</strong>｜<strong>サブスクリプション型高防御 CDN</strong>｜<strong>自律制御で柔軟に組み合わせられる CDN ネットワーク</strong>。</td>
+</tr>
+
+<tr>
+<td width="180"><a href="https://pp.dog/register?aff=SUB2API"><img src="assets/partners/logos/ppdog.png" alt="PP.dog" width="150"></a></td>
+<td><a href="https://pp.dog/register?aff=SUB2API">PP.dog</a> は自社運用の大規模アカウントプールを持つソースレベルの API ゲートウェイで、下流の中継ステーションや高頻度開発者向けに API ゲートウェイリレーサービスを提供し、アカウントプールの自主構築にかかるすべての手間を省きます。✅ ソース直供：自社運用の大規模アカウントプール、中間マージンなし；🧧 コスト最強：総合レート倍率わずか 0.03x、コストは公式の 0.35% のみ；🚀 超高速体験：ファーストトークンレイテンシ 1 秒未満、公式ネイティブ API に匹敵するスムーズさ。<a href="https://www.pp.dog/register?aff=SUB2API">今すぐ PP.dog に接続</a></td>
+</tr>
+
+<tr>
+<td width="180"><a href="https://colaproxy.com/?utm_source=sub2api&utm_medium=sub2api&ref=sub2api"><img src="assets/partners/logos/cola-proxy.jpg" alt="ColaProxy" width="150"></a></td>
+<td>ColaProxy は、Web スクレイピング、自動化、マルチアカウント管理向けに構築された高品質な住宅プロキシを提供します。有効期限なしのトラフィックで無料トライアルが利用でき、料金は $0.3/GB から、無制限の同時接続とインテリジェントな IP ローテーションにより、よりスムーズで安定したプロキシ体験を実現します。割引コード COLA10 で 10% オフ、信頼性の高い住宅プロキシでプロジェクトを今すぐスケールしましょう。<a href="https://colaproxy.com/?utm_source=sub2api&utm_medium=sub2api&ref=sub2api">ColaProxy を始める</a></td>
+</tr>
+
 </table>
 
 ## 概要
@@ -204,6 +206,7 @@ Sub2API は、AI 製品のサブスクリプションから API クォータを�
 - **レート制限** - 設定可能なリクエスト数およびトークンレート制限
 - **内蔵決済システム** - EasyPay、Alipay、WeChat Pay、Stripe に対応。ユーザーのセルフサービスチャージが可能で、別途決済サービスのデプロイは不要（[設定ガイド](docs/PAYMENT.md)）
 - **管理ダッシュボード** - 監視・管理のための Web インターフェース
+- **複合グループ** - 複数プロバイダーのグループでモデルを具体的な提供元へルーティングする管理機能（[運用ガイド](docs/COMPOSITE_GROUPS.md)）
 - **外部システム連携** - 外部システム（チケット管理など）を iframe 経由で管理ダッシュボードに埋め込み可能
 
 ## エコシステム
@@ -235,6 +238,14 @@ underscores_in_headers on;
 ```
 
 Nginx はデフォルトでアンダースコアを含むヘッダー（例: `session_id`）を破棄するため、マルチアカウント構成でのスティッキーセッションルーティングに支障をきたします。
+
+---
+
+## Codex Fast/Flex ポリシー
+
+管理画面のシステム設定で OpenAI Fast/Flex ポリシーを設定すると、本文の `service_tier` を処理します。`pass` は保持（`fast` は `priority` に正規化）、`filter` は削除、`block` は拒否、`force_priority` は Priority/Fast 料金で `priority` に変更します。互換性のため `all` は明示された tier のみを対象とし、省略された OpenAI tier を強制するには `service_tier=missing + force_priority` ルールが必要です。他のプラットフォームには省略時の tier 注入を行いません。
+
+ポリシーは Codex のモデルカタログを変更しません。`/fast` の表示には `additional_speed_tiers: ["fast"]` と対応する `service_tiers` の宣言が必要です。`~/.codex/config.toml` の `service_tier = "fast"` はリクエストの既定 tier を設定しますが、`[features]` の `fast_mode = true` だけでは不足したモデル宣言を補えません。最終 tier は Sub2API の使用履歴で確認してください。[設定例](README_EN.md#codex-fastflex-policy)。
 
 ---
 
@@ -419,6 +430,10 @@ docker compose -f docker-compose.local.yml logs -f sub2api
 
 **推奨:** データ管理が容易な `docker-compose.local.yml`（スクリプトによるデプロイ）を使用してください。
 
+#### データ管理の有効化（datamanagementd）
+
+管理画面のデータ管理には、ホスト上の別プロセス `datamanagementd` が必要です。`/tmp/sub2api-datamanagement.sock` に接続できる場合のみ有効になり、Docker ではホストの Socket をコンテナ内の同じパスにマウントしてください。[デプロイガイド](deploy/DATAMANAGEMENTD_CN.md)。
+
 #### アクセス
 
 ブラウザで `http://YOUR_SERVER_IP:8080` を開いてください。
@@ -519,6 +534,8 @@ pnpm run build
 
 # 4. フロントエンドを組み込んだバックエンドをビルド
 cd ../backend
+go generate ./ent
+go generate -tags wireinject ./cmd/server
 VERSION="$(./scripts/resolve-version.sh)"
 go build -tags embed -ldflags="-X main.Version=${VERSION}" -o sub2api ./cmd/server
 
@@ -584,6 +601,10 @@ SECURITY_FORWARDED_CLIENT_IP_HEADERS=True-Client-IP,X-CDN-Client-IP
 
 ヘッダー名は検証、正規化、大小文字を区別しない重複排除が行われます。管理画面のセキュリティ設定から再起動せずに更新でき、新規インストールでは YAML/環境変数の既定値を保存し、既存環境ではデータベース値がない場合に補完します。従来モードを無効にするとカスタムおよび組み込みの生転送ヘッダーはすべて無視され、`server.trusted_proxies` のみを使用します。有効にする場合はオリジンへの接続元を CDN/プロキシに制限し、エッジで信頼する全クライアント IP ヘッダーを上書きしてください。移行規則と信頼境界の詳細は [`deploy/EDGE_SECURITY.md`](deploy/EDGE_SECURITY.md) を参照してください。
 
+**ゲートウェイの多層防御**
+
+非ストリーミング上流レスポンスの読取上限は `gateway.upstream_response_read_max_bytes`（既定 `8MB`）、プロキシ探測は `gateway.proxy_probe_response_read_max_bytes`（既定 `1MB`）です。`gateway.gemini_debug_response_headers` は既定 `false` で、調査時のみ短時間有効にしてください。`/auth/register`、`/auth/login`、`/auth/login/2fa`、`/auth/send-verify-code` のサーバー側制限は Redis 障害時に拒否します。WAF/CDN とサーバー側制限・読取上限を併用してください。
+
 **⚠️ セキュリティ警告: HTTP URL 設定**
 
 `security.url_allowlist.enabled=false` の場合、システムは最小限の URL バリデーションのみを行い、**デフォルトで HTTP URL を許可**します（開発フレンドリーモード。Docker Compose デプロイのデフォルトも同じです）。本番環境では、以下のように明示的に HTTPS のみに制限することを推奨します:
@@ -624,6 +645,12 @@ URL バリデーションまたはレスポンスヘッダーフィルタリン�
 - TLS のみのアウトバウンドトラフィックを強制
 - プロキシで機密性の高い上流レスポンスヘッダーを除去
 
+#### OpenAI Responses WebSocket 接続制限
+
+`gateway.openai_ws` の既定値は `client_first_message_timeout_seconds: 30`、`ingress_inter_turn_idle_timeout_seconds: 300`、`max_ingress_connections_per_api_key: 64` です。最初のメッセージの期限は読取・解凍の合計時間で、HTTP ブリッジの選択前に適用されます。低速リンクでは 120-300 秒に増やせます。後者 2 項目は `0` で無効になります。接続上限は Redis の 60 秒リース（20 秒ごとに更新）で共有し、リースを確認できない状態が続くと接続を閉じます。各ターンのユーザー/アカウント同時実行枠とは独立しています。
+
+アカウントの `http_bridge` モードには `mode_router_v2_enabled: true` または `GATEWAY_OPENAI_WS_MODE_ROUTER_V2_ENABLED=true` が必要です。上流 WebSocket の再接続が続く場合は `gateway.openai_ws.force_http: true` または `GATEWAY_OPENAI_WS_FORCE_HTTP=true` で HTTP/SSE に変更できます。この全体設定は v2 ルーター不要で、クライアント側プロトコルも変更しません。HTTP/1.1 は強制しないため、HTTP/2 非互換時は `gateway.openai_http2.enabled: false` または `GATEWAY_OPENAI_HTTP2_ENABLED=false` を別途設定してください。更新後も有効になるよう、永続的な `.env` / `config.yaml` に保存します。[詳細](README_EN.md#openai-responses-websocket-ingress-limits)。
+
 #### ⚠️ 重要：管理者アカウントの作成
 
 初期管理者アカウントは**セットアップウィザード経由でのみ作成**されます（初回起動時に `http://<host>:8080` にアクセス）。`config.yaml` の `default.admin_email` / `default.admin_password` フィールドは**管理者作成には使われません**。テンプレートに残っているのは歴史的経緯によるものです。
@@ -648,11 +675,16 @@ URL バリデーションまたはレスポンスヘッダーフィルタリン�
 ./sub2api
 ```
 
+#### HTTP/2 (h2c) と HTTP/1.1 フォールバック
+
+バックエンドの平文ポートは既定で h2c をサポートし、WebSocket と旧クライアント向けに HTTP/1.1 も維持します。通常のブラウザは h2c を使わず、主な対象はリバースプロキシや内部接続です。Caddy では `transport http` に `versions h2c h1` を指定します。[設定例](README_EN.md#http2-h2c-and-http11-fallback)。
+
 #### 開発モード
 
 ```bash
 # バックエンド（ホットリロード付き）
 cd backend
+make generate
 go run ./cmd/server
 
 # フロントエンド（ホットリロード付き）
@@ -667,8 +699,26 @@ pnpm run dev
 ```bash
 cd backend
 go generate ./ent
-go generate ./cmd/server
+go generate -tags wireinject ./cmd/server
 ```
+
+初回のソースビルドと Ent schema / Wire provider の変更後は、先に上記の生成コマンドを実行してください。`wire_gen.go` は Git 管理対象外です。生成には Go とモジュールへのネットワーク接続が必要で、ツール版は `backend/go.mod` に固定されています。バックエンド Make のビルド・テストは自動生成しますが、`go build`、`go test`、`go run` を直接使う場合は事前生成が必要です。
+
+ルートの `Dockerfile` はコンパイル前に Ent と Wire を再生成します。`remote-docker` は `cust` を push し、GitHub Actions で生成・ビルド・イメージ配信を行います。agent はローカルでテスト・型検査・ビルドを行わず、Actions の完了待ちや本番の再起動も行いません。[リリース手順](docs/SYNC_UPSTREAM_CN.md)。
+
+---
+
+## OpenAI 画像モデル
+
+`gpt-image-2.5-flare`、`gpt-image-2.5-sunburst` と `2026-09-08` スナップショットを `/v1/images/generations`、`/v1/images/edits` で利用できます。`quality` は `xhigh`、`max`、`auto` に対応し、有効な独自サイズと画像 usage を保持します。
+
+OAuth / Setup Token は Responses のテキスト主制御モデル（既定 `gpt-5.6-luna`）から `image_generation` を呼び出します。`SUB2API_IMAGES_MAIN_MODEL` でアカウントが使える別のテキストモデルへ変更可能です。Compose は `.env` 更新後に `docker compose up -d` で再作成します。選択した画像モデルや、`/v1/responses` に明示した主制御モデルは変更しません。
+
+制限なしのアカウントは更新後に新モデルを利用できますが、明示的なマッピングとグループ許可リストには 2.5 モデル（必要ならスナップショット）を追加してください。更新は管理者の権限設定を広げません。リモート価格表に未掲載の場合は内蔵のテキスト入力・画像入力・画像出力 Token 価格を使用し、リクエスト単位か Token 単位かは既存グループ/チャネル設定に従います。
+
+## 非同期画像タスク
+
+長時間の OpenAI/Grok 画像生成・編集は `/v1/images/generations/async` または `/v1/images/edits/async` に送信し、`/v1/images/tasks/{task_id}` で結果を取得できます。CDN 接続を長時間保持する必要はありません。[リクエスト・レスポンス例](docs/ASYNC_IMAGE_TASKS.md)。
 
 ---
 
@@ -677,8 +727,35 @@ go generate ./cmd/server
 シンプルモードは、フル SaaS 機能を必要とせず、素早くアクセスしたい個人開発者や社内チーム向けに設計されています。
 
 - 有効化: 環境変数 `RUN_MODE=simple` を設定
-- 違い: SaaS 関連機能を非表示にし、課金プロセスをスキップ
+- 起動ごとに既定グループを補完します。`SIMPLE_MODE_AUTO_CREATE_DEFAULT_GROUPS=false` または YAML `simple_mode.auto_create_default_groups: false` で手動管理に変更できます。既定は `true` です。無効にしても既存グループの削除、実行時の自動関連付け、管理者の同時実行設定は変更しません。
+- 違い: SaaS 関連機能を非表示にし、残高・サブスクリプションの引き落としをスキップ
+- 任意のキー制限: `SIMPLE_MODE_KEY_RATE_LIMIT_ENABLED=true` で API Key に設定した 5 時間、1 日、7 日の支出制限を適用します。既定は `false` で、有効時も残高・サブスクリプションは引き落としません。
+- データベースを基準にキーの期間使用量のみ記録します。リクエスト完了後のソフト上限なので、並行リクエストの最終費用で上限を超える場合があります。有効化前の履歴は補算しません。
 - セキュリティに関する注意: 本番環境では `SIMPLE_MODE_CONFIRM=true` も設定する必要があります
+
+設定はサービス環境または部署の `.env` に保存して、変更後にサービスを再起動してください。Compose では `docker compose up -d` でコンテナを再作成します。再起動だけでは `.env` を再読み込みしません。YAML では `simple_mode_key_rate_limit_enabled: true` でもキー制限を有効にできます。
+
+---
+
+## Grok / xAI サポート
+
+`grok` プラットフォームは xAI OAuth サブスクリプションと API Key をサポートします。管理者はアカウントを Grok グループに関連付け、そのグループの Sub2API API Key を発行します。OAuth は PKCE を使用し、既定上流は `https://cli-chat-proxy.grok.com/v1` です。旧既定 `https://api.x.ai/v1` を保存した OAuth アカウントは実行時にサブスクリプションプロキシへ切り替えますが、明示的な独自上流は維持します。API Key の既定は `https://api.x.ai/v1` です。
+
+Responses は `/v1/responses`、`/responses`、`/backend-api/codex/responses`（WebSocket は上流 HTTP/SSE にブリッジ）、Messages は `/v1/messages`、Chat Completions は `/v1/chat/completions`、`/chat/completions` に対応します。画像生成・編集、動画生成・編集・拡張・状態取得は `/v1/images/generations`、`/v1/images/edits`、`/v1/videos/generations`、`/v1/videos/edits`、`/v1/videos/extensions`、`/v1/videos/{request_id}` と `/v1` なしの同等パスを利用できます。生成・編集・拡張にはグループの画像生成権限が必要です。画像参照は `url` を使用し、旧 `image_url` は正規化します。TTS、音声文字起こし、ブラウザ自動化、Cookie、Grok ウェブスクレイピングは対象外です。
+
+ユーザーの「Use Key -> Grok CLI」で `~/.grok/config.toml`（Windows: `%USERPROFILE%\.grok\config.toml`）を生成し、OpenCode タブも利用できます。`base_url` は `/v1` で終わる Sub2API の公開 URL とし、キーを含むファイルの権限を制限して既存設定をバックアップしてください。OAuth 環境変数、管理 API、モデル一覧、CLI の完全な例は[英語版](README_EN.md#oauth-configuration)を参照してください。`XAI_GROK_CLI_VERSION` は既定・最低 `0.2.114` で、それ未満は無視します。`XAI_BASE_URL` は診断用で、転送はアカウントの `base_url` に従います。
+
+クォータは上流の課金探測やレート制限ヘッダーから取得し、不明時もローカル使用量を表示します。`401` は認証、`403` は権益、`429` は冷却として処理します。新規メディア生成では明示的に Free/禁止の OAuth アカウントを除外し、不足・不正形式の観測は転送前に探測します。成功しても不完全な `billing_inconclusive` は互換性のため利用可能です。API Key は利用可能です。作成/更新 API の `extra.grok_media_eligible=false` で除外、`true` で強制許可、更新時 `null` で自動判定に戻し、省略時は維持します。該当アカウントがなければ `503` / `grok_media_no_eligible_account` を返します。チャット・動画照会には適用しません。週次期間のみは有料の証拠ではなく、空の画像 HTTP `200` は成功扱いせず別アカウントへ切り替えます。
+
+---
+
+## TypeSafe / Jev サポート
+
+管理者は `typesafe` の API Key アカウント（既定 `https://api.typesafe.ai`）と対応グループを作成し、Sub2API API Key で `POST /v1/systemone` を呼び出します。モデルは `jev-latest`（グループの `/v1/models` にも掲載）で、`noul`、`choice`、`score` の質問を処理します。リクエストと成功レスポンスは非ストリーミングの System One ネイティブ JSON です。
+
+TypeSafe OpenAPI/SDK v0.5.7 のスキーマに従い、全質問の `instructions` は省略/`null` 可です。Noul の `criteria` も省略/`null` 可、Noul の真偽説明と Choice の説明は文字列・オブジェクト・配列・`null` を許可します。Score の `criteria` は 1 件以上の説明配列（各要素は文字列・オブジェクト・配列）で、SDK の整数キーのマップは SDK が配列に変換します。
+
+内蔵価格は入力 `$0.042/百万 tokens`、出力 `$0` でチャネル設定が優先します。`401`、`402`、`403`、`429`、`529`、`5xx`、通信エラーは既存エラーポリシーで別アカウントへ切り替えます。`400`、`413`、`422` は再試行せずアカウント状態も変更しません。Chat Completions、Responses、Messages、ストリーミングには非対応で、TypeSafe グループ（Composite からのルーティングを含む）への Messages、Chat Completions、Responses、count_tokens は `404` です。[リクエスト例](README_EN.md#typesafe--jev-support)。
 
 ---
 

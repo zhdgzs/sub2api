@@ -18,6 +18,12 @@ English | [中文](README.md) | [日本語](README_JA.md)
 
 </div>
 
+## Fork Differences
+
+This fork regularly merges `main` from [Wei-Shaw/sub2api](https://github.com/Wei-Shaw/sub2api). It publishes independent `-zhdgzs.N` releases and Docker images, and persists admin account-list filters in the browser (the URL `search` parameter takes precedence). Users can read account status, usage, and supported OpenAI weekly quota history only within their active subscription groups; they cannot change account settings.
+
+The account list keeps direct integer priority editing (Enter or blur saves) and provides arrow controls to step the priority; lower values are used first, with a minimum of 1. Remote Docker builds regenerate Ent and Wire from the merged source definitions before backend compilation; release agents do not run generators or builds locally.
+
 ## Codex Outbound Identity
 
 This fork ports `7b9dd30`, `b25a062`, and `863dbd0` from [KlN-4096/sub2api](https://github.com/KlN-4096/sub2api). Identity handling covers HTTP, passthrough, WebSocket, Messages bridging, compact, images, and search, preserving each WS frame's turn and window number.
@@ -62,8 +68,8 @@ Please read the following carefully before using this project:
 </tr>
 
 <tr>
-<td width="180"><a href="https://apikey.fun/register?aff=SUB2API"><img src="assets/partners/logos/apikey-fun.png" alt="APIKEY.FUN" width="150"></a></td>
-<td>Thanks to APIKEY.FUN for sponsoring this project! <a href="https://apikey.fun/register?aff=SUB2API">APIKEY.FUN</a> is one of the core contributors to the sub2api open-source project, dedicated to providing open, stable, and cost-effective AI API access. The platform supports API relay services for Claude, OpenAI, Gemini, and other popular models, with pricing starting from as low as 7% of the original rate. Register via the exclusive link: <a href="https://apikey.fun/register?aff=SUB2API">APIKEY</a> to enjoy up to 5% off on all recharges.</td>
+<td width="180"><a href="https://apikey.fan/register?aff=SUB2API"><img src="assets/partners/logos/apikey-fun.png" alt="APIKEY.FUN" width="150"></a></td>
+<td>Thanks to APIKEY.FUN for sponsoring this project! <a href="https://apikey.fan/register?aff=SUB2API">APIKEY.FUN</a> is one of the core contributors to the sub2api open-source project, dedicated to providing open, stable, and cost-effective AI API access. The platform supports API relay services for Claude, OpenAI, Gemini, and other popular models, with pricing starting from as low as 7% of the original rate. Register via the exclusive link: <a href="https://apikey.fan/register?aff=SUB2API">APIKEY</a> to enjoy up to 5% off on all recharges.</td>
 </tr>
 
 <tr>
@@ -99,33 +105,19 @@ Please read the following carefully before using this project:
 
 <tr>
 <td width="180"><a href="https://veilx.io/#/hello/SJRBRVDV"><img src="assets/partners/logos/veilx.png" alt="veilx" width="150"></a></td>
-<td>Thanks to Veilx for sponsoring this project! <a href="https://veilx.io/#/hello/SJRBRVDV">Veilx</a> CDN is purpose-built for large-scale AI API traffic, deeply optimized for relay services and call chains across OpenAI, Claude, Gemini, and scenarios like chat, image generation, embeddings, and streaming — delivering lower latency and higher stability under heavy concurrency. It also offers China three-network optimized return lines, making it ideal for global AI relay platforms, overseas AI SaaS, and cross-border high-concurrency deployments.
+<td>Thanks to Veilx for sponsoring this project! <a href="https://veilx.io/#/hello/SJRBRVDV">Veilx</a> CDN is purpose-built for large-scale AI API traffic, deeply optimized for relay services and call chains across OpenAI, Claude, Gemini, and scenarios like chat, image generation, embeddings, and streaming — delivering lower latency and higher stability under heavy concurrency. It also offers China three-network optimized return lines, making it ideal for global AI relay platforms, overseas AI SaaS, and cross-border high-concurrency deployments. <a href="https://veilx.io/#/hello/SJRBRVDV">Purchase here</a>.
 </td>
 </tr>
 
 <tr>
-<td width="180"><a href="https://roxybrowser.com/invite/bgGKG7"><img src="assets/partners/logos/RoxyBrowser.png" alt="veilx" width="150"></a></td>
+<td width="180"><a href="https://roxybrowser.com/invite/bgGKG7"><img src="assets/partners/logos/RoxyBrowser.png" alt="RoxyBrowser" width="150"></a></td>
 <td>Thanks to RoxyBrowser for sponsoring this project! <a href="https://roxybrowser.com/invite/bgGKG7">RoxyBrowser</a> RoxyBrowser is the perfect partner for Sub2API: it features a built-in native Roxy AI Agent and high-quality native residential IPs, supports batch automation via simple commands, and significantly boosts security and efficiency for multi-account management! Click <a href="https://roxybrowser.com/invite/bgGKG7">this link</a> to sign up and receive a free residential IP package plus a 10% lifetime discount.
-</td>
-</tr>
-
-<tr>
-<td width="180"><a href="https://sui-xiang.com/"><img src="assets/partners/logos/sui-xiang.jpg" alt="sui-xiang" width="150"></a></td>
-<td>Thanks to Suixiang AI Gateway for sponsoring this project! <a href="https://sui-xiang.com/">Suixiang AI Gateway</a> is a reliable and efficient API relay service provider offering relay services for Claude, Codex, Gemini, and more. A privacy-focused relay — no data reselling, no model dilution; privacy, transparency, and lightning-fast after-sales support. New accounts get ¥0.5 in trial credit daily by signing in; top-ups are 1:1, no subscription required, pay-as-you-go. Multi-line redundancy, cross-region disaster recovery, automatic failover, and uninterrupted long-link SSE. 99.9% availability — critical calls never fall behind.
 </td>
 </tr>
 
 <tr>
 <td width="180"><a href="https://www.proxy4free.com/?keyword=4yjqecpc"><img src="assets/partners/logos/proxy4free.png" alt="proxy4free" width="150"></a></td>
 <td>Thanks to Proxy4Free for sponsoring this project! Proxy4Free is a data proxy service provider for developers and AI applications, offering residential proxies, static residential proxies, ISP proxies, and datacenter proxies for scenarios such as Web Scraping, Browser Automation, and AI Agents. With global IP resources, stable connections, and flexible switching, it helps developers improve data collection success rates and reduce the risk of IP bans. Register via <a href="https://www.proxy4free.com/?keyword=4yjqecpc">this link</a> to get started and easily build more stable and efficient automation workflows.
-</td>
-</tr>
-
-<tr>
-<td width="180"><a href="http://www.fastaitoken.com/register"><img src="assets/partners/logos/fastaitoken.jpg" alt="fastaitoken" width="150"></a></td>
-<td>🎉 Thanks to FastAIToken for sponsoring this project! <a href="http://www.fastaitoken.com/register">FastAIToken</a> is an AI API aggregation platform for developers, supporting mainstream large models such as OpenAI, Claude, and Gemini. Top-up at 1:1 — 1 CNY = 1 USD of API credit — letting developers use the world's leading large model services at lower cost and with greater convenience.<br>
-
-🚀 The platform offers a variety of channels to choose from: an ultra-low-price 0.02x OpenAI promotional group (limited time), groups as low as 0.25x OpenAI, 0.7x Claude with 95% fixed cache, and a 1.2x Claude Max channel. It also provides a public status page showing real-time availability, latency, and operating status of each group for transparent and reliable service, plus 7×24 human technical support (not bots) with fast responses to developer needs.
 </td>
 </tr>
 
@@ -138,11 +130,6 @@ Please read the following carefully before using this project:
 <tr>
 <td width="180"><a href="https://nagora.ai/"><img src="assets/partners/logos/nagora.png" alt="Nagora" width="150"></a></td>
 <td><a href="https://nagora.ai/">Nagora</a> is a multi-model AI API gateway built for developers and teams. With a single account and API key, you can access more than 26 leading text and image models through one unified interface. It is compatible with OpenAI, Anthropic, and Gemini protocols and integrates seamlessly with development tools such as Claude Code, Codex, and Gemini CLI. The platform provides intelligent routing, automatic failover, transparent pricing, and consolidated billing, along with budget management, rate limiting, and concurrency controls. This makes AI usage more reliable and manageable across individual development, team collaboration, and production environments. No changes to your existing application are required. Simply replace the Base URL and API key to complete the integration in as little as one minute.</td>
-</tr>
-
-<tr>
-<td width="180"><a href="https://www.novada.com/?sub2api/"><img src="assets/partners/logos/novada.png" alt="Novada" width="150"></a></td>
-<td>Thanks to <a href="https://www.novada.com/?sub2api/">Novada</a> for sponsoring this project! Novada provides residential, ISP, datacenter, and mobile proxies, along with Web Unlocker and Scraper APIs for developers building AI applications and automation workflows. With global IP coverage, flexible rotating and sticky sessions, and precise geo-targeting, Novada helps teams access web data reliably for AI agent workflows, cross-region testing, web research, and browser automation. Explore Novada to build more stable and scalable AI workflows.</td>
 </tr>
 
 <tr>
@@ -183,6 +170,21 @@ Please read the following carefully before using this project:
 <tr>
 <td width="180"><a href="https://go.apimart.ai/gh-sub2api"><img src="assets/partners/logos/apimart.jpg" alt="APIMart" width="150"></a></td>
 <td>Thanks to APIMart for sponsoring this project! <a href="https://go.apimart.ai/gh-sub2api">APIMart</a> is a low-cost API platform for AI image and video generation — GPT-Image-2 from $0.006 per image, with 160+ images per dollar. One async API covers both image and video: submit a task, get an ID, and retrieve results via polling or callback. Batch tens of thousands of images without timeouts, and switch models without changing code. Pay as you go with no monthly fee — <a href="https://go.apimart.ai/gh-sub2api">sign up here</a> to get started.</td>
+</tr>
+
+<tr>
+<td width="180"><a href="https://www.axisnow.io/"><img src="assets/partners/logos/axisnow.jpg" alt="AxisNow" width="150"></a></td>
+<td>Thanks to AxisNow for sponsoring this project! <a href="https://www.axisnow.io/">AxisNow</a> protects and accelerates websites and APIs across mainland China and globally. Client SDKs extend acceleration and security to native/mobile apps, with self-hosted private CDN deployments, subscription DDoS-protected CDN services, and flexible, independently controlled CDN networks.</td>
+</tr>
+
+<tr>
+<td width="180"><a href="https://pp.dog/register?aff=SUB2API"><img src="assets/partners/logos/ppdog.png" alt="PP.dog" width="150"></a></td>
+<td><a href="https://pp.dog/register?aff=SUB2API">PP.dog</a> operates its own large account pool as a source-level API gateway for downstream relay services and high-frequency developers. It offers direct supply without intermediary markup, combined rates as low as 0.03x (0.35% of official pricing), and first-token latency under 1 second. <a href="https://www.pp.dog/register?aff=SUB2API">Get started with PP.dog</a>.</td>
+</tr>
+
+<tr>
+<td width="180"><a href="https://colaproxy.com/?utm_source=sub2api&utm_medium=sub2api&ref=sub2api"><img src="assets/partners/logos/cola-proxy.jpg" alt="ColaProxy" width="150"></a></td>
+<td>ColaProxy provides residential proxies for web scraping, automation, and multi-account management, with a free trial, non-expiring traffic, prices from $0.3/GB, unlimited concurrent connections, and intelligent IP rotation. Use code COLA10 for 10% off. <a href="https://colaproxy.com/?utm_source=sub2api&utm_medium=sub2api&ref=sub2api">Get started with ColaProxy</a>.</td>
 </tr>
 
 </table>
@@ -234,6 +236,28 @@ underscores_in_headers on;
 ```
 
 Nginx drops headers containing underscores by default (e.g. `session_id`), which breaks sticky session routing in multi-account setups.
+
+---
+
+## Codex Fast/Flex Policy
+
+Configure **System Settings -> Gateway Service -> OpenAI Fast/Flex Policy** to process request-body `service_tier` values. This does not change the Codex model catalog or make Speed or `/fast` appear in the client UI.
+
+- `pass` preserves the tier and normalizes `fast` to upstream `priority`.
+- `filter` removes the tier and uses ordinary priority.
+- `block` rejects matching Fast/Flex requests.
+- `force_priority` sets matching requests to `priority`, billed at Priority/Fast rates. For upgrade compatibility, `all` matches only explicitly supplied tiers. Add a `service_tier=missing + force_priority` rule to upgrade OpenAI requests that omit the field; missing-tier injection never applies to other platforms.
+
+Codex displays `/fast` only when the model catalog declares `additional_speed_tiers: ["fast"]` and corresponding `service_tiers`. API-key/custom-provider configurations without those declarations may not show Speed even after restarting. Set defaults in `~/.codex/config.toml`:
+
+```toml
+service_tier = "fast"
+
+[features]
+fast_mode = true
+```
+
+`service_tier` sets the requested tier; `features.fast_mode` only enables the client feature and cannot supply missing model capabilities. Check Sub2API usage records for the final `priority` tier.
 
 ---
 
@@ -418,6 +442,10 @@ docker compose -f docker-compose.local.yml logs -f sub2api
 
 **Recommendation:** Use `docker-compose.local.yml` (deployed by script) for easier data management.
 
+#### Enabling Data Management (datamanagementd)
+
+The admin Data Management feature requires a separate host `datamanagementd` process. Sub2API probes `/tmp/sub2api-datamanagement.sock` and enables the feature only while the socket is reachable. Docker deployments must mount the host socket at that same container path. See [Deployment Guide](deploy/DATAMANAGEMENTD_CN.md).
+
 #### Access
 
 Open `http://YOUR_SERVER_IP:8080` in your browser.
@@ -518,6 +546,8 @@ pnpm run build
 
 # 4. Build backend with embedded frontend
 cd ../backend
+go generate ./ent
+go generate -tags wireinject ./cmd/server
 VERSION="$(./scripts/resolve-version.sh)"
 go build -tags embed -ldflags="-X main.Version=${VERSION}" -o sub2api ./cmd/server
 
@@ -583,6 +613,13 @@ SECURITY_FORWARDED_CLIENT_IP_HEADERS=True-Client-IP,X-CDN-Client-IP
 ```
 
 Header names are validated, canonicalized, and de-duplicated. The admin security settings can update the list without a restart; new installations persist YAML/environment defaults and existing installations backfill a missing database value. When legacy takeover is disabled, all custom and built-in raw forwarding headers are ignored and Gin uses only `server.trusted_proxies`. While takeover is enabled, firewall the origin to CDN/proxy addresses and make the edge overwrite every trusted client-IP header. See [`deploy/EDGE_SECURITY.md`](deploy/EDGE_SECURITY.md) for the complete migration and trust-boundary rules.
+
+**Gateway Defense in Depth**
+
+- `gateway.upstream_response_read_max_bytes` limits non-streaming upstream response reads (default `8MB`); `gateway.proxy_probe_response_read_max_bytes` limits proxy probe reads (default `1MB`).
+- `gateway.gemini_debug_response_headers` defaults to `false`; enable it briefly for troubleshooting to avoid high-volume logging overhead.
+- `/auth/register`, `/auth/login`, `/auth/login/2fa`, and `/auth/send-verify-code` have server-side fallback rate limits that fail closed when Redis fails.
+- Keep WAF/CDN protection alongside server rate limits and response-size bounds to cover bypass traffic and misconfiguration.
 
 **⚠️ Security Warning: HTTP URL Configuration**
 
@@ -714,11 +751,16 @@ Because step 5 above pre-creates `config.yaml`, the setup wizard will be **skipp
 ./sub2api
 ```
 
+#### HTTP/2 (h2c) and HTTP/1.1 Fallback
+
+The backend plaintext port supports h2c by default while retaining HTTP/1.1 for WebSocket and older clients. Browsers generally do not use h2c; benefits primarily apply to reverse proxies and internal links. For Caddy, set `versions h2c h1` in `transport http`. The Chinese [configuration examples](README.md#http2-h2c-与-http11-回退) cover both HTTP versions and the admin WebSocket fallback.
+
 #### Development Mode
 
 ```bash
 # Backend (with hot reload)
 cd backend
+make generate
 go run ./cmd/server
 
 # Frontend (with hot reload)
@@ -733,18 +775,35 @@ When editing `backend/ent/schema`, regenerate Ent + Wire:
 ```bash
 cd backend
 go generate ./ent
-go generate ./cmd/server
+go generate -tags wireinject ./cmd/server
 ```
 
+Generate before the first source build and after changing Ent schemas or Wire providers. `wire_gen.go` is no longer tracked; generators require Go and module network access, with tool versions pinned in `backend/go.mod`. Backend Make build/test targets generate automatically. Run the commands above before invoking `go build`, `go test`, or `go run` directly.
+
+The root `Dockerfile` regenerates Ent and Wire before compiling. `remote-docker` pushes `cust` and lets GitHub Actions generate, build, and push the images; the agent does not run local tests, type checks, or builds, wait for Actions, or restart production. See [release workflow](docs/SYNC_UPSTREAM_CN.md).
+
 ---
+
+## OpenAI Image Models
+
+`gpt-image-2.5-flare`, `gpt-image-2.5-sunburst`, and their `2026-09-08` snapshots are available through `/v1/images/generations` and `/v1/images/edits`. Supported quality values include `xhigh`, `max`, and `auto`; valid custom sizes and image usage details pass through.
+
+OAuth / Setup Token image requests invoke the `image_generation` tool through a Responses controller model, defaulting to `gpt-5.6-luna`. Set `SUB2API_IMAGES_MAIN_MODEL` to another text model supported by the account; Compose users must recreate the container with `docker compose up -d` after updating `.env`. This does not replace the selected image model or override an explicit text controller in `/v1/responses` requests.
+
+Unrestricted accounts gain access on upgrade. Explicit account mappings and group allowlists must include the two 2.5 models (snapshots as needed); upgrades do not broaden administrator-defined permissions. Built-in pricing covers text input, image input, and image output tokens and is used when remote pricing lacks these models. Existing group/channel settings still determine per-request or per-token billing.
 
 ## Simple Mode
 
 Simple Mode is designed for individual developers or internal teams who want quick access without full SaaS features.
 
 - Enable: Set environment variable `RUN_MODE=simple`
-- Difference: Hides SaaS-related features and skips billing process
+- Default groups are seeded on each startup. Set `SIMPLE_MODE_AUTO_CREATE_DEFAULT_GROUPS=false` (or YAML `simple_mode.auto_create_default_groups: false`) to manage groups yourself. The default is `true`; disabling it does not delete existing groups or change runtime auto-binding or admin concurrency setup.
+- Difference: Hides SaaS-related features and bypasses balance and subscription debit.
+- Optional key windows: Set `SIMPLE_MODE_KEY_RATE_LIMIT_ENABLED=true` to enforce each API key's configured 5-hour, daily, and 7-day spending windows. The default is `false`; balance and subscription debit remain bypassed when enabled.
+- Window enforcement uses the database as its source of truth and records only API-key window usage. It is a post-request soft cap, so concurrent in-flight requests can overshoot by their final costs. Historical simple-mode usage is not backfilled.
 - Security note: In production, you must also set `SIMPLE_MODE_CONFIRM=true` to allow startup
+
+Persist these settings in the service environment or deployment `.env`. Restart the binary/service after changes; Compose users must recreate containers with `docker compose up -d`, since a container restart alone does not reload `.env`. For YAML deployments, key windows can also be enabled with `simple_mode_key_rate_limit_enabled: true`.
 
 ---
 
@@ -836,9 +895,34 @@ xAI quota is passive. Sub2API does not invent subscription quota values; it reco
 
 `401` responses temporarily remove accounts with invalid credentials from scheduling. `403` responses are treated as access or entitlement failures instead of token-refresh loops. `429` responses use `Retry-After` or a short cooldown to temporarily remove the account from scheduling.
 
-New Grok image and video generation requests use a media-specific eligibility check. API-key accounts remain eligible. OAuth accounts require positive paid-entitlement evidence from the xAI billing probe; Free, forbidden, missing, malformed, and inconclusive billing observations are excluded from new media generation. Unobserved OAuth accounts are probed before the first media request is forwarded, and imports run the billing-first quota probe proactively. Chat requests and video status lookups are not affected by this media-only quarantine. If no eligible account remains, the media endpoint returns HTTP `503` with error type `grok_media_no_eligible_account`.
+New Grok image and video generation requests use a media-specific eligibility check. API-key accounts remain eligible. OAuth accounts with explicit Free or forbidden billing evidence are excluded from new media generation. Missing or malformed observations are probed before dispatch; a successful but incomplete billing response is treated as `billing_inconclusive` and remains eligible for backwards compatibility, because an unknown billing schema is not proof that the account lacks media entitlement. Operators can quarantine a known-bad account with `extra.grok_media_eligible=false` or force-enable a verified account with `true`. Imports run the billing-first quota probe proactively. Chat requests and video status lookups are not affected by this media-only quarantine. If no eligible account remains, the media endpoint returns HTTP `503` with error type `grok_media_no_eligible_account`.
 
 Administrators can override automatic media eligibility through the account create/update API by setting `extra.grok_media_eligible` to `false` (exclude) or `true` (force eligible). On update, set it to `null` to remove the override and return to automatic probe-based behavior; omitting the field preserves the current override. A weekly allowance period alone is not treated as a paid tier signal. Successful image responses must contain at least one actual image output; empty HTTP `200` responses trigger account failover instead of being counted and returned as successful generations.
+
+---
+
+## TypeSafe / Jev Support
+
+Sub2API supports TypeSafe API-key accounts through Jev's native, non-streaming System One protocol.
+
+- Platform: `typesafe`; account type: API Key
+- Default upstream: `https://api.typesafe.ai`
+- Public endpoint: `POST /v1/systemone`
+- Model: `jev-latest`, also returned by `/v1/models` for TypeSafe groups
+- Questions: `noul`, `choice`, and `score`
+
+Requests and successful responses retain the native System One JSON structure. This endpoint is not compatible with Chat Completions, Responses, Anthropic Messages, or streaming clients.
+
+Question validation follows the TypeSafe OpenAPI wire schema (also used by SDK v0.5.7). `instructions` may be omitted or `null` for all question types. Noul `criteria` may be omitted or `null`; its `true`/`false` descriptions and Choice descriptions accept strings, objects, arrays, or `null`. Score `criteria` must be a non-empty array of string, object, or array descriptions; a single level is valid. SDK integer-keyed Score maps are normalized to arrays by the SDK before sending.
+
+```bash
+curl https://your-sub2api.example.com/v1/systemone \
+  -H 'Authorization: Bearer sk-your-sub2api-key' \
+  -H 'Content-Type: application/json' \
+  --data '{"model":"jev-latest","state":"Text to evaluate","questions":{"safety":{"type":"noul","instructions":"Evaluate whether the text is unsafe"}}}'
+```
+
+The built-in `jev-latest` price is `$0.042` per million input tokens and `$0` for output tokens. Channel pricing can override both values. Credential, billing, permission, rate-limit, overload, server, and network failures (`401`, `402`, `403`, `429`, `529`, `5xx`, transport errors) use the existing account error policy (including custom error codes and temporary-unschedulable rules) and fail over to another account; request errors (`400`, `413`, and `422`) are returned without retrying another account and never change account state. TypeSafe groups (and Composite requests routed to TypeSafe) reject Messages, Chat Completions, Responses, and count_tokens requests with `404`.
 
 ---
 

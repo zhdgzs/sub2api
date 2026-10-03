@@ -124,7 +124,7 @@ $remote-docker
 - 滚动镜像：`ghcr.io/<owner>/sub2api:cust`
 - 不再配置 GitHub Actions 监控或自动更新容器的外部 watcher。
 
-发布 preview 必须只读。仅涉及版本号或工具版本、且不影响代码与功能语义的单一用途版本元数据冲突，允许按白名单自动采用 incoming 分支版本，无需二次确认；`backend/cmd/server/VERSION` 合并后仍由发布步骤写入本次 fork 版本。依赖清单、锁文件、workflow 和通用配置即使包含版本号也不视为纯版本元数据。其他文本冲突或高风险共享修改必须汇总风险并等待用户一次性决策。生成文件必须先解决源定义再重新生成，不能直接选边。i18n 文件必须检查对象键唯一性。
+发布 preview 必须只读。仅涉及版本号或工具版本、且不影响代码与功能语义的单一用途版本元数据冲突，允许按白名单自动采用 incoming 分支版本，无需二次确认；`backend/cmd/server/VERSION` 合并后仍由发布步骤写入本次 fork 版本。依赖清单、锁文件、workflow 和通用配置即使包含版本号也不视为纯版本元数据。其他文本冲突或高风险共享修改必须汇总风险并等待用户一次性决策。生成文件必须先解决源定义再重新生成，不能直接选边。根 `Dockerfile` 在后端编译前依次执行 `go generate ./ent` 和 `go generate -tags wireinject ./cmd/server`，以合并后的 Ent schema 与 Wire provider 定义为准；生成依赖 `backend/go.mod` 中固定的工具版本和 Go 模块网络访问。`backend/cmd/server/wire_gen.go` 不再提交到版本库，源码构建须先执行 `make -C backend generate`；后端 Make 构建/测试入口、CI lint 和 GoReleaser 已加入生成步骤。远程发布的 agent 不在本地运行生成工具，由 GitHub Actions Docker 构建完成生成与编译。i18n 文件必须检查对象键唯一性。
 
 `remote-docker` 不执行任何本地测试或构建；白名单外的合并冲突按用户确认解决并通过结构检查后，直接推送发布提交，由 GitHub Actions 构建镜像。agent 不等待或主动轮询构建结果，也不自动更新生产容器。
 

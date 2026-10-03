@@ -486,7 +486,7 @@ func rewriteCodexTurnMetadataFields(h http.Header, fields map[string]any, ids *c
 			setCodexSessionIdentityValue(metadata, field, value)
 		}
 	}
-	rebuilt, err := json.Marshal(metadata)
+	rebuilt, err := marshalCodexTurnMetadata(metadata)
 	if err != nil {
 		return
 	}
@@ -761,7 +761,7 @@ func rewriteClientMetadataEmbeddedTurnMetadata(clientMetadata map[string]any, fi
 			setCodexSessionIdentityValue(metadata, field, value)
 		}
 	}
-	if rebuilt, err := json.Marshal(metadata); err == nil {
+	if rebuilt, err := marshalCodexTurnMetadata(metadata); err == nil {
 		clientMetadata["x-codex-turn-metadata"] = string(rebuilt)
 	}
 }
