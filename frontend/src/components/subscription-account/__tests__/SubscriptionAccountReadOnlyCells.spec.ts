@@ -4,7 +4,20 @@ import type { SubscriptionAccount } from '@/api/subscriptionAccounts'
 import SubscriptionAccountTodayStats from '../SubscriptionAccountTodayStats.vue'
 import SubscriptionAccountUsageWindows from '../SubscriptionAccountUsageWindows.vue'
 
-const { getUsage } = vi.hoisted(() => ({ getUsage: vi.fn() }))
+const { getUsage, refreshOpenAIQuota, resetOpenAIQuota, refreshOpenAIReferrals, sendOpenAIReferralInvite } = vi.hoisted(() => ({
+  getUsage: vi.fn(),
+  refreshOpenAIQuota: vi.fn(),
+  resetOpenAIQuota: vi.fn(),
+  refreshOpenAIReferrals: vi.fn(),
+  sendOpenAIReferralInvite: vi.fn(),
+}))
+
+vi.mock('@/api/admin/accounts', () => ({
+  refreshOpenAIQuota,
+  resetOpenAIQuota,
+  refreshOpenAIReferrals,
+  sendOpenAIReferralInvite,
+}))
 
 vi.mock('@/api/admin', () => ({
   adminAPI: { accounts: { getUsage } },
@@ -44,6 +57,10 @@ function makeAccount(): SubscriptionAccount {
 describe('subscription account readonly cells', () => {
   beforeEach(() => {
     getUsage.mockReset()
+    refreshOpenAIQuota.mockReset()
+    resetOpenAIQuota.mockReset()
+    refreshOpenAIReferrals.mockReset()
+    sendOpenAIReferralInvite.mockReset()
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
       value: vi.fn().mockReturnValue({
@@ -67,6 +84,67 @@ describe('subscription account readonly cells', () => {
     expect(wrapper.text()).not.toContain('usage.userBilled')
     expect(wrapper.text()).not.toContain('7.89')
     expect(wrapper.text()).not.toContain('9.87')
+  })
+
+  it.each([
+    { name: 'decimal precision', credits: { has_credits: true, unlimited: false, balance: '12345678901234567890.0123' }, expected: '12345678901234567890.0123' },
+    { name: 'zero', credits: { has_credits: false, unlimited: false, balance: '0' }, expected: '0' },
+    { name: 'unlimited', credits: { has_credits: false, unlimited: true, balance: null }, expected: 'admin.accounts.openaiQuotaReset.pointsUnlimited' },
+    { name: 'hidden balance', credits: { has_credits: true, unlimited: false, balance: null }, expected: 'admin.accounts.openaiQuotaReset.pointsAvailable' },
+    { name: 'invalid balance', credits: { has_credits: true, unlimited: false, balance: 'NaN' }, expected: 'admin.accounts.openaiQuotaReset.pointsAvailable' },
+    { name: 'negative balance', credits: { has_credits: true, unlimited: false, balance: '-1' }, expected: 'admin.accounts.openaiQuotaReset.pointsAvailable' },
+    { name: 'unknown', credits: null, expected: '—' },
+  ])('displays readonly Codex points: $name without administrator requests', async ({ credits, expected }) => {
+    const account: SubscriptionAccount = {
+      ...makeAccount(),
+      platform: 'openai',
+      codex_credits_snapshot: { credits, fetched_at: 1770000000 },
+    }
+    const wrapper = mount(SubscriptionAccountUsageWindows, { props: { account } })
+    await flushPromises()
+
+    const points = wrapper.get('[data-testid="subscription-codex-credits"]')
+    expect(points.text()).toContain('admin.accounts.openaiQuotaReset.points')
+    expect(points.text()).toContain(expected)
+    expect(points.find('button').exists()).toBe(false)
+    expect(points.get('[data-testid="codex-credits-balance"]').attributes('title')).toBe('admin.accounts.openaiQuotaReset.pointsUpdatedAt')
+    expect(getUsage).not.toHaveBeenCalled()
+    expect(refreshOpenAIQuota).not.toHaveBeenCalled()
+    expect(resetOpenAIQuota).not.toHaveBeenCalled()
+    expect(refreshOpenAIReferrals).not.toHaveBeenCalled()
+    expect(sendOpenAIReferralInvite).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it('refreshes the balance from list data and clears it when the snapshot disappears', async () => {
+    const account: SubscriptionAccount = { ...makeAccount(), platform: 'openai', usage: undefined }
+    const wrapper = mount(SubscriptionAccountUsageWindows, { props: { account } })
+    const points = () => wrapper.get('[data-testid="subscription-codex-credits"]')
+    expect(points().text()).toContain('—')
+
+    await wrapper.setProps({ account: {
+      ...account,
+      codex_credits_snapshot: { credits: { has_credits: true, unlimited: false, balance: '12.50' }, fetched_at: 1770000000 },
+    } })
+    expect(points().text()).toContain('12.50')
+
+    await wrapper.setProps({ account })
+    expect(points().text()).toContain('—')
+    expect(points().text()).not.toContain('12.50')
+    expect(getUsage).not.toHaveBeenCalled()
+    expect(refreshOpenAIQuota).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it.each([
+    { platform: 'anthropic' as const, type: 'oauth' as const },
+    { platform: 'openai' as const, type: 'apikey' as const },
+  ])('does not display Codex points for $platform/$type', ({ platform, type }) => {
+    const wrapper = mount(SubscriptionAccountUsageWindows, {
+      props: { account: { ...makeAccount(), platform, type } },
+    })
+    expect(wrapper.find('[data-testid="subscription-codex-credits"]').exists()).toBe(false)
+    wrapper.unmount()
   })
 
   it('用量窗口只消费列表数据且不请求管理员接口', async () => {

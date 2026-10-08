@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"strconv"
 	"strings"
 	"time"
@@ -78,6 +79,11 @@ type userSubscriptionAccountUsage struct {
 	ErrorCode              string                                    `json:"error_code,omitempty"`
 }
 
+type userCodexCreditsSnapshot struct {
+	Credits   *service.OpenAICredits `json:"credits"`
+	FetchedAt int64                  `json:"fetched_at"`
+}
+
 type userSubscriptionAccount struct {
 	ID                           int64                           `json:"id"`
 	Name                         string                          `json:"name"`
@@ -92,6 +98,7 @@ type userSubscriptionAccount struct {
 	TodayStats                   *service.WindowStats            `json:"today_stats,omitempty"`
 	Groups                       []userSubscriptionAccountGroup  `json:"groups"`
 	Usage                        *userSubscriptionAccountUsage   `json:"usage,omitempty"`
+	CodexCreditsSnapshot         *userCodexCreditsSnapshot       `json:"codex_credits_snapshot,omitempty"`
 	CurrentOpenAIQuotaPrediction *float64                        `json:"current_openai_quota_prediction,omitempty"`
 	SupportsOpenAIQuotaHistory   bool                            `json:"supports_openai_quota_history"`
 	RateMultiplier               float64                         `json:"rate_multiplier"`
@@ -194,11 +201,50 @@ func userSubscriptionAccountFromService(item *service.SubscriptionAccountItem) u
 		TodayStats:                   item.TodayStats,
 		Groups:                       groups,
 		Usage:                        userSubscriptionAccountUsageFromService(item.Usage),
+		CodexCreditsSnapshot:         userSubscriptionAccountCodexCreditsFromService(account),
 		CurrentOpenAIQuotaPrediction: item.CurrentOpenAIQuotaPrediction,
 		SupportsOpenAIQuotaHistory:   service.SupportsOpenAIQuotaPeriods(account),
 		RateMultiplier:               account.BillingRateMultiplier(),
 		LastUsedAt:                   account.LastUsedAt,
 		CreatedAt:                    account.CreatedAt,
+	}
+}
+
+// Only expose the persisted display fields; never forward the account's extra map.
+func userSubscriptionAccountCodexCreditsFromService(account *service.Account) *userCodexCreditsSnapshot {
+	if account == nil || !account.IsOpenAIOAuth() {
+		return nil
+	}
+	raw, ok := account.Extra["codex_credits_snapshot"]
+	if !ok || raw == nil {
+		return nil
+	}
+	encoded, err := json.Marshal(raw)
+	if err != nil {
+		return nil
+	}
+	var snapshot struct {
+		Credits *struct {
+			HasCredits *bool   `json:"has_credits"`
+			Unlimited  *bool   `json:"unlimited"`
+			Balance    *string `json:"balance"`
+		} `json:"credits"`
+		FetchedAt int64 `json:"fetched_at"`
+	}
+	if err := json.Unmarshal(encoded, &snapshot); err != nil || snapshot.Credits == nil {
+		return nil
+	}
+	credits := snapshot.Credits
+	if credits.HasCredits == nil || credits.Unlimited == nil {
+		return nil
+	}
+	return &userCodexCreditsSnapshot{
+		Credits: &service.OpenAICredits{
+			HasCredits: *credits.HasCredits,
+			Unlimited:  *credits.Unlimited,
+			Balance:    credits.Balance,
+		},
+		FetchedAt: snapshot.FetchedAt,
 	}
 }
 

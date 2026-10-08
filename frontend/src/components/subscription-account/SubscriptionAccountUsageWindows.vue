@@ -5,6 +5,17 @@
       :batched-usage="account.usage ?? null"
       :request-batched-usage="ignoreUsageRequest"
     />
+    <div
+      v-if="account.platform === 'openai' && account.type === 'oauth'"
+      data-testid="subscription-codex-credits"
+      class="mt-1"
+    >
+      <CodexCreditsDisplay
+        :credits="account.codex_credits_snapshot?.credits"
+        :fetched-at="account.codex_credits_snapshot?.fetched_at"
+        class="rounded px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-400"
+      />
+    </div>
   </div>
 </template>
 
@@ -13,6 +24,7 @@ import { computed } from 'vue'
 import type { SubscriptionAccount } from '@/api/subscriptionAccounts'
 import type { Account } from '@/types'
 import AccountUsageCell from '@/components/account/AccountUsageCell.vue'
+import CodexCreditsDisplay from '@/components/account/CodexCreditsDisplay.vue'
 import { toReadonlyAccount } from './accountView'
 
 const props = defineProps<{ account: SubscriptionAccount }>()

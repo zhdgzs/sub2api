@@ -70,8 +70,7 @@
         :title="creditsButtonTitle"
         @click="handleQuery()"
       >
-        {{ t('admin.accounts.openaiQuotaReset.points') }}
-        <span class="truncate tabular-nums">{{ creditsDisplay }}</span>
+        <CodexCreditsDisplay :credits="creditsData?.credits" />
       </button>
       <OpenAIReferralCell :account="account" />
     </div>
@@ -191,6 +190,7 @@ import {
   type OpenAIQuotaResetResult
 } from '@/api/admin/accounts'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import CodexCreditsDisplay from '@/components/account/CodexCreditsDisplay.vue'
 import OpenAIReferralCell from '@/components/account/OpenAIReferralCell.vue'
 
 const props = defineProps<{
@@ -225,16 +225,6 @@ const readCachedCredits = (account: Account) => {
   return { credits, fetched_at: snapshot.fetched_at }
 }
 const creditsData = ref(readCachedCredits(props.account))
-const creditsDisplay = computed(() => {
-  const credits = creditsData.value?.credits
-  if (!credits) return '—'
-  if (credits.unlimited) return t('admin.accounts.openaiQuotaReset.pointsUnlimited')
-  if (!credits.has_credits) return '0'
-  const balance = credits.balance?.trim()
-  // Keep the upstream decimal string intact, including fractional points.
-  if (balance && Number.isFinite(Number(balance)) && Number(balance) >= 0) return balance
-  return t('admin.accounts.openaiQuotaReset.pointsAvailable')
-})
 const creditsButtonTitle = computed(() => {
   const fetchedAt = creditsData.value?.fetched_at
   const refresh = t('admin.accounts.openaiQuotaReset.pointsTooltip')

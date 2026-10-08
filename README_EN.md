@@ -20,7 +20,7 @@ English | [中文](README.md) | [日本語](README_JA.md)
 
 ## Fork Differences
 
-This fork regularly merges `main` from [Wei-Shaw/sub2api](https://github.com/Wei-Shaw/sub2api). It publishes independent `-zhdgzs.N` releases and Docker images, and persists admin account-list filters in the browser (the URL `search` parameter takes precedence). Users can read account status, usage, and supported OpenAI weekly quota history only within their active subscription groups; they cannot change account settings.
+This fork regularly merges `main` from [Wei-Shaw/sub2api](https://github.com/Wei-Shaw/sub2api). It publishes independent `-zhdgzs.N` releases and Docker images, and persists admin account-list filters in the browser (the URL `search` parameter takes precedence). Users can read account status, usage, and supported OpenAI weekly quota history only within their active subscription groups; they cannot change account settings. OpenAI OAuth accounts also show Codex points below the usage windows, using the same display as account management; hovering shows the last query time. No configuration is required: refreshing the page reads the latest snapshot saved by an administrator's query. Missing snapshots display `—`. This view does not query upstream points or allow quota resets.
 
 The account list keeps direct integer priority editing (Enter or blur saves) and provides arrow controls to step the priority; lower values are used first, with a minimum of 1. Remote Docker builds regenerate Ent and Wire from the merged source definitions before backend compilation; release agents do not run generators or builds locally.
 
