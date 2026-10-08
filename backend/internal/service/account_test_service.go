@@ -22,6 +22,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"regexp"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -178,8 +179,8 @@ func (s *AccountTestService) SetOpenAIGatewayService(gateway *OpenAIGatewayServi
 }
 
 // FetchOpenAIAccountModels uses the shared cached discovery path for the test picker.
-// It only fills picker-only gaps (local display-name fallbacks, OAuth image choices)
-// on its own copy; the shared catalog and its cache stay untouched.
+// It only fills picker-only gaps (local display names, OAuth image choices, and
+// concrete configured aliases) on its own copy; the shared catalog stays untouched.
 func (s *AccountTestService) FetchOpenAIAccountModels(ctx context.Context, account *Account) ([]openai.Model, error) {
 	if s == nil || s.openaiGatewayService == nil {
 		return nil, errors.New("OpenAI model discovery service is unavailable")
@@ -216,7 +217,7 @@ func (s *AccountTestService) FetchOpenAIAccountModels(ctx context.Context, accou
 	}
 	// Codex discovery lists Responses drivers, not image_generation tool models.
 	// Add locally supported image choices only to the OAuth test picker; keep the
-	// shared upstream catalog and API-key discovery authoritative.
+	// shared upstream catalog unchanged.
 	if account != nil && account.IsOpenAIOAuthLike() {
 		passthrough := account.IsOpenAIPassthroughEnabled()
 		seen := make(map[string]bool, len(payload.Data))
@@ -235,10 +236,9 @@ func (s *AccountTestService) FetchOpenAIAccountModels(ctx context.Context, accou
 		// Image models that a configured alias points at are absent from the Codex
 		// manifest, so the projection alone cannot surface them. Resolve each public
 		// name to its target and keep the entry when that target is an image model.
-		// Judging by the target rather than the public name keeps a lookalike name
-		// (for example an alias spelled "gpt-image-*" that maps to a text model)
-		// from being synthesized into the picker.
-		// Passthrough keeps native image names without applying mapping targets.
+		// Resolving the target here limits image-specific additions to image aliases;
+		// other concrete mappings are added below. Passthrough keeps native image
+		// names without applying mapping targets.
 		for publicID := range account.GetModelMapping() {
 			if strings.Contains(publicID, "*") || seen[publicID] {
 				continue
@@ -252,6 +252,29 @@ func (s *AccountTestService) FetchOpenAIAccountModels(ctx context.Context, accou
 			}
 			payload.Data = append(payload.Data, openai.Model{ID: publicID, Object: "model", Type: "model", OwnedBy: "openai", DisplayName: openaiCodexDisplayName(publicID)})
 			seen[publicID] = true
+		}
+	}
+	// Relay routes can accept configured targets that are absent from /models.
+	// Let administrators test concrete mappings without changing their targets or
+	// inventing entries in the public catalog. Wildcard rules are not model IDs.
+	if account != nil && !account.IsOpenAIPassthroughEnabled() {
+		seen := make(map[string]bool, len(payload.Data))
+		for _, model := range payload.Data {
+			seen[model.ID] = true
+		}
+		aliases := make([]string, 0)
+		for alias, target := range account.GetModelMapping() {
+			if alias == "" || alias != strings.TrimSpace(alias) || strings.Contains(alias, "*") ||
+				strings.TrimSpace(target) == "" || strings.Contains(target, "*") || seen[alias] {
+				continue
+			}
+			aliases = append(aliases, alias)
+		}
+		sort.Strings(aliases)
+		for _, alias := range aliases {
+			payload.Data = append(payload.Data, openai.Model{
+				ID: alias, Object: "model", Type: "model", DisplayName: openaiCodexDisplayName(alias),
+			})
 		}
 	}
 	return payload.Data, nil

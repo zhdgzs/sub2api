@@ -165,6 +165,41 @@ func TestAccountTestService_OpenAIOAuthTestNormalizesGPT56Alias(t *testing.T) {
 	require.Equal(t, "gpt-5.6-sol", gjson.GetBytes(body, "model").String())
 }
 
+func TestAccountTestService_OpenAIUnlistedMappingsPreserveRelayTargets(t *testing.T) {
+	for _, mapping := range []struct{ alias, target string }{
+		{"gpt-6.1-sol", "gpt-6.1-sol"},
+		{"deepseek-v4.1-flash", "cline-pass/deepseek-v4.1-flash"},
+		{"gpt-image-2.5-lookalike", "private-text-route"},
+	} {
+		t.Run(mapping.alias, func(t *testing.T) {
+			ctx, recorder := newTestContext()
+			upstream := &queuedHTTPUpstream{responses: []*http.Response{
+				newJSONResponse(http.StatusOK, "data: {\"choices\":[{\"delta\":{\"content\":\"ok\"}}]}\n\ndata: [DONE]\n\n"),
+			}}
+			svc := &AccountTestService{
+				httpUpstream: upstream,
+				cfg:          &config.Config{Security: config.SecurityConfig{URLAllowlist: config.URLAllowlistConfig{Enabled: false}}},
+			}
+			account := &Account{
+				ID: 91, Platform: PlatformOpenAI, Type: AccountTypeAPIKey, Concurrency: 1,
+				Credentials: map[string]any{
+					"api_key": "test-key", "base_url": "https://relay.example/v1",
+					"model_mapping": map[string]any{mapping.alias: mapping.target},
+				},
+				Extra: map[string]any{openai_compat.ExtraKeyResponsesSupported: false},
+			}
+			require.NoError(t, svc.testOpenAIAccountConnection(ctx, account, mapping.alias, "", ""))
+			require.Len(t, upstream.requests, 1)
+			req := upstream.requests[0]
+			require.Equal(t, "/v1/chat/completions", req.URL.Path, "routing follows the mapped target, including image-shaped aliases")
+			body, err := io.ReadAll(req.Body)
+			require.NoError(t, err)
+			require.Equal(t, mapping.target, gjson.GetBytes(body, "model").String())
+			require.Contains(t, recorder.Body.String(), `"success":true`)
+		})
+	}
+}
+
 func TestAccountTestService_OpenAIShadowUsesParentCredentialsAndShadowModel(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	ctx, recorder := newTestContext()

@@ -24,6 +24,8 @@ This fork regularly merges `main` from [Wei-Shaw/sub2api](https://github.com/Wei
 
 The account list keeps direct integer priority editing (Enter or blur saves) and provides arrow controls to step the priority; lower values are used first, with a minimum of 1. Remote Docker builds regenerate Ent and Wire from the merged source definitions before backend compilation; release agents do not run generators or builds locally.
 
+After configuring concrete model mappings in an OpenAI account's editor, **Test Connection** includes the public names on the left even when their targets are absent from the upstream `/models` catalog. Requests keep the configured targets, including subscription routes. This applies to API key and OAuth accounts without an extra switch. Wildcard rules do not become concrete choices, and passthrough keeps using the upstream catalog. Public model discovery remains filtered by upstream availability; the actual test request determines whether a configured model works.
+
 ## Codex Outbound Identity
 
 This fork ports `7b9dd30`, `b25a062`, and `863dbd0` from [KlN-4096/sub2api](https://github.com/KlN-4096/sub2api). Identity handling covers HTTP, passthrough, WebSocket, Messages bridging, compact, images, and search, preserving each WS frame's turn and window number.

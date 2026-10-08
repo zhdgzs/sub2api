@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"sync/atomic"
 	"testing"
@@ -105,6 +106,94 @@ func TestFetchOpenAIAccountModelsAPIKeyAppliesAccountModelMapping(t *testing.T) 
 	require.EqualValues(t, 123, alias.Created)
 }
 
+func TestFetchOpenAIAccountModelsAPIKeyKeepsConfiguredRelayRoutes(t *testing.T) {
+	for _, catalog := range []string{
+		`{"data":[{"id":"openai/gpt-6.1-sol"},{"id":"deepseek/deepseek-v4.1-flash"}]}`,
+		`{"data":[]}`,
+	} {
+		t.Run(catalog, func(t *testing.T) {
+			var calls atomic.Int32
+			gateway := newCodexModelsAPIKeyTestService(&codexModelsHTTPUpstreamStub{do: func(_ *http.Request, _ string, _ int64, _ int) (*http.Response, error) {
+				calls.Add(1)
+				return ordinaryModelsUpstreamResponse(catalog), nil
+			}})
+			svc := &AccountTestService{openaiGatewayService: gateway}
+			account := newCodexModelsAPIKeyTestAccount("https://models.example/v1")
+			account.Credentials["model_mapping"] = map[string]any{
+				"gpt-6.1-sol":         "gpt-6.1-sol",
+				"deepseek-v4.1-flash": "cline-pass/deepseek-v4.1-flash",
+				"wild-*":              "unlisted-target",
+				"":                    "unlisted-target",
+				"blank-target":        "  ",
+				"wild-target":         "provider/*",
+				" padded-alias ":      "unlisted-target",
+			}
+			ctx := context.Background()
+			before, err := gateway.FetchOpenAIModelsList(ctx, account)
+			require.NoError(t, err)
+			original := append([]byte(nil), before.Body...)
+
+			models, err := svc.FetchOpenAIAccountModels(ctx, account)
+			require.NoError(t, err)
+			require.Equal(t, []string{"deepseek-v4.1-flash", "gpt-6.1-sol"}, pickerModelIDs(models))
+			for _, model := range models {
+				require.Equal(t, "model", model.Object)
+				require.Equal(t, "model", model.Type)
+				require.NotEmpty(t, model.DisplayName)
+			}
+			require.Equal(t, "cline-pass/deepseek-v4.1-flash", account.GetMappedModel("deepseek-v4.1-flash"), "discovery must not rewrite the subscription route")
+			require.Equal(t, "gpt-6.1-sol", account.GetMappedModel("gpt-6.1-sol"))
+
+			after, err := gateway.FetchOpenAIModelsList(ctx, account)
+			require.NoError(t, err)
+			require.Equal(t, original, after.Body, "test choices must not enter the shared cache")
+			publicBody, err := projectAccountModelsBody(after.Body, account, nil, false)
+			require.NoError(t, err)
+			var publicCatalog struct {
+				Data []openai.Model `json:"data"`
+			}
+			require.NoError(t, json.Unmarshal(publicBody, &publicCatalog))
+			require.Empty(t, publicCatalog.Data, "public discovery remains constrained by upstream availability")
+			require.EqualValues(t, 1, calls.Load())
+		})
+	}
+}
+
+func TestFetchOpenAIAccountModelsCombinesDiscoveredAndUnlistedMappings(t *testing.T) {
+	gateway := newCodexModelsAPIKeyTestService(&codexModelsHTTPUpstreamStub{do: func(_ *http.Request, _ string, _ int64, _ int) (*http.Response, error) {
+		return ordinaryModelsUpstreamResponse(`{"data":[
+			{"id":"listed-target","owned_by":"provider","created":123},
+			{"id":"wild-known"},{"id":"unconfigured"}
+		]}`), nil
+	}})
+	svc := &AccountTestService{openaiGatewayService: gateway}
+	account := newCodexModelsAPIKeyTestAccount("https://models.example/v1")
+	account.Credentials["model_mapping"] = map[string]any{
+		"listed-alias": "listed-target",
+		"custom-alias": "subscription/unlisted-target",
+		"wild-*":       "listed-target",
+	}
+	models, err := svc.FetchOpenAIAccountModels(context.Background(), account)
+	require.NoError(t, err)
+	require.ElementsMatch(t, []string{"listed-alias", "custom-alias", "wild-known"}, pickerModelIDs(models))
+	for _, model := range models {
+		if model.ID == "listed-alias" || model.ID == "wild-known" {
+			require.Equal(t, "provider", model.OwnedBy)
+			require.EqualValues(t, 123, model.Created)
+		}
+	}
+}
+
+func TestFetchOpenAIAccountModelsOAuthKeepsUnlistedConcreteMappings(t *testing.T) {
+	newCodexModelsOAuthCacheServer(t, `{"models":[{"slug":"unconfigured-text"}]}`)
+	svc := &AccountTestService{openaiGatewayService: &OpenAIGatewayService{}}
+	account := newCodexModelsTestAccount()
+	account.Credentials["model_mapping"] = map[string]any{"custom-text": "unlisted-text-target"}
+	models, err := svc.FetchOpenAIAccountModels(context.Background(), account)
+	require.NoError(t, err)
+	require.Equal(t, []string{"custom-text"}, pickerModelIDs(models))
+}
+
 func TestFetchOpenAIAccountModelsPreservesEmptyCatalog(t *testing.T) {
 	gateway := newCodexModelsAPIKeyTestService(&codexModelsHTTPUpstreamStub{do: func(_ *http.Request, _ string, _ int64, _ int) (*http.Response, error) {
 		return ordinaryModelsUpstreamResponse(`{"data":[]}`), nil
@@ -186,8 +275,8 @@ func TestFetchOpenAIAccountModelsOAuthLocalImageAlias(t *testing.T) {
 	require.Equal(t, "paint", models[0].DisplayName)
 }
 
-// Image-shaped public names must come from projection when their target is text,
-// whether or not the public name also appears in the local image catalog.
+// Image-shaped aliases remain selectable even when their text target is absent.
+// Test dispatch resolves the target before deciding between text and image APIs.
 func TestFetchOpenAIAccountModelsOAuthImageNamesMappedToText(t *testing.T) {
 	for _, publicID := range []string{"gpt-image-2.5-lookalike", "gpt-image-2.5-flare"} {
 		for _, target := range []string{"text-target-missing", "gpt-6-astra"} {
@@ -199,12 +288,12 @@ func TestFetchOpenAIAccountModelsOAuthImageNamesMappedToText(t *testing.T) {
 
 				models, err := svc.FetchOpenAIAccountModels(context.Background(), account)
 				require.NoError(t, err)
-				if target == "text-target-missing" {
-					require.Empty(t, models, "a missing text target must not be synthesized as an image choice")
-					return
-				}
 				require.Equal(t, []string{publicID}, pickerModelIDs(models))
-				require.Equal(t, publicID, models[0].DisplayName, "a real text target uses the projected alias label")
+				if target == "text-target-missing" {
+					require.Equal(t, openaiCodexDisplayName(publicID), models[0].DisplayName)
+				} else {
+					require.Equal(t, publicID, models[0].DisplayName, "a discovered text target keeps the projected alias label")
+				}
 			})
 		}
 	}
@@ -286,6 +375,10 @@ func TestFetchOpenAIAccountModelsMappingChangesReuseRawCache(t *testing.T) {
 	models, err = svc.FetchOpenAIAccountModels(ctx, account)
 	require.NoError(t, err)
 	require.Equal(t, []string{"second"}, pickerModelIDs(models), "mapping changes apply without refreshing discovery")
+	account.Credentials["model_mapping"] = map[string]any{"third": "subscription/unlisted-target"}
+	models, err = svc.FetchOpenAIAccountModels(ctx, account)
+	require.NoError(t, err)
+	require.Equal(t, []string{"third"}, pickerModelIDs(models), "unlisted mappings also update without refreshing discovery")
 	after, err := gateway.FetchOpenAIModelsList(ctx, account)
 	require.NoError(t, err)
 	require.Equal(t, original, after.Body, "projection must not mutate the shared catalog")
