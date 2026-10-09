@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -72,31 +71,6 @@ func SupportsOpenAIQuotaPeriods(account *Account) bool {
 	return openAIQuotaPeriodEligible(account)
 }
 
-// OpenAIQuotaPeriodStart returns the persisted start of the current observed
-// quota period. The state lives in account extra so an empty period can still
-// retain its boundary without creating a history row.
-func OpenAIQuotaPeriodStart(account *Account) (time.Time, bool) {
-	if account == nil || len(account.Extra) == 0 {
-		return time.Time{}, false
-	}
-	raw, ok := account.Extra["openai_quota_period"]
-	if !ok {
-		return time.Time{}, false
-	}
-	state, ok := raw.(map[string]any)
-	if !ok {
-		encoded, err := json.Marshal(raw)
-		if err != nil || json.Unmarshal(encoded, &state) != nil {
-			return time.Time{}, false
-		}
-	}
-	startedAt, err := parseTime(fmt.Sprint(state["started_at"]))
-	if err != nil || startedAt.IsZero() {
-		return time.Time{}, false
-	}
-	return startedAt.UTC(), true
-}
-
 func openAIQuotaPeriodSnapshot(account *Account) (OpenAIQuotaPeriodSnapshot, bool) {
 	if !openAIQuotaPeriodEligible(account) || len(account.Extra) == 0 {
 		return OpenAIQuotaPeriodSnapshot{}, false
@@ -132,8 +106,8 @@ func openAIQuotaPeriodSnapshot(account *Account) (OpenAIQuotaPeriodSnapshot, boo
 	}, true
 }
 
-// SyncAccount persists the latest cached long-window snapshot and returns the
-// local usage values that should be shown in the account usage window.
+// SyncAccount persists the latest cached long-window snapshot for quota history.
+// Its period boundaries and totals do not control the account usage window.
 func (s *OpenAIQuotaPeriodService) SyncAccount(ctx context.Context, account *Account) (*OpenAIQuotaPeriod, error) {
 	if s == nil || s.repo == nil {
 		return nil, nil

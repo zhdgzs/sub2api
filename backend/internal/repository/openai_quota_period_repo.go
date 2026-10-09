@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
@@ -65,6 +66,8 @@ func (r *openAIQuotaPeriodRepository) Sync(ctx context.Context, snapshot service
 	}
 
 	resetDetected := false
+	previousState := state
+	resetReason := "percent_drop"
 	resetStartedAt := snapshot.ObservedAt
 	if newerSnapshot && !state.LastPercentSnapshot.IsZero() {
 		resetDetected = state.LastUsedPercent-snapshot.UsedPercent > 2
@@ -72,6 +75,7 @@ func (r *openAIQuotaPeriodRepository) Sync(ctx context.Context, snapshot service
 			naturalReset := !state.ResetAt.After(snapshot.ObservedAt) && snapshot.ResetAt.After(*state.ResetAt)
 			if naturalReset {
 				resetDetected = true
+				resetReason = "window_expired"
 				resetStartedAt = *state.ResetAt
 			}
 		}
@@ -161,6 +165,14 @@ func (r *openAIQuotaPeriodRepository) Sync(ctx context.Context, snapshot service
 	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
+	}
+	if resetDetected {
+		slog.Info("openai_quota_period_history_split", "account_id", snapshot.AccountID,
+			"reason", resetReason,
+			"previous_used_percent", previousState.LastUsedPercent, "used_percent", snapshot.UsedPercent,
+			"previous_snapshot_at", previousState.LastPercentSnapshot, "snapshot_at", snapshot.ObservedAt,
+			"previous_reset_at", previousState.ResetAt, "reset_at", snapshot.ResetAt,
+			"previous_started_at", previousState.StartedAt, "started_at", state.StartedAt)
 	}
 	return period, nil
 }

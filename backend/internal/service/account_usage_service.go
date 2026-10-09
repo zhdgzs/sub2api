@@ -760,16 +760,12 @@ func (s *AccountUsageService) getOpenAIUsage(ctx context.Context, account *Accou
 		usage.FiveHour.WindowStats = windowStatsFromAccountStats(stats)
 	}
 
+	// History periods may split on percentage changes within one upstream
+	// window. Keep their boundaries independent of the displayed usage totals.
 	sevenDayStart := codexWindowStatsStart(usage.SevenDay, 7*24*time.Hour, now)
-	if trackedStart, ok := OpenAIQuotaPeriodStart(account); ok {
-		sevenDayStart = trackedStart
-	}
 	if s.openAIQuotaPeriodService != nil {
-		period, err := s.openAIQuotaPeriodService.SyncAccount(ctx, account)
-		if err != nil {
+		if _, err := s.openAIQuotaPeriodService.SyncAccount(ctx, account); err != nil {
 			slog.Warn("openai_quota_period_sync_failed", "account_id", account.ID, "error", err)
-		} else if period != nil && !period.StartedAt.IsZero() {
-			sevenDayStart = period.StartedAt
 		}
 	}
 
