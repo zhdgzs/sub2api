@@ -3,7 +3,6 @@ package admin
 import (
 	"bytes"
 	"compress/gzip"
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -17,27 +16,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type accountListPredictionRepo struct {
-	service.OpenAIQuotaPeriodRepository
-}
-
-func (accountListPredictionRepo) GetCurrentPredictions(_ context.Context, _ []int64) (map[int64]float64, error) {
-	return map[int64]float64{501: 123.45}, nil
-}
-
-func TestAccountHandlerListPreservesQuotaPredictionInBothPayloads(t *testing.T) {
+func TestAccountHandlerListOmitsQuotaPredictionInBothPayloads(t *testing.T) {
 	for _, lite := range []string{"0", "1"} {
 		t.Run("lite="+lite, func(t *testing.T) {
 			gin.SetMode(gin.TestMode)
 			router := gin.New()
 			adminSvc := newStubAdminService()
 			adminSvc.accounts = []service.Account{{
-				ID: 501, Name: "predicted-account", Platform: service.PlatformOpenAI,
+				ID: 501, Name: "openai-account", Platform: service.PlatformOpenAI,
 				Type: service.AccountTypeOAuth, Status: service.StatusActive,
 				Schedulable: true, Credentials: map[string]any{"plan_type": "plus"},
 			}}
 			handler := NewAccountHandler(adminSvc, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
-			handler.openAIQuotaPeriodService = service.NewOpenAIQuotaPeriodService(accountListPredictionRepo{}, nil)
 			router.GET("/api/v1/admin/accounts", handler.List)
 			rec := httptest.NewRecorder()
 			router.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/admin/accounts?lite="+lite, nil))
@@ -49,7 +39,7 @@ func TestAccountHandlerListPreservesQuotaPredictionInBothPayloads(t *testing.T) 
 			}
 			require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &payload))
 			require.Len(t, payload.Data.Items, 1)
-			require.Equal(t, 123.45, payload.Data.Items[0]["current_openai_quota_prediction"])
+			require.NotContains(t, payload.Data.Items[0], "current_openai_quota_prediction")
 		})
 	}
 }

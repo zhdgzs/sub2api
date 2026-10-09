@@ -29561,31 +29561,37 @@ func (m *IdentityAdoptionDecisionMutation) ResetEdge(name string) error {
 // OpenAIQuotaPeriodMutation represents an operation that mutates the OpenAIQuotaPeriod nodes in the graph.
 type OpenAIQuotaPeriodMutation struct {
 	config
-	op                     Op
-	typ                    string
-	id                     *int64
-	account_id             *int64
-	addaccount_id          *int64
-	started_at             *time.Time
-	ended_at               *time.Time
-	reset_at               *time.Time
-	request_count          *int64
-	addrequest_count       *int64
-	token_count            *int64
-	addtoken_count         *int64
-	used_usd               *float64
-	addused_usd            *float64
-	used_percent           *float64
-	addused_percent        *float64
-	predicted_quota_usd    *float64
-	addpredicted_quota_usd *float64
-	snapshot_at            *time.Time
-	created_at             *time.Time
-	updated_at             *time.Time
-	clearedFields          map[string]struct{}
-	done                   bool
-	oldValue               func(context.Context) (*OpenAIQuotaPeriod, error)
-	predicates             []predicate.OpenAIQuotaPeriod
+	op                         Op
+	typ                        string
+	id                         *int64
+	account_id                 *int64
+	addaccount_id              *int64
+	started_at                 *time.Time
+	ended_at                   *time.Time
+	reset_at                   *time.Time
+	request_count              *int64
+	addrequest_count           *int64
+	token_count                *int64
+	addtoken_count             *int64
+	used_usd                   *float64
+	addused_usd                *float64
+	used_percent               *float64
+	addused_percent            *float64
+	estimated_total_cost       *float64
+	addestimated_total_cost    *float64
+	estimate_window_started_at *time.Time
+	estimate_window_cost       *float64
+	addestimate_window_cost    *float64
+	estimate_used_percent      *float64
+	addestimate_used_percent   *float64
+	estimated_at               *time.Time
+	snapshot_at                *time.Time
+	created_at                 *time.Time
+	updated_at                 *time.Time
+	clearedFields              map[string]struct{}
+	done                       bool
+	oldValue                   func(context.Context) (*OpenAIQuotaPeriod, error)
+	predicates                 []predicate.OpenAIQuotaPeriod
 }
 
 var _ ent.Mutation = (*OpenAIQuotaPeriodMutation)(nil)
@@ -30114,74 +30120,312 @@ func (m *OpenAIQuotaPeriodMutation) ResetUsedPercent() {
 	m.addused_percent = nil
 }
 
-// SetPredictedQuotaUsd sets the "predicted_quota_usd" field.
-func (m *OpenAIQuotaPeriodMutation) SetPredictedQuotaUsd(f float64) {
-	m.predicted_quota_usd = &f
-	m.addpredicted_quota_usd = nil
+// SetEstimatedTotalCost sets the "estimated_total_cost" field.
+func (m *OpenAIQuotaPeriodMutation) SetEstimatedTotalCost(f float64) {
+	m.estimated_total_cost = &f
+	m.addestimated_total_cost = nil
 }
 
-// PredictedQuotaUsd returns the value of the "predicted_quota_usd" field in the mutation.
-func (m *OpenAIQuotaPeriodMutation) PredictedQuotaUsd() (r float64, exists bool) {
-	v := m.predicted_quota_usd
+// EstimatedTotalCost returns the value of the "estimated_total_cost" field in the mutation.
+func (m *OpenAIQuotaPeriodMutation) EstimatedTotalCost() (r float64, exists bool) {
+	v := m.estimated_total_cost
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldPredictedQuotaUsd returns the old "predicted_quota_usd" field's value of the OpenAIQuotaPeriod entity.
+// OldEstimatedTotalCost returns the old "estimated_total_cost" field's value of the OpenAIQuotaPeriod entity.
 // If the OpenAIQuotaPeriod object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *OpenAIQuotaPeriodMutation) OldPredictedQuotaUsd(ctx context.Context) (v *float64, err error) {
+func (m *OpenAIQuotaPeriodMutation) OldEstimatedTotalCost(ctx context.Context) (v *float64, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldPredictedQuotaUsd is only allowed on UpdateOne operations")
+		return v, errors.New("OldEstimatedTotalCost is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldPredictedQuotaUsd requires an ID field in the mutation")
+		return v, errors.New("OldEstimatedTotalCost requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldPredictedQuotaUsd: %w", err)
+		return v, fmt.Errorf("querying old value for OldEstimatedTotalCost: %w", err)
 	}
-	return oldValue.PredictedQuotaUsd, nil
+	return oldValue.EstimatedTotalCost, nil
 }
 
-// AddPredictedQuotaUsd adds f to the "predicted_quota_usd" field.
-func (m *OpenAIQuotaPeriodMutation) AddPredictedQuotaUsd(f float64) {
-	if m.addpredicted_quota_usd != nil {
-		*m.addpredicted_quota_usd += f
+// AddEstimatedTotalCost adds f to the "estimated_total_cost" field.
+func (m *OpenAIQuotaPeriodMutation) AddEstimatedTotalCost(f float64) {
+	if m.addestimated_total_cost != nil {
+		*m.addestimated_total_cost += f
 	} else {
-		m.addpredicted_quota_usd = &f
+		m.addestimated_total_cost = &f
 	}
 }
 
-// AddedPredictedQuotaUsd returns the value that was added to the "predicted_quota_usd" field in this mutation.
-func (m *OpenAIQuotaPeriodMutation) AddedPredictedQuotaUsd() (r float64, exists bool) {
-	v := m.addpredicted_quota_usd
+// AddedEstimatedTotalCost returns the value that was added to the "estimated_total_cost" field in this mutation.
+func (m *OpenAIQuotaPeriodMutation) AddedEstimatedTotalCost() (r float64, exists bool) {
+	v := m.addestimated_total_cost
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// ClearPredictedQuotaUsd clears the value of the "predicted_quota_usd" field.
-func (m *OpenAIQuotaPeriodMutation) ClearPredictedQuotaUsd() {
-	m.predicted_quota_usd = nil
-	m.addpredicted_quota_usd = nil
-	m.clearedFields[openaiquotaperiod.FieldPredictedQuotaUsd] = struct{}{}
+// ClearEstimatedTotalCost clears the value of the "estimated_total_cost" field.
+func (m *OpenAIQuotaPeriodMutation) ClearEstimatedTotalCost() {
+	m.estimated_total_cost = nil
+	m.addestimated_total_cost = nil
+	m.clearedFields[openaiquotaperiod.FieldEstimatedTotalCost] = struct{}{}
 }
 
-// PredictedQuotaUsdCleared returns if the "predicted_quota_usd" field was cleared in this mutation.
-func (m *OpenAIQuotaPeriodMutation) PredictedQuotaUsdCleared() bool {
-	_, ok := m.clearedFields[openaiquotaperiod.FieldPredictedQuotaUsd]
+// EstimatedTotalCostCleared returns if the "estimated_total_cost" field was cleared in this mutation.
+func (m *OpenAIQuotaPeriodMutation) EstimatedTotalCostCleared() bool {
+	_, ok := m.clearedFields[openaiquotaperiod.FieldEstimatedTotalCost]
 	return ok
 }
 
-// ResetPredictedQuotaUsd resets all changes to the "predicted_quota_usd" field.
-func (m *OpenAIQuotaPeriodMutation) ResetPredictedQuotaUsd() {
-	m.predicted_quota_usd = nil
-	m.addpredicted_quota_usd = nil
-	delete(m.clearedFields, openaiquotaperiod.FieldPredictedQuotaUsd)
+// ResetEstimatedTotalCost resets all changes to the "estimated_total_cost" field.
+func (m *OpenAIQuotaPeriodMutation) ResetEstimatedTotalCost() {
+	m.estimated_total_cost = nil
+	m.addestimated_total_cost = nil
+	delete(m.clearedFields, openaiquotaperiod.FieldEstimatedTotalCost)
+}
+
+// SetEstimateWindowStartedAt sets the "estimate_window_started_at" field.
+func (m *OpenAIQuotaPeriodMutation) SetEstimateWindowStartedAt(t time.Time) {
+	m.estimate_window_started_at = &t
+}
+
+// EstimateWindowStartedAt returns the value of the "estimate_window_started_at" field in the mutation.
+func (m *OpenAIQuotaPeriodMutation) EstimateWindowStartedAt() (r time.Time, exists bool) {
+	v := m.estimate_window_started_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEstimateWindowStartedAt returns the old "estimate_window_started_at" field's value of the OpenAIQuotaPeriod entity.
+// If the OpenAIQuotaPeriod object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OpenAIQuotaPeriodMutation) OldEstimateWindowStartedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEstimateWindowStartedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEstimateWindowStartedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEstimateWindowStartedAt: %w", err)
+	}
+	return oldValue.EstimateWindowStartedAt, nil
+}
+
+// ClearEstimateWindowStartedAt clears the value of the "estimate_window_started_at" field.
+func (m *OpenAIQuotaPeriodMutation) ClearEstimateWindowStartedAt() {
+	m.estimate_window_started_at = nil
+	m.clearedFields[openaiquotaperiod.FieldEstimateWindowStartedAt] = struct{}{}
+}
+
+// EstimateWindowStartedAtCleared returns if the "estimate_window_started_at" field was cleared in this mutation.
+func (m *OpenAIQuotaPeriodMutation) EstimateWindowStartedAtCleared() bool {
+	_, ok := m.clearedFields[openaiquotaperiod.FieldEstimateWindowStartedAt]
+	return ok
+}
+
+// ResetEstimateWindowStartedAt resets all changes to the "estimate_window_started_at" field.
+func (m *OpenAIQuotaPeriodMutation) ResetEstimateWindowStartedAt() {
+	m.estimate_window_started_at = nil
+	delete(m.clearedFields, openaiquotaperiod.FieldEstimateWindowStartedAt)
+}
+
+// SetEstimateWindowCost sets the "estimate_window_cost" field.
+func (m *OpenAIQuotaPeriodMutation) SetEstimateWindowCost(f float64) {
+	m.estimate_window_cost = &f
+	m.addestimate_window_cost = nil
+}
+
+// EstimateWindowCost returns the value of the "estimate_window_cost" field in the mutation.
+func (m *OpenAIQuotaPeriodMutation) EstimateWindowCost() (r float64, exists bool) {
+	v := m.estimate_window_cost
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEstimateWindowCost returns the old "estimate_window_cost" field's value of the OpenAIQuotaPeriod entity.
+// If the OpenAIQuotaPeriod object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OpenAIQuotaPeriodMutation) OldEstimateWindowCost(ctx context.Context) (v *float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEstimateWindowCost is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEstimateWindowCost requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEstimateWindowCost: %w", err)
+	}
+	return oldValue.EstimateWindowCost, nil
+}
+
+// AddEstimateWindowCost adds f to the "estimate_window_cost" field.
+func (m *OpenAIQuotaPeriodMutation) AddEstimateWindowCost(f float64) {
+	if m.addestimate_window_cost != nil {
+		*m.addestimate_window_cost += f
+	} else {
+		m.addestimate_window_cost = &f
+	}
+}
+
+// AddedEstimateWindowCost returns the value that was added to the "estimate_window_cost" field in this mutation.
+func (m *OpenAIQuotaPeriodMutation) AddedEstimateWindowCost() (r float64, exists bool) {
+	v := m.addestimate_window_cost
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearEstimateWindowCost clears the value of the "estimate_window_cost" field.
+func (m *OpenAIQuotaPeriodMutation) ClearEstimateWindowCost() {
+	m.estimate_window_cost = nil
+	m.addestimate_window_cost = nil
+	m.clearedFields[openaiquotaperiod.FieldEstimateWindowCost] = struct{}{}
+}
+
+// EstimateWindowCostCleared returns if the "estimate_window_cost" field was cleared in this mutation.
+func (m *OpenAIQuotaPeriodMutation) EstimateWindowCostCleared() bool {
+	_, ok := m.clearedFields[openaiquotaperiod.FieldEstimateWindowCost]
+	return ok
+}
+
+// ResetEstimateWindowCost resets all changes to the "estimate_window_cost" field.
+func (m *OpenAIQuotaPeriodMutation) ResetEstimateWindowCost() {
+	m.estimate_window_cost = nil
+	m.addestimate_window_cost = nil
+	delete(m.clearedFields, openaiquotaperiod.FieldEstimateWindowCost)
+}
+
+// SetEstimateUsedPercent sets the "estimate_used_percent" field.
+func (m *OpenAIQuotaPeriodMutation) SetEstimateUsedPercent(f float64) {
+	m.estimate_used_percent = &f
+	m.addestimate_used_percent = nil
+}
+
+// EstimateUsedPercent returns the value of the "estimate_used_percent" field in the mutation.
+func (m *OpenAIQuotaPeriodMutation) EstimateUsedPercent() (r float64, exists bool) {
+	v := m.estimate_used_percent
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEstimateUsedPercent returns the old "estimate_used_percent" field's value of the OpenAIQuotaPeriod entity.
+// If the OpenAIQuotaPeriod object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OpenAIQuotaPeriodMutation) OldEstimateUsedPercent(ctx context.Context) (v *float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEstimateUsedPercent is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEstimateUsedPercent requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEstimateUsedPercent: %w", err)
+	}
+	return oldValue.EstimateUsedPercent, nil
+}
+
+// AddEstimateUsedPercent adds f to the "estimate_used_percent" field.
+func (m *OpenAIQuotaPeriodMutation) AddEstimateUsedPercent(f float64) {
+	if m.addestimate_used_percent != nil {
+		*m.addestimate_used_percent += f
+	} else {
+		m.addestimate_used_percent = &f
+	}
+}
+
+// AddedEstimateUsedPercent returns the value that was added to the "estimate_used_percent" field in this mutation.
+func (m *OpenAIQuotaPeriodMutation) AddedEstimateUsedPercent() (r float64, exists bool) {
+	v := m.addestimate_used_percent
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearEstimateUsedPercent clears the value of the "estimate_used_percent" field.
+func (m *OpenAIQuotaPeriodMutation) ClearEstimateUsedPercent() {
+	m.estimate_used_percent = nil
+	m.addestimate_used_percent = nil
+	m.clearedFields[openaiquotaperiod.FieldEstimateUsedPercent] = struct{}{}
+}
+
+// EstimateUsedPercentCleared returns if the "estimate_used_percent" field was cleared in this mutation.
+func (m *OpenAIQuotaPeriodMutation) EstimateUsedPercentCleared() bool {
+	_, ok := m.clearedFields[openaiquotaperiod.FieldEstimateUsedPercent]
+	return ok
+}
+
+// ResetEstimateUsedPercent resets all changes to the "estimate_used_percent" field.
+func (m *OpenAIQuotaPeriodMutation) ResetEstimateUsedPercent() {
+	m.estimate_used_percent = nil
+	m.addestimate_used_percent = nil
+	delete(m.clearedFields, openaiquotaperiod.FieldEstimateUsedPercent)
+}
+
+// SetEstimatedAt sets the "estimated_at" field.
+func (m *OpenAIQuotaPeriodMutation) SetEstimatedAt(t time.Time) {
+	m.estimated_at = &t
+}
+
+// EstimatedAt returns the value of the "estimated_at" field in the mutation.
+func (m *OpenAIQuotaPeriodMutation) EstimatedAt() (r time.Time, exists bool) {
+	v := m.estimated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEstimatedAt returns the old "estimated_at" field's value of the OpenAIQuotaPeriod entity.
+// If the OpenAIQuotaPeriod object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OpenAIQuotaPeriodMutation) OldEstimatedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEstimatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEstimatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEstimatedAt: %w", err)
+	}
+	return oldValue.EstimatedAt, nil
+}
+
+// ClearEstimatedAt clears the value of the "estimated_at" field.
+func (m *OpenAIQuotaPeriodMutation) ClearEstimatedAt() {
+	m.estimated_at = nil
+	m.clearedFields[openaiquotaperiod.FieldEstimatedAt] = struct{}{}
+}
+
+// EstimatedAtCleared returns if the "estimated_at" field was cleared in this mutation.
+func (m *OpenAIQuotaPeriodMutation) EstimatedAtCleared() bool {
+	_, ok := m.clearedFields[openaiquotaperiod.FieldEstimatedAt]
+	return ok
+}
+
+// ResetEstimatedAt resets all changes to the "estimated_at" field.
+func (m *OpenAIQuotaPeriodMutation) ResetEstimatedAt() {
+	m.estimated_at = nil
+	delete(m.clearedFields, openaiquotaperiod.FieldEstimatedAt)
 }
 
 // SetSnapshotAt sets the "snapshot_at" field.
@@ -30326,7 +30570,7 @@ func (m *OpenAIQuotaPeriodMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *OpenAIQuotaPeriodMutation) Fields() []string {
-	fields := make([]string, 0, 12)
+	fields := make([]string, 0, 16)
 	if m.account_id != nil {
 		fields = append(fields, openaiquotaperiod.FieldAccountID)
 	}
@@ -30351,8 +30595,20 @@ func (m *OpenAIQuotaPeriodMutation) Fields() []string {
 	if m.used_percent != nil {
 		fields = append(fields, openaiquotaperiod.FieldUsedPercent)
 	}
-	if m.predicted_quota_usd != nil {
-		fields = append(fields, openaiquotaperiod.FieldPredictedQuotaUsd)
+	if m.estimated_total_cost != nil {
+		fields = append(fields, openaiquotaperiod.FieldEstimatedTotalCost)
+	}
+	if m.estimate_window_started_at != nil {
+		fields = append(fields, openaiquotaperiod.FieldEstimateWindowStartedAt)
+	}
+	if m.estimate_window_cost != nil {
+		fields = append(fields, openaiquotaperiod.FieldEstimateWindowCost)
+	}
+	if m.estimate_used_percent != nil {
+		fields = append(fields, openaiquotaperiod.FieldEstimateUsedPercent)
+	}
+	if m.estimated_at != nil {
+		fields = append(fields, openaiquotaperiod.FieldEstimatedAt)
 	}
 	if m.snapshot_at != nil {
 		fields = append(fields, openaiquotaperiod.FieldSnapshotAt)
@@ -30387,8 +30643,16 @@ func (m *OpenAIQuotaPeriodMutation) Field(name string) (ent.Value, bool) {
 		return m.UsedUsd()
 	case openaiquotaperiod.FieldUsedPercent:
 		return m.UsedPercent()
-	case openaiquotaperiod.FieldPredictedQuotaUsd:
-		return m.PredictedQuotaUsd()
+	case openaiquotaperiod.FieldEstimatedTotalCost:
+		return m.EstimatedTotalCost()
+	case openaiquotaperiod.FieldEstimateWindowStartedAt:
+		return m.EstimateWindowStartedAt()
+	case openaiquotaperiod.FieldEstimateWindowCost:
+		return m.EstimateWindowCost()
+	case openaiquotaperiod.FieldEstimateUsedPercent:
+		return m.EstimateUsedPercent()
+	case openaiquotaperiod.FieldEstimatedAt:
+		return m.EstimatedAt()
 	case openaiquotaperiod.FieldSnapshotAt:
 		return m.SnapshotAt()
 	case openaiquotaperiod.FieldCreatedAt:
@@ -30420,8 +30684,16 @@ func (m *OpenAIQuotaPeriodMutation) OldField(ctx context.Context, name string) (
 		return m.OldUsedUsd(ctx)
 	case openaiquotaperiod.FieldUsedPercent:
 		return m.OldUsedPercent(ctx)
-	case openaiquotaperiod.FieldPredictedQuotaUsd:
-		return m.OldPredictedQuotaUsd(ctx)
+	case openaiquotaperiod.FieldEstimatedTotalCost:
+		return m.OldEstimatedTotalCost(ctx)
+	case openaiquotaperiod.FieldEstimateWindowStartedAt:
+		return m.OldEstimateWindowStartedAt(ctx)
+	case openaiquotaperiod.FieldEstimateWindowCost:
+		return m.OldEstimateWindowCost(ctx)
+	case openaiquotaperiod.FieldEstimateUsedPercent:
+		return m.OldEstimateUsedPercent(ctx)
+	case openaiquotaperiod.FieldEstimatedAt:
+		return m.OldEstimatedAt(ctx)
 	case openaiquotaperiod.FieldSnapshotAt:
 		return m.OldSnapshotAt(ctx)
 	case openaiquotaperiod.FieldCreatedAt:
@@ -30493,12 +30765,40 @@ func (m *OpenAIQuotaPeriodMutation) SetField(name string, value ent.Value) error
 		}
 		m.SetUsedPercent(v)
 		return nil
-	case openaiquotaperiod.FieldPredictedQuotaUsd:
+	case openaiquotaperiod.FieldEstimatedTotalCost:
 		v, ok := value.(float64)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetPredictedQuotaUsd(v)
+		m.SetEstimatedTotalCost(v)
+		return nil
+	case openaiquotaperiod.FieldEstimateWindowStartedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEstimateWindowStartedAt(v)
+		return nil
+	case openaiquotaperiod.FieldEstimateWindowCost:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEstimateWindowCost(v)
+		return nil
+	case openaiquotaperiod.FieldEstimateUsedPercent:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEstimateUsedPercent(v)
+		return nil
+	case openaiquotaperiod.FieldEstimatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEstimatedAt(v)
 		return nil
 	case openaiquotaperiod.FieldSnapshotAt:
 		v, ok := value.(time.Time)
@@ -30544,8 +30844,14 @@ func (m *OpenAIQuotaPeriodMutation) AddedFields() []string {
 	if m.addused_percent != nil {
 		fields = append(fields, openaiquotaperiod.FieldUsedPercent)
 	}
-	if m.addpredicted_quota_usd != nil {
-		fields = append(fields, openaiquotaperiod.FieldPredictedQuotaUsd)
+	if m.addestimated_total_cost != nil {
+		fields = append(fields, openaiquotaperiod.FieldEstimatedTotalCost)
+	}
+	if m.addestimate_window_cost != nil {
+		fields = append(fields, openaiquotaperiod.FieldEstimateWindowCost)
+	}
+	if m.addestimate_used_percent != nil {
+		fields = append(fields, openaiquotaperiod.FieldEstimateUsedPercent)
 	}
 	return fields
 }
@@ -30565,8 +30871,12 @@ func (m *OpenAIQuotaPeriodMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedUsedUsd()
 	case openaiquotaperiod.FieldUsedPercent:
 		return m.AddedUsedPercent()
-	case openaiquotaperiod.FieldPredictedQuotaUsd:
-		return m.AddedPredictedQuotaUsd()
+	case openaiquotaperiod.FieldEstimatedTotalCost:
+		return m.AddedEstimatedTotalCost()
+	case openaiquotaperiod.FieldEstimateWindowCost:
+		return m.AddedEstimateWindowCost()
+	case openaiquotaperiod.FieldEstimateUsedPercent:
+		return m.AddedEstimateUsedPercent()
 	}
 	return nil, false
 }
@@ -30611,12 +30921,26 @@ func (m *OpenAIQuotaPeriodMutation) AddField(name string, value ent.Value) error
 		}
 		m.AddUsedPercent(v)
 		return nil
-	case openaiquotaperiod.FieldPredictedQuotaUsd:
+	case openaiquotaperiod.FieldEstimatedTotalCost:
 		v, ok := value.(float64)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.AddPredictedQuotaUsd(v)
+		m.AddEstimatedTotalCost(v)
+		return nil
+	case openaiquotaperiod.FieldEstimateWindowCost:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddEstimateWindowCost(v)
+		return nil
+	case openaiquotaperiod.FieldEstimateUsedPercent:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddEstimateUsedPercent(v)
 		return nil
 	}
 	return fmt.Errorf("unknown OpenAIQuotaPeriod numeric field %s", name)
@@ -30635,8 +30959,20 @@ func (m *OpenAIQuotaPeriodMutation) ClearedFields() []string {
 	if m.FieldCleared(openaiquotaperiod.FieldTokenCount) {
 		fields = append(fields, openaiquotaperiod.FieldTokenCount)
 	}
-	if m.FieldCleared(openaiquotaperiod.FieldPredictedQuotaUsd) {
-		fields = append(fields, openaiquotaperiod.FieldPredictedQuotaUsd)
+	if m.FieldCleared(openaiquotaperiod.FieldEstimatedTotalCost) {
+		fields = append(fields, openaiquotaperiod.FieldEstimatedTotalCost)
+	}
+	if m.FieldCleared(openaiquotaperiod.FieldEstimateWindowStartedAt) {
+		fields = append(fields, openaiquotaperiod.FieldEstimateWindowStartedAt)
+	}
+	if m.FieldCleared(openaiquotaperiod.FieldEstimateWindowCost) {
+		fields = append(fields, openaiquotaperiod.FieldEstimateWindowCost)
+	}
+	if m.FieldCleared(openaiquotaperiod.FieldEstimateUsedPercent) {
+		fields = append(fields, openaiquotaperiod.FieldEstimateUsedPercent)
+	}
+	if m.FieldCleared(openaiquotaperiod.FieldEstimatedAt) {
+		fields = append(fields, openaiquotaperiod.FieldEstimatedAt)
 	}
 	return fields
 }
@@ -30661,8 +30997,20 @@ func (m *OpenAIQuotaPeriodMutation) ClearField(name string) error {
 	case openaiquotaperiod.FieldTokenCount:
 		m.ClearTokenCount()
 		return nil
-	case openaiquotaperiod.FieldPredictedQuotaUsd:
-		m.ClearPredictedQuotaUsd()
+	case openaiquotaperiod.FieldEstimatedTotalCost:
+		m.ClearEstimatedTotalCost()
+		return nil
+	case openaiquotaperiod.FieldEstimateWindowStartedAt:
+		m.ClearEstimateWindowStartedAt()
+		return nil
+	case openaiquotaperiod.FieldEstimateWindowCost:
+		m.ClearEstimateWindowCost()
+		return nil
+	case openaiquotaperiod.FieldEstimateUsedPercent:
+		m.ClearEstimateUsedPercent()
+		return nil
+	case openaiquotaperiod.FieldEstimatedAt:
+		m.ClearEstimatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown OpenAIQuotaPeriod nullable field %s", name)
@@ -30696,8 +31044,20 @@ func (m *OpenAIQuotaPeriodMutation) ResetField(name string) error {
 	case openaiquotaperiod.FieldUsedPercent:
 		m.ResetUsedPercent()
 		return nil
-	case openaiquotaperiod.FieldPredictedQuotaUsd:
-		m.ResetPredictedQuotaUsd()
+	case openaiquotaperiod.FieldEstimatedTotalCost:
+		m.ResetEstimatedTotalCost()
+		return nil
+	case openaiquotaperiod.FieldEstimateWindowStartedAt:
+		m.ResetEstimateWindowStartedAt()
+		return nil
+	case openaiquotaperiod.FieldEstimateWindowCost:
+		m.ResetEstimateWindowCost()
+		return nil
+	case openaiquotaperiod.FieldEstimateUsedPercent:
+		m.ResetEstimateUsedPercent()
+		return nil
+	case openaiquotaperiod.FieldEstimatedAt:
+		m.ResetEstimatedAt()
 		return nil
 	case openaiquotaperiod.FieldSnapshotAt:
 		m.ResetSnapshotAt()

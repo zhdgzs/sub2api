@@ -146,12 +146,13 @@ type WindowStats struct {
 
 // UsageProgress 使用量进度
 type UsageProgress struct {
-	Utilization      float64      `json:"utilization"`            // 使用率百分比 (0-100+，100表示100%)
-	ResetsAt         *time.Time   `json:"resets_at"`              // 重置时间
-	RemainingSeconds int          `json:"remaining_seconds"`      // 距重置剩余秒数
-	WindowStats      *WindowStats `json:"window_stats,omitempty"` // 窗口期统计（从窗口开始到当前的使用量）
-	UsedRequests     int64        `json:"used_requests,omitempty"`
-	LimitRequests    int64        `json:"limit_requests,omitempty"`
+	Utilization        float64      `json:"utilization"`            // 使用率百分比 (0-100+，100表示100%)
+	ResetsAt           *time.Time   `json:"resets_at"`              // 重置时间
+	RemainingSeconds   int          `json:"remaining_seconds"`      // 距重置剩余秒数
+	WindowStats        *WindowStats `json:"window_stats,omitempty"` // 窗口期统计（从窗口开始到当前的使用量）
+	EstimatedTotalCost *float64     `json:"estimated_total_cost,omitempty"`
+	UsedRequests       int64        `json:"used_requests,omitempty"`
+	LimitRequests      int64        `json:"limit_requests,omitempty"`
 }
 
 // AntigravityModelQuota Antigravity 单个模型的配额信息
@@ -763,17 +764,20 @@ func (s *AccountUsageService) getOpenAIUsage(ctx context.Context, account *Accou
 	// History periods may split on percentage changes within one upstream
 	// window. Keep their boundaries independent of the displayed usage totals.
 	sevenDayStart := codexWindowStatsStart(usage.SevenDay, 7*24*time.Hour, now)
-	if s.openAIQuotaPeriodService != nil {
-		if _, err := s.openAIQuotaPeriodService.SyncAccount(ctx, account); err != nil {
-			slog.Warn("openai_quota_period_sync_failed", "account_id", account.ID, "error", err)
-		}
-	}
-
 	if stats, err := s.usageLogRepo.GetAccountWindowStats(ctx, account.ID, sevenDayStart); err == nil {
 		if usage.SevenDay == nil {
 			usage.SevenDay = &UsageProgress{Utilization: 0}
 		}
 		usage.SevenDay.WindowStats = windowStatsFromAccountStats(stats)
+		estimate := buildOpenAIQuotaEstimate(usage.SevenDay, now)
+		if estimate != nil {
+			usage.SevenDay.EstimatedTotalCost = &estimate.TotalCost
+		}
+		if s.openAIQuotaPeriodService != nil {
+			if _, err := s.openAIQuotaPeriodService.SyncUsage(ctx, account, estimate, now); err != nil {
+				slog.Warn("openai_quota_period_sync_failed", "account_id", account.ID, "error", err)
+			}
+		}
 	}
 
 	return usage, nil

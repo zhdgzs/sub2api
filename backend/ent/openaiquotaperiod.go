@@ -33,8 +33,16 @@ type OpenAIQuotaPeriod struct {
 	UsedUsd float64 `json:"used_usd,omitempty"`
 	// UsedPercent holds the value of the "used_percent" field.
 	UsedPercent float64 `json:"used_percent,omitempty"`
-	// PredictedQuotaUsd holds the value of the "predicted_quota_usd" field.
-	PredictedQuotaUsd *float64 `json:"predicted_quota_usd,omitempty"`
+	// EstimatedTotalCost holds the value of the "estimated_total_cost" field.
+	EstimatedTotalCost *float64 `json:"estimated_total_cost,omitempty"`
+	// EstimateWindowStartedAt holds the value of the "estimate_window_started_at" field.
+	EstimateWindowStartedAt *time.Time `json:"estimate_window_started_at,omitempty"`
+	// EstimateWindowCost holds the value of the "estimate_window_cost" field.
+	EstimateWindowCost *float64 `json:"estimate_window_cost,omitempty"`
+	// EstimateUsedPercent holds the value of the "estimate_used_percent" field.
+	EstimateUsedPercent *float64 `json:"estimate_used_percent,omitempty"`
+	// EstimatedAt holds the value of the "estimated_at" field.
+	EstimatedAt *time.Time `json:"estimated_at,omitempty"`
 	// SnapshotAt holds the value of the "snapshot_at" field.
 	SnapshotAt time.Time `json:"snapshot_at,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -49,11 +57,11 @@ func (*OpenAIQuotaPeriod) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case openaiquotaperiod.FieldUsedUsd, openaiquotaperiod.FieldUsedPercent, openaiquotaperiod.FieldPredictedQuotaUsd:
+		case openaiquotaperiod.FieldUsedUsd, openaiquotaperiod.FieldUsedPercent, openaiquotaperiod.FieldEstimatedTotalCost, openaiquotaperiod.FieldEstimateWindowCost, openaiquotaperiod.FieldEstimateUsedPercent:
 			values[i] = new(sql.NullFloat64)
 		case openaiquotaperiod.FieldID, openaiquotaperiod.FieldAccountID, openaiquotaperiod.FieldRequestCount, openaiquotaperiod.FieldTokenCount:
 			values[i] = new(sql.NullInt64)
-		case openaiquotaperiod.FieldStartedAt, openaiquotaperiod.FieldEndedAt, openaiquotaperiod.FieldResetAt, openaiquotaperiod.FieldSnapshotAt, openaiquotaperiod.FieldCreatedAt, openaiquotaperiod.FieldUpdatedAt:
+		case openaiquotaperiod.FieldStartedAt, openaiquotaperiod.FieldEndedAt, openaiquotaperiod.FieldResetAt, openaiquotaperiod.FieldEstimateWindowStartedAt, openaiquotaperiod.FieldEstimatedAt, openaiquotaperiod.FieldSnapshotAt, openaiquotaperiod.FieldCreatedAt, openaiquotaperiod.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -127,12 +135,40 @@ func (_m *OpenAIQuotaPeriod) assignValues(columns []string, values []any) error 
 			} else if value.Valid {
 				_m.UsedPercent = value.Float64
 			}
-		case openaiquotaperiod.FieldPredictedQuotaUsd:
+		case openaiquotaperiod.FieldEstimatedTotalCost:
 			if value, ok := values[i].(*sql.NullFloat64); !ok {
-				return fmt.Errorf("unexpected type %T for field predicted_quota_usd", values[i])
+				return fmt.Errorf("unexpected type %T for field estimated_total_cost", values[i])
 			} else if value.Valid {
-				_m.PredictedQuotaUsd = new(float64)
-				*_m.PredictedQuotaUsd = value.Float64
+				_m.EstimatedTotalCost = new(float64)
+				*_m.EstimatedTotalCost = value.Float64
+			}
+		case openaiquotaperiod.FieldEstimateWindowStartedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field estimate_window_started_at", values[i])
+			} else if value.Valid {
+				_m.EstimateWindowStartedAt = new(time.Time)
+				*_m.EstimateWindowStartedAt = value.Time
+			}
+		case openaiquotaperiod.FieldEstimateWindowCost:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field estimate_window_cost", values[i])
+			} else if value.Valid {
+				_m.EstimateWindowCost = new(float64)
+				*_m.EstimateWindowCost = value.Float64
+			}
+		case openaiquotaperiod.FieldEstimateUsedPercent:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field estimate_used_percent", values[i])
+			} else if value.Valid {
+				_m.EstimateUsedPercent = new(float64)
+				*_m.EstimateUsedPercent = value.Float64
+			}
+		case openaiquotaperiod.FieldEstimatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field estimated_at", values[i])
+			} else if value.Valid {
+				_m.EstimatedAt = new(time.Time)
+				*_m.EstimatedAt = value.Time
 			}
 		case openaiquotaperiod.FieldSnapshotAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -218,9 +254,29 @@ func (_m *OpenAIQuotaPeriod) String() string {
 	builder.WriteString("used_percent=")
 	builder.WriteString(fmt.Sprintf("%v", _m.UsedPercent))
 	builder.WriteString(", ")
-	if v := _m.PredictedQuotaUsd; v != nil {
-		builder.WriteString("predicted_quota_usd=")
+	if v := _m.EstimatedTotalCost; v != nil {
+		builder.WriteString("estimated_total_cost=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.EstimateWindowStartedAt; v != nil {
+		builder.WriteString("estimate_window_started_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := _m.EstimateWindowCost; v != nil {
+		builder.WriteString("estimate_window_cost=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.EstimateUsedPercent; v != nil {
+		builder.WriteString("estimate_used_percent=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.EstimatedAt; v != nil {
+		builder.WriteString("estimated_at=")
+		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteString(", ")
 	builder.WriteString("snapshot_at=")

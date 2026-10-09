@@ -12,11 +12,11 @@ import (
 func TestUserSubscriptionAccountFieldWhitelist(t *testing.T) {
 	now := time.Now().UTC()
 	rate := 1.25
-	prediction := 120.5
+	estimate := 30.0
 	account := &service.Account{
 		ID: 8, Name: "pool-8", Platform: service.PlatformOpenAI, Type: service.AccountTypeOAuth,
 		Credentials: map[string]any{"access_token": "secret-token", "plan_type": "pro"},
-		Extra:       map[string]any{
+		Extra: map[string]any{
 			"validation_url": "https://internal.example", "private": "secret-extra",
 			"codex_credits_snapshot": map[string]any{
 				"credits": map[string]any{
@@ -26,16 +26,16 @@ func TestUserSubscriptionAccountFieldWhitelist(t *testing.T) {
 				"fetched_at": int64(1770000000), "account_id": "secret-credit-account",
 			},
 		},
-		ProxyID:     int64Pointer(99), ErrorMessage: "internal upstream failure",
+		ProxyID: int64Pointer(99), ErrorMessage: "internal upstream failure",
 		Concurrency: 5, RateMultiplier: &rate, Status: service.StatusActive, Schedulable: true,
 		LastUsedAt: &now, CreatedAt: now,
 	}
 	item := &service.SubscriptionAccountItem{
-		Account:                      account,
-		Groups:                       []service.SubscriptionAccountGroup{{ID: 3, Name: "Pro", Platform: service.PlatformOpenAI}},
-		CurrentOpenAIQuotaPrediction: &prediction,
+		Account: account,
+		Groups:  []service.SubscriptionAccountGroup{{ID: 3, Name: "Pro", Platform: service.PlatformOpenAI}},
 		Usage: &service.UsageInfo{
 			FiveHour:        &service.UsageProgress{Utilization: 42},
+			SevenDay:        &service.UsageProgress{Utilization: 40, EstimatedTotalCost: &estimate},
 			Error:           "secret usage error",
 			ForbiddenReason: "secret forbidden reason",
 			ValidationURL:   "https://verify.example",
@@ -50,7 +50,8 @@ func TestUserSubscriptionAccountFieldWhitelist(t *testing.T) {
 	require.Contains(t, jsonText, `"name":"pool-8"`)
 	require.Contains(t, jsonText, `"rate_multiplier":1.25`)
 	require.Contains(t, jsonText, `"five_hour":{"utilization":42`)
-	require.Contains(t, jsonText, `"current_openai_quota_prediction":120.5`)
+	require.Contains(t, jsonText, `"estimated_total_cost":30`)
+	require.NotContains(t, jsonText, "current_openai_quota_prediction")
 	require.Contains(t, jsonText, `"supports_openai_quota_history":true`)
 	require.Contains(t, jsonText, `"codex_credits_snapshot":{"credits":{"has_credits":true,"unlimited":false,"balance":"12345678901234567890.0123"},"fetched_at":1770000000}`)
 	require.NotContains(t, jsonText, "secret-credit-data")

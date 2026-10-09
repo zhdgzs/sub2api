@@ -193,30 +193,124 @@ func (_u *OpenAIQuotaPeriodUpdate) AddUsedPercent(v float64) *OpenAIQuotaPeriodU
 	return _u
 }
 
-// SetPredictedQuotaUsd sets the "predicted_quota_usd" field.
-func (_u *OpenAIQuotaPeriodUpdate) SetPredictedQuotaUsd(v float64) *OpenAIQuotaPeriodUpdate {
-	_u.mutation.ResetPredictedQuotaUsd()
-	_u.mutation.SetPredictedQuotaUsd(v)
+// SetEstimatedTotalCost sets the "estimated_total_cost" field.
+func (_u *OpenAIQuotaPeriodUpdate) SetEstimatedTotalCost(v float64) *OpenAIQuotaPeriodUpdate {
+	_u.mutation.ResetEstimatedTotalCost()
+	_u.mutation.SetEstimatedTotalCost(v)
 	return _u
 }
 
-// SetNillablePredictedQuotaUsd sets the "predicted_quota_usd" field if the given value is not nil.
-func (_u *OpenAIQuotaPeriodUpdate) SetNillablePredictedQuotaUsd(v *float64) *OpenAIQuotaPeriodUpdate {
+// SetNillableEstimatedTotalCost sets the "estimated_total_cost" field if the given value is not nil.
+func (_u *OpenAIQuotaPeriodUpdate) SetNillableEstimatedTotalCost(v *float64) *OpenAIQuotaPeriodUpdate {
 	if v != nil {
-		_u.SetPredictedQuotaUsd(*v)
+		_u.SetEstimatedTotalCost(*v)
 	}
 	return _u
 }
 
-// AddPredictedQuotaUsd adds value to the "predicted_quota_usd" field.
-func (_u *OpenAIQuotaPeriodUpdate) AddPredictedQuotaUsd(v float64) *OpenAIQuotaPeriodUpdate {
-	_u.mutation.AddPredictedQuotaUsd(v)
+// AddEstimatedTotalCost adds value to the "estimated_total_cost" field.
+func (_u *OpenAIQuotaPeriodUpdate) AddEstimatedTotalCost(v float64) *OpenAIQuotaPeriodUpdate {
+	_u.mutation.AddEstimatedTotalCost(v)
 	return _u
 }
 
-// ClearPredictedQuotaUsd clears the value of the "predicted_quota_usd" field.
-func (_u *OpenAIQuotaPeriodUpdate) ClearPredictedQuotaUsd() *OpenAIQuotaPeriodUpdate {
-	_u.mutation.ClearPredictedQuotaUsd()
+// ClearEstimatedTotalCost clears the value of the "estimated_total_cost" field.
+func (_u *OpenAIQuotaPeriodUpdate) ClearEstimatedTotalCost() *OpenAIQuotaPeriodUpdate {
+	_u.mutation.ClearEstimatedTotalCost()
+	return _u
+}
+
+// SetEstimateWindowStartedAt sets the "estimate_window_started_at" field.
+func (_u *OpenAIQuotaPeriodUpdate) SetEstimateWindowStartedAt(v time.Time) *OpenAIQuotaPeriodUpdate {
+	_u.mutation.SetEstimateWindowStartedAt(v)
+	return _u
+}
+
+// SetNillableEstimateWindowStartedAt sets the "estimate_window_started_at" field if the given value is not nil.
+func (_u *OpenAIQuotaPeriodUpdate) SetNillableEstimateWindowStartedAt(v *time.Time) *OpenAIQuotaPeriodUpdate {
+	if v != nil {
+		_u.SetEstimateWindowStartedAt(*v)
+	}
+	return _u
+}
+
+// ClearEstimateWindowStartedAt clears the value of the "estimate_window_started_at" field.
+func (_u *OpenAIQuotaPeriodUpdate) ClearEstimateWindowStartedAt() *OpenAIQuotaPeriodUpdate {
+	_u.mutation.ClearEstimateWindowStartedAt()
+	return _u
+}
+
+// SetEstimateWindowCost sets the "estimate_window_cost" field.
+func (_u *OpenAIQuotaPeriodUpdate) SetEstimateWindowCost(v float64) *OpenAIQuotaPeriodUpdate {
+	_u.mutation.ResetEstimateWindowCost()
+	_u.mutation.SetEstimateWindowCost(v)
+	return _u
+}
+
+// SetNillableEstimateWindowCost sets the "estimate_window_cost" field if the given value is not nil.
+func (_u *OpenAIQuotaPeriodUpdate) SetNillableEstimateWindowCost(v *float64) *OpenAIQuotaPeriodUpdate {
+	if v != nil {
+		_u.SetEstimateWindowCost(*v)
+	}
+	return _u
+}
+
+// AddEstimateWindowCost adds value to the "estimate_window_cost" field.
+func (_u *OpenAIQuotaPeriodUpdate) AddEstimateWindowCost(v float64) *OpenAIQuotaPeriodUpdate {
+	_u.mutation.AddEstimateWindowCost(v)
+	return _u
+}
+
+// ClearEstimateWindowCost clears the value of the "estimate_window_cost" field.
+func (_u *OpenAIQuotaPeriodUpdate) ClearEstimateWindowCost() *OpenAIQuotaPeriodUpdate {
+	_u.mutation.ClearEstimateWindowCost()
+	return _u
+}
+
+// SetEstimateUsedPercent sets the "estimate_used_percent" field.
+func (_u *OpenAIQuotaPeriodUpdate) SetEstimateUsedPercent(v float64) *OpenAIQuotaPeriodUpdate {
+	_u.mutation.ResetEstimateUsedPercent()
+	_u.mutation.SetEstimateUsedPercent(v)
+	return _u
+}
+
+// SetNillableEstimateUsedPercent sets the "estimate_used_percent" field if the given value is not nil.
+func (_u *OpenAIQuotaPeriodUpdate) SetNillableEstimateUsedPercent(v *float64) *OpenAIQuotaPeriodUpdate {
+	if v != nil {
+		_u.SetEstimateUsedPercent(*v)
+	}
+	return _u
+}
+
+// AddEstimateUsedPercent adds value to the "estimate_used_percent" field.
+func (_u *OpenAIQuotaPeriodUpdate) AddEstimateUsedPercent(v float64) *OpenAIQuotaPeriodUpdate {
+	_u.mutation.AddEstimateUsedPercent(v)
+	return _u
+}
+
+// ClearEstimateUsedPercent clears the value of the "estimate_used_percent" field.
+func (_u *OpenAIQuotaPeriodUpdate) ClearEstimateUsedPercent() *OpenAIQuotaPeriodUpdate {
+	_u.mutation.ClearEstimateUsedPercent()
+	return _u
+}
+
+// SetEstimatedAt sets the "estimated_at" field.
+func (_u *OpenAIQuotaPeriodUpdate) SetEstimatedAt(v time.Time) *OpenAIQuotaPeriodUpdate {
+	_u.mutation.SetEstimatedAt(v)
+	return _u
+}
+
+// SetNillableEstimatedAt sets the "estimated_at" field if the given value is not nil.
+func (_u *OpenAIQuotaPeriodUpdate) SetNillableEstimatedAt(v *time.Time) *OpenAIQuotaPeriodUpdate {
+	if v != nil {
+		_u.SetEstimatedAt(*v)
+	}
+	return _u
+}
+
+// ClearEstimatedAt clears the value of the "estimated_at" field.
+func (_u *OpenAIQuotaPeriodUpdate) ClearEstimatedAt() *OpenAIQuotaPeriodUpdate {
+	_u.mutation.ClearEstimatedAt()
 	return _u
 }
 
@@ -338,14 +432,44 @@ func (_u *OpenAIQuotaPeriodUpdate) sqlSave(ctx context.Context) (_node int, err 
 	if value, ok := _u.mutation.AddedUsedPercent(); ok {
 		_spec.AddField(openaiquotaperiod.FieldUsedPercent, field.TypeFloat64, value)
 	}
-	if value, ok := _u.mutation.PredictedQuotaUsd(); ok {
-		_spec.SetField(openaiquotaperiod.FieldPredictedQuotaUsd, field.TypeFloat64, value)
+	if value, ok := _u.mutation.EstimatedTotalCost(); ok {
+		_spec.SetField(openaiquotaperiod.FieldEstimatedTotalCost, field.TypeFloat64, value)
 	}
-	if value, ok := _u.mutation.AddedPredictedQuotaUsd(); ok {
-		_spec.AddField(openaiquotaperiod.FieldPredictedQuotaUsd, field.TypeFloat64, value)
+	if value, ok := _u.mutation.AddedEstimatedTotalCost(); ok {
+		_spec.AddField(openaiquotaperiod.FieldEstimatedTotalCost, field.TypeFloat64, value)
 	}
-	if _u.mutation.PredictedQuotaUsdCleared() {
-		_spec.ClearField(openaiquotaperiod.FieldPredictedQuotaUsd, field.TypeFloat64)
+	if _u.mutation.EstimatedTotalCostCleared() {
+		_spec.ClearField(openaiquotaperiod.FieldEstimatedTotalCost, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.EstimateWindowStartedAt(); ok {
+		_spec.SetField(openaiquotaperiod.FieldEstimateWindowStartedAt, field.TypeTime, value)
+	}
+	if _u.mutation.EstimateWindowStartedAtCleared() {
+		_spec.ClearField(openaiquotaperiod.FieldEstimateWindowStartedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.EstimateWindowCost(); ok {
+		_spec.SetField(openaiquotaperiod.FieldEstimateWindowCost, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedEstimateWindowCost(); ok {
+		_spec.AddField(openaiquotaperiod.FieldEstimateWindowCost, field.TypeFloat64, value)
+	}
+	if _u.mutation.EstimateWindowCostCleared() {
+		_spec.ClearField(openaiquotaperiod.FieldEstimateWindowCost, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.EstimateUsedPercent(); ok {
+		_spec.SetField(openaiquotaperiod.FieldEstimateUsedPercent, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedEstimateUsedPercent(); ok {
+		_spec.AddField(openaiquotaperiod.FieldEstimateUsedPercent, field.TypeFloat64, value)
+	}
+	if _u.mutation.EstimateUsedPercentCleared() {
+		_spec.ClearField(openaiquotaperiod.FieldEstimateUsedPercent, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.EstimatedAt(); ok {
+		_spec.SetField(openaiquotaperiod.FieldEstimatedAt, field.TypeTime, value)
+	}
+	if _u.mutation.EstimatedAtCleared() {
+		_spec.ClearField(openaiquotaperiod.FieldEstimatedAt, field.TypeTime)
 	}
 	if value, ok := _u.mutation.SnapshotAt(); ok {
 		_spec.SetField(openaiquotaperiod.FieldSnapshotAt, field.TypeTime, value)
@@ -538,30 +662,124 @@ func (_u *OpenAIQuotaPeriodUpdateOne) AddUsedPercent(v float64) *OpenAIQuotaPeri
 	return _u
 }
 
-// SetPredictedQuotaUsd sets the "predicted_quota_usd" field.
-func (_u *OpenAIQuotaPeriodUpdateOne) SetPredictedQuotaUsd(v float64) *OpenAIQuotaPeriodUpdateOne {
-	_u.mutation.ResetPredictedQuotaUsd()
-	_u.mutation.SetPredictedQuotaUsd(v)
+// SetEstimatedTotalCost sets the "estimated_total_cost" field.
+func (_u *OpenAIQuotaPeriodUpdateOne) SetEstimatedTotalCost(v float64) *OpenAIQuotaPeriodUpdateOne {
+	_u.mutation.ResetEstimatedTotalCost()
+	_u.mutation.SetEstimatedTotalCost(v)
 	return _u
 }
 
-// SetNillablePredictedQuotaUsd sets the "predicted_quota_usd" field if the given value is not nil.
-func (_u *OpenAIQuotaPeriodUpdateOne) SetNillablePredictedQuotaUsd(v *float64) *OpenAIQuotaPeriodUpdateOne {
+// SetNillableEstimatedTotalCost sets the "estimated_total_cost" field if the given value is not nil.
+func (_u *OpenAIQuotaPeriodUpdateOne) SetNillableEstimatedTotalCost(v *float64) *OpenAIQuotaPeriodUpdateOne {
 	if v != nil {
-		_u.SetPredictedQuotaUsd(*v)
+		_u.SetEstimatedTotalCost(*v)
 	}
 	return _u
 }
 
-// AddPredictedQuotaUsd adds value to the "predicted_quota_usd" field.
-func (_u *OpenAIQuotaPeriodUpdateOne) AddPredictedQuotaUsd(v float64) *OpenAIQuotaPeriodUpdateOne {
-	_u.mutation.AddPredictedQuotaUsd(v)
+// AddEstimatedTotalCost adds value to the "estimated_total_cost" field.
+func (_u *OpenAIQuotaPeriodUpdateOne) AddEstimatedTotalCost(v float64) *OpenAIQuotaPeriodUpdateOne {
+	_u.mutation.AddEstimatedTotalCost(v)
 	return _u
 }
 
-// ClearPredictedQuotaUsd clears the value of the "predicted_quota_usd" field.
-func (_u *OpenAIQuotaPeriodUpdateOne) ClearPredictedQuotaUsd() *OpenAIQuotaPeriodUpdateOne {
-	_u.mutation.ClearPredictedQuotaUsd()
+// ClearEstimatedTotalCost clears the value of the "estimated_total_cost" field.
+func (_u *OpenAIQuotaPeriodUpdateOne) ClearEstimatedTotalCost() *OpenAIQuotaPeriodUpdateOne {
+	_u.mutation.ClearEstimatedTotalCost()
+	return _u
+}
+
+// SetEstimateWindowStartedAt sets the "estimate_window_started_at" field.
+func (_u *OpenAIQuotaPeriodUpdateOne) SetEstimateWindowStartedAt(v time.Time) *OpenAIQuotaPeriodUpdateOne {
+	_u.mutation.SetEstimateWindowStartedAt(v)
+	return _u
+}
+
+// SetNillableEstimateWindowStartedAt sets the "estimate_window_started_at" field if the given value is not nil.
+func (_u *OpenAIQuotaPeriodUpdateOne) SetNillableEstimateWindowStartedAt(v *time.Time) *OpenAIQuotaPeriodUpdateOne {
+	if v != nil {
+		_u.SetEstimateWindowStartedAt(*v)
+	}
+	return _u
+}
+
+// ClearEstimateWindowStartedAt clears the value of the "estimate_window_started_at" field.
+func (_u *OpenAIQuotaPeriodUpdateOne) ClearEstimateWindowStartedAt() *OpenAIQuotaPeriodUpdateOne {
+	_u.mutation.ClearEstimateWindowStartedAt()
+	return _u
+}
+
+// SetEstimateWindowCost sets the "estimate_window_cost" field.
+func (_u *OpenAIQuotaPeriodUpdateOne) SetEstimateWindowCost(v float64) *OpenAIQuotaPeriodUpdateOne {
+	_u.mutation.ResetEstimateWindowCost()
+	_u.mutation.SetEstimateWindowCost(v)
+	return _u
+}
+
+// SetNillableEstimateWindowCost sets the "estimate_window_cost" field if the given value is not nil.
+func (_u *OpenAIQuotaPeriodUpdateOne) SetNillableEstimateWindowCost(v *float64) *OpenAIQuotaPeriodUpdateOne {
+	if v != nil {
+		_u.SetEstimateWindowCost(*v)
+	}
+	return _u
+}
+
+// AddEstimateWindowCost adds value to the "estimate_window_cost" field.
+func (_u *OpenAIQuotaPeriodUpdateOne) AddEstimateWindowCost(v float64) *OpenAIQuotaPeriodUpdateOne {
+	_u.mutation.AddEstimateWindowCost(v)
+	return _u
+}
+
+// ClearEstimateWindowCost clears the value of the "estimate_window_cost" field.
+func (_u *OpenAIQuotaPeriodUpdateOne) ClearEstimateWindowCost() *OpenAIQuotaPeriodUpdateOne {
+	_u.mutation.ClearEstimateWindowCost()
+	return _u
+}
+
+// SetEstimateUsedPercent sets the "estimate_used_percent" field.
+func (_u *OpenAIQuotaPeriodUpdateOne) SetEstimateUsedPercent(v float64) *OpenAIQuotaPeriodUpdateOne {
+	_u.mutation.ResetEstimateUsedPercent()
+	_u.mutation.SetEstimateUsedPercent(v)
+	return _u
+}
+
+// SetNillableEstimateUsedPercent sets the "estimate_used_percent" field if the given value is not nil.
+func (_u *OpenAIQuotaPeriodUpdateOne) SetNillableEstimateUsedPercent(v *float64) *OpenAIQuotaPeriodUpdateOne {
+	if v != nil {
+		_u.SetEstimateUsedPercent(*v)
+	}
+	return _u
+}
+
+// AddEstimateUsedPercent adds value to the "estimate_used_percent" field.
+func (_u *OpenAIQuotaPeriodUpdateOne) AddEstimateUsedPercent(v float64) *OpenAIQuotaPeriodUpdateOne {
+	_u.mutation.AddEstimateUsedPercent(v)
+	return _u
+}
+
+// ClearEstimateUsedPercent clears the value of the "estimate_used_percent" field.
+func (_u *OpenAIQuotaPeriodUpdateOne) ClearEstimateUsedPercent() *OpenAIQuotaPeriodUpdateOne {
+	_u.mutation.ClearEstimateUsedPercent()
+	return _u
+}
+
+// SetEstimatedAt sets the "estimated_at" field.
+func (_u *OpenAIQuotaPeriodUpdateOne) SetEstimatedAt(v time.Time) *OpenAIQuotaPeriodUpdateOne {
+	_u.mutation.SetEstimatedAt(v)
+	return _u
+}
+
+// SetNillableEstimatedAt sets the "estimated_at" field if the given value is not nil.
+func (_u *OpenAIQuotaPeriodUpdateOne) SetNillableEstimatedAt(v *time.Time) *OpenAIQuotaPeriodUpdateOne {
+	if v != nil {
+		_u.SetEstimatedAt(*v)
+	}
+	return _u
+}
+
+// ClearEstimatedAt clears the value of the "estimated_at" field.
+func (_u *OpenAIQuotaPeriodUpdateOne) ClearEstimatedAt() *OpenAIQuotaPeriodUpdateOne {
+	_u.mutation.ClearEstimatedAt()
 	return _u
 }
 
@@ -713,14 +931,44 @@ func (_u *OpenAIQuotaPeriodUpdateOne) sqlSave(ctx context.Context) (_node *OpenA
 	if value, ok := _u.mutation.AddedUsedPercent(); ok {
 		_spec.AddField(openaiquotaperiod.FieldUsedPercent, field.TypeFloat64, value)
 	}
-	if value, ok := _u.mutation.PredictedQuotaUsd(); ok {
-		_spec.SetField(openaiquotaperiod.FieldPredictedQuotaUsd, field.TypeFloat64, value)
+	if value, ok := _u.mutation.EstimatedTotalCost(); ok {
+		_spec.SetField(openaiquotaperiod.FieldEstimatedTotalCost, field.TypeFloat64, value)
 	}
-	if value, ok := _u.mutation.AddedPredictedQuotaUsd(); ok {
-		_spec.AddField(openaiquotaperiod.FieldPredictedQuotaUsd, field.TypeFloat64, value)
+	if value, ok := _u.mutation.AddedEstimatedTotalCost(); ok {
+		_spec.AddField(openaiquotaperiod.FieldEstimatedTotalCost, field.TypeFloat64, value)
 	}
-	if _u.mutation.PredictedQuotaUsdCleared() {
-		_spec.ClearField(openaiquotaperiod.FieldPredictedQuotaUsd, field.TypeFloat64)
+	if _u.mutation.EstimatedTotalCostCleared() {
+		_spec.ClearField(openaiquotaperiod.FieldEstimatedTotalCost, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.EstimateWindowStartedAt(); ok {
+		_spec.SetField(openaiquotaperiod.FieldEstimateWindowStartedAt, field.TypeTime, value)
+	}
+	if _u.mutation.EstimateWindowStartedAtCleared() {
+		_spec.ClearField(openaiquotaperiod.FieldEstimateWindowStartedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.EstimateWindowCost(); ok {
+		_spec.SetField(openaiquotaperiod.FieldEstimateWindowCost, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedEstimateWindowCost(); ok {
+		_spec.AddField(openaiquotaperiod.FieldEstimateWindowCost, field.TypeFloat64, value)
+	}
+	if _u.mutation.EstimateWindowCostCleared() {
+		_spec.ClearField(openaiquotaperiod.FieldEstimateWindowCost, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.EstimateUsedPercent(); ok {
+		_spec.SetField(openaiquotaperiod.FieldEstimateUsedPercent, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedEstimateUsedPercent(); ok {
+		_spec.AddField(openaiquotaperiod.FieldEstimateUsedPercent, field.TypeFloat64, value)
+	}
+	if _u.mutation.EstimateUsedPercentCleared() {
+		_spec.ClearField(openaiquotaperiod.FieldEstimateUsedPercent, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.EstimatedAt(); ok {
+		_spec.SetField(openaiquotaperiod.FieldEstimatedAt, field.TypeTime, value)
+	}
+	if _u.mutation.EstimatedAtCleared() {
+		_spec.ClearField(openaiquotaperiod.FieldEstimatedAt, field.TypeTime)
 	}
 	if value, ok := _u.mutation.SnapshotAt(); ok {
 		_spec.SetField(openaiquotaperiod.FieldSnapshotAt, field.TypeTime, value)

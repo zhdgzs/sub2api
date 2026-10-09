@@ -1338,7 +1338,6 @@ export interface Account {
   current_window_cost?: number | null // 当前窗口费用
   active_sessions?: number | null // 当前活跃会话数
   current_rpm?: number | null // 当前分钟 RPM 计数
-  current_openai_quota_prediction?: number | null
 
   // 影子账号关系（spark 维度影子）
   parent_account_id?: number | null
@@ -1375,6 +1374,7 @@ export interface WindowStats {
 }
 
 export interface UsageProgress {
+  estimated_total_cost?: number | null // 后端统一计算的 OpenAI 7d 预计总费用
   utilization: number // Percentage (0-100+, 100 = 100%)
   resets_at: string | null
   remaining_seconds: number
@@ -1510,7 +1510,16 @@ export interface CodexUsageSnapshot {
   codex_usage_updated_at?: string // Last update timestamp
 }
 
+export interface OpenAIQuotaEstimate {
+  total_cost: number
+  window_started_at: string
+  window_cost: number
+  used_percent: number
+  sampled_at: string
+}
+
 export interface OpenAIQuotaPeriod {
+  estimate?: OpenAIQuotaEstimate | null
   id: number
   account_id: number
   started_at: string
@@ -1520,7 +1529,6 @@ export interface OpenAIQuotaPeriod {
   token_count?: number | null
   used_usd: number
   used_percent: number
-  predicted_quota_usd?: number | null
   snapshot_at: string
   created_at: string
   updated_at: string

@@ -114,16 +114,8 @@ func TestSubscriptionAccountServiceListSearchAndPagination(t *testing.T) {
 
 type subscriptionAccountQuotaPeriodRepoStub struct {
 	OpenAIQuotaPeriodRepository
-	predictions     map[int64]float64
 	periods         []OpenAIQuotaPeriod
 	listedAccountID int64
-}
-
-func (s *subscriptionAccountQuotaPeriodRepoStub) GetCurrentPredictions(
-	context.Context,
-	[]int64,
-) (map[int64]float64, error) {
-	return s.predictions, nil
 }
 
 func (s *subscriptionAccountQuotaPeriodRepoStub) List(
@@ -137,24 +129,6 @@ func (s *subscriptionAccountQuotaPeriodRepoStub) List(
 		Page:     params.Page,
 		PageSize: params.PageSize,
 	}, nil
-}
-
-func TestSubscriptionAccountServiceListAddsCurrentOpenAIQuotaPrediction(t *testing.T) {
-	group := &Group{ID: 10, Name: "Pro", Platform: PlatformOpenAI, Status: StatusActive, SubscriptionType: SubscriptionTypeSubscription}
-	subRepo := &subscriptionAccountUserSubRepoStub{subs: []UserSubscription{{GroupID: 10, Group: group}}}
-	accountRepo := &subscriptionAccountRepoStub{byGroup: map[int64][]Account{
-		10: {{ID: 1, Name: "OpenAI Pro", Platform: PlatformOpenAI, Type: AccountTypeOAuth}},
-	}}
-	quotaRepo := &subscriptionAccountQuotaPeriodRepoStub{predictions: map[int64]float64{1: 123.45}}
-	quotaService := &OpenAIQuotaPeriodService{repo: quotaRepo}
-	svc := NewSubscriptionAccountService(subRepo, accountRepo, nil, nil, nil, nil, quotaService)
-
-	result, err := svc.List(context.Background(), 7, SubscriptionAccountListOptions{})
-
-	require.NoError(t, err)
-	require.Len(t, result.Items, 1)
-	require.NotNil(t, result.Items[0].CurrentOpenAIQuotaPrediction)
-	require.Equal(t, 123.45, *result.Items[0].CurrentOpenAIQuotaPrediction)
 }
 
 func TestSubscriptionAccountServiceListOpenAIQuotaPeriodsRequiresSubscriptionAccess(t *testing.T) {

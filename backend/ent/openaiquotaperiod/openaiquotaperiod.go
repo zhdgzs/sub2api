@@ -29,8 +29,16 @@ const (
 	FieldUsedUsd = "used_usd"
 	// FieldUsedPercent holds the string denoting the used_percent field in the database.
 	FieldUsedPercent = "used_percent"
-	// FieldPredictedQuotaUsd holds the string denoting the predicted_quota_usd field in the database.
-	FieldPredictedQuotaUsd = "predicted_quota_usd"
+	// FieldEstimatedTotalCost holds the string denoting the estimated_total_cost field in the database.
+	FieldEstimatedTotalCost = "estimated_total_cost"
+	// FieldEstimateWindowStartedAt holds the string denoting the estimate_window_started_at field in the database.
+	FieldEstimateWindowStartedAt = "estimate_window_started_at"
+	// FieldEstimateWindowCost holds the string denoting the estimate_window_cost field in the database.
+	FieldEstimateWindowCost = "estimate_window_cost"
+	// FieldEstimateUsedPercent holds the string denoting the estimate_used_percent field in the database.
+	FieldEstimateUsedPercent = "estimate_used_percent"
+	// FieldEstimatedAt holds the string denoting the estimated_at field in the database.
+	FieldEstimatedAt = "estimated_at"
 	// FieldSnapshotAt holds the string denoting the snapshot_at field in the database.
 	FieldSnapshotAt = "snapshot_at"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
@@ -52,7 +60,11 @@ var Columns = []string{
 	FieldTokenCount,
 	FieldUsedUsd,
 	FieldUsedPercent,
-	FieldPredictedQuotaUsd,
+	FieldEstimatedTotalCost,
+	FieldEstimateWindowStartedAt,
+	FieldEstimateWindowCost,
+	FieldEstimateUsedPercent,
+	FieldEstimatedAt,
 	FieldSnapshotAt,
 	FieldCreatedAt,
 	FieldUpdatedAt,
@@ -131,9 +143,29 @@ func ByUsedPercent(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUsedPercent, opts...).ToFunc()
 }
 
-// ByPredictedQuotaUsd orders the results by the predicted_quota_usd field.
-func ByPredictedQuotaUsd(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldPredictedQuotaUsd, opts...).ToFunc()
+// ByEstimatedTotalCost orders the results by the estimated_total_cost field.
+func ByEstimatedTotalCost(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldEstimatedTotalCost, opts...).ToFunc()
+}
+
+// ByEstimateWindowStartedAt orders the results by the estimate_window_started_at field.
+func ByEstimateWindowStartedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldEstimateWindowStartedAt, opts...).ToFunc()
+}
+
+// ByEstimateWindowCost orders the results by the estimate_window_cost field.
+func ByEstimateWindowCost(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldEstimateWindowCost, opts...).ToFunc()
+}
+
+// ByEstimateUsedPercent orders the results by the estimate_used_percent field.
+func ByEstimateUsedPercent(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldEstimateUsedPercent, opts...).ToFunc()
+}
+
+// ByEstimatedAt orders the results by the estimated_at field.
+func ByEstimatedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldEstimatedAt, opts...).ToFunc()
 }
 
 // BySnapshotAt orders the results by the snapshot_at field.

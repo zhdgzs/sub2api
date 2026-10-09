@@ -20,15 +20,14 @@ type SubscriptionAccountGroup struct {
 
 // SubscriptionAccountItem 聚合订阅账号页面所需的账号及全局运行数据。
 type SubscriptionAccountItem struct {
-	Account                      *Account
-	Groups                       []SubscriptionAccountGroup
-	CurrentConcurrency           int
-	CurrentWindowCost            *float64
-	ActiveSessions               *int
-	CurrentRPM                   *int
-	TodayStats                   *WindowStats
-	Usage                        *UsageInfo
-	CurrentOpenAIQuotaPrediction *float64
+	Account            *Account
+	Groups             []SubscriptionAccountGroup
+	CurrentConcurrency int
+	CurrentWindowCost  *float64
+	ActiveSessions     *int
+	CurrentRPM         *int
+	TodayStats         *WindowStats
+	Usage              *UsageInfo
 }
 
 type SubscriptionAccountListOptions struct {
@@ -303,16 +302,6 @@ func (s *SubscriptionAccountService) enrichRuntime(ctx context.Context, items []
 			for id, value := range usage {
 				if index, ok := indexByID[id]; ok {
 					items[index].Usage = value
-				}
-			}
-		}
-	}
-	if s.openAIQuotaPeriod != nil {
-		if predictions, err := s.openAIQuotaPeriod.GetCurrentPredictions(ctx, accountIDs); err == nil {
-			for id, prediction := range predictions {
-				if index, ok := indexByID[id]; ok {
-					value := prediction
-					items[index].CurrentOpenAIQuotaPrediction = &value
 				}
 			}
 		}

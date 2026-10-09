@@ -94,9 +94,29 @@ func UsedPercent(v float64) predicate.OpenAIQuotaPeriod {
 	return predicate.OpenAIQuotaPeriod(sql.FieldEQ(FieldUsedPercent, v))
 }
 
-// PredictedQuotaUsd applies equality check predicate on the "predicted_quota_usd" field. It's identical to PredictedQuotaUsdEQ.
-func PredictedQuotaUsd(v float64) predicate.OpenAIQuotaPeriod {
-	return predicate.OpenAIQuotaPeriod(sql.FieldEQ(FieldPredictedQuotaUsd, v))
+// EstimatedTotalCost applies equality check predicate on the "estimated_total_cost" field. It's identical to EstimatedTotalCostEQ.
+func EstimatedTotalCost(v float64) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldEQ(FieldEstimatedTotalCost, v))
+}
+
+// EstimateWindowStartedAt applies equality check predicate on the "estimate_window_started_at" field. It's identical to EstimateWindowStartedAtEQ.
+func EstimateWindowStartedAt(v time.Time) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldEQ(FieldEstimateWindowStartedAt, v))
+}
+
+// EstimateWindowCost applies equality check predicate on the "estimate_window_cost" field. It's identical to EstimateWindowCostEQ.
+func EstimateWindowCost(v float64) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldEQ(FieldEstimateWindowCost, v))
+}
+
+// EstimateUsedPercent applies equality check predicate on the "estimate_used_percent" field. It's identical to EstimateUsedPercentEQ.
+func EstimateUsedPercent(v float64) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldEQ(FieldEstimateUsedPercent, v))
+}
+
+// EstimatedAt applies equality check predicate on the "estimated_at" field. It's identical to EstimatedAtEQ.
+func EstimatedAt(v time.Time) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldEQ(FieldEstimatedAt, v))
 }
 
 // SnapshotAt applies equality check predicate on the "snapshot_at" field. It's identical to SnapshotAtEQ.
@@ -464,54 +484,254 @@ func UsedPercentLTE(v float64) predicate.OpenAIQuotaPeriod {
 	return predicate.OpenAIQuotaPeriod(sql.FieldLTE(FieldUsedPercent, v))
 }
 
-// PredictedQuotaUsdEQ applies the EQ predicate on the "predicted_quota_usd" field.
-func PredictedQuotaUsdEQ(v float64) predicate.OpenAIQuotaPeriod {
-	return predicate.OpenAIQuotaPeriod(sql.FieldEQ(FieldPredictedQuotaUsd, v))
+// EstimatedTotalCostEQ applies the EQ predicate on the "estimated_total_cost" field.
+func EstimatedTotalCostEQ(v float64) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldEQ(FieldEstimatedTotalCost, v))
 }
 
-// PredictedQuotaUsdNEQ applies the NEQ predicate on the "predicted_quota_usd" field.
-func PredictedQuotaUsdNEQ(v float64) predicate.OpenAIQuotaPeriod {
-	return predicate.OpenAIQuotaPeriod(sql.FieldNEQ(FieldPredictedQuotaUsd, v))
+// EstimatedTotalCostNEQ applies the NEQ predicate on the "estimated_total_cost" field.
+func EstimatedTotalCostNEQ(v float64) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldNEQ(FieldEstimatedTotalCost, v))
 }
 
-// PredictedQuotaUsdIn applies the In predicate on the "predicted_quota_usd" field.
-func PredictedQuotaUsdIn(vs ...float64) predicate.OpenAIQuotaPeriod {
-	return predicate.OpenAIQuotaPeriod(sql.FieldIn(FieldPredictedQuotaUsd, vs...))
+// EstimatedTotalCostIn applies the In predicate on the "estimated_total_cost" field.
+func EstimatedTotalCostIn(vs ...float64) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldIn(FieldEstimatedTotalCost, vs...))
 }
 
-// PredictedQuotaUsdNotIn applies the NotIn predicate on the "predicted_quota_usd" field.
-func PredictedQuotaUsdNotIn(vs ...float64) predicate.OpenAIQuotaPeriod {
-	return predicate.OpenAIQuotaPeriod(sql.FieldNotIn(FieldPredictedQuotaUsd, vs...))
+// EstimatedTotalCostNotIn applies the NotIn predicate on the "estimated_total_cost" field.
+func EstimatedTotalCostNotIn(vs ...float64) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldNotIn(FieldEstimatedTotalCost, vs...))
 }
 
-// PredictedQuotaUsdGT applies the GT predicate on the "predicted_quota_usd" field.
-func PredictedQuotaUsdGT(v float64) predicate.OpenAIQuotaPeriod {
-	return predicate.OpenAIQuotaPeriod(sql.FieldGT(FieldPredictedQuotaUsd, v))
+// EstimatedTotalCostGT applies the GT predicate on the "estimated_total_cost" field.
+func EstimatedTotalCostGT(v float64) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldGT(FieldEstimatedTotalCost, v))
 }
 
-// PredictedQuotaUsdGTE applies the GTE predicate on the "predicted_quota_usd" field.
-func PredictedQuotaUsdGTE(v float64) predicate.OpenAIQuotaPeriod {
-	return predicate.OpenAIQuotaPeriod(sql.FieldGTE(FieldPredictedQuotaUsd, v))
+// EstimatedTotalCostGTE applies the GTE predicate on the "estimated_total_cost" field.
+func EstimatedTotalCostGTE(v float64) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldGTE(FieldEstimatedTotalCost, v))
 }
 
-// PredictedQuotaUsdLT applies the LT predicate on the "predicted_quota_usd" field.
-func PredictedQuotaUsdLT(v float64) predicate.OpenAIQuotaPeriod {
-	return predicate.OpenAIQuotaPeriod(sql.FieldLT(FieldPredictedQuotaUsd, v))
+// EstimatedTotalCostLT applies the LT predicate on the "estimated_total_cost" field.
+func EstimatedTotalCostLT(v float64) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldLT(FieldEstimatedTotalCost, v))
 }
 
-// PredictedQuotaUsdLTE applies the LTE predicate on the "predicted_quota_usd" field.
-func PredictedQuotaUsdLTE(v float64) predicate.OpenAIQuotaPeriod {
-	return predicate.OpenAIQuotaPeriod(sql.FieldLTE(FieldPredictedQuotaUsd, v))
+// EstimatedTotalCostLTE applies the LTE predicate on the "estimated_total_cost" field.
+func EstimatedTotalCostLTE(v float64) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldLTE(FieldEstimatedTotalCost, v))
 }
 
-// PredictedQuotaUsdIsNil applies the IsNil predicate on the "predicted_quota_usd" field.
-func PredictedQuotaUsdIsNil() predicate.OpenAIQuotaPeriod {
-	return predicate.OpenAIQuotaPeriod(sql.FieldIsNull(FieldPredictedQuotaUsd))
+// EstimatedTotalCostIsNil applies the IsNil predicate on the "estimated_total_cost" field.
+func EstimatedTotalCostIsNil() predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldIsNull(FieldEstimatedTotalCost))
 }
 
-// PredictedQuotaUsdNotNil applies the NotNil predicate on the "predicted_quota_usd" field.
-func PredictedQuotaUsdNotNil() predicate.OpenAIQuotaPeriod {
-	return predicate.OpenAIQuotaPeriod(sql.FieldNotNull(FieldPredictedQuotaUsd))
+// EstimatedTotalCostNotNil applies the NotNil predicate on the "estimated_total_cost" field.
+func EstimatedTotalCostNotNil() predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldNotNull(FieldEstimatedTotalCost))
+}
+
+// EstimateWindowStartedAtEQ applies the EQ predicate on the "estimate_window_started_at" field.
+func EstimateWindowStartedAtEQ(v time.Time) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldEQ(FieldEstimateWindowStartedAt, v))
+}
+
+// EstimateWindowStartedAtNEQ applies the NEQ predicate on the "estimate_window_started_at" field.
+func EstimateWindowStartedAtNEQ(v time.Time) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldNEQ(FieldEstimateWindowStartedAt, v))
+}
+
+// EstimateWindowStartedAtIn applies the In predicate on the "estimate_window_started_at" field.
+func EstimateWindowStartedAtIn(vs ...time.Time) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldIn(FieldEstimateWindowStartedAt, vs...))
+}
+
+// EstimateWindowStartedAtNotIn applies the NotIn predicate on the "estimate_window_started_at" field.
+func EstimateWindowStartedAtNotIn(vs ...time.Time) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldNotIn(FieldEstimateWindowStartedAt, vs...))
+}
+
+// EstimateWindowStartedAtGT applies the GT predicate on the "estimate_window_started_at" field.
+func EstimateWindowStartedAtGT(v time.Time) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldGT(FieldEstimateWindowStartedAt, v))
+}
+
+// EstimateWindowStartedAtGTE applies the GTE predicate on the "estimate_window_started_at" field.
+func EstimateWindowStartedAtGTE(v time.Time) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldGTE(FieldEstimateWindowStartedAt, v))
+}
+
+// EstimateWindowStartedAtLT applies the LT predicate on the "estimate_window_started_at" field.
+func EstimateWindowStartedAtLT(v time.Time) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldLT(FieldEstimateWindowStartedAt, v))
+}
+
+// EstimateWindowStartedAtLTE applies the LTE predicate on the "estimate_window_started_at" field.
+func EstimateWindowStartedAtLTE(v time.Time) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldLTE(FieldEstimateWindowStartedAt, v))
+}
+
+// EstimateWindowStartedAtIsNil applies the IsNil predicate on the "estimate_window_started_at" field.
+func EstimateWindowStartedAtIsNil() predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldIsNull(FieldEstimateWindowStartedAt))
+}
+
+// EstimateWindowStartedAtNotNil applies the NotNil predicate on the "estimate_window_started_at" field.
+func EstimateWindowStartedAtNotNil() predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldNotNull(FieldEstimateWindowStartedAt))
+}
+
+// EstimateWindowCostEQ applies the EQ predicate on the "estimate_window_cost" field.
+func EstimateWindowCostEQ(v float64) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldEQ(FieldEstimateWindowCost, v))
+}
+
+// EstimateWindowCostNEQ applies the NEQ predicate on the "estimate_window_cost" field.
+func EstimateWindowCostNEQ(v float64) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldNEQ(FieldEstimateWindowCost, v))
+}
+
+// EstimateWindowCostIn applies the In predicate on the "estimate_window_cost" field.
+func EstimateWindowCostIn(vs ...float64) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldIn(FieldEstimateWindowCost, vs...))
+}
+
+// EstimateWindowCostNotIn applies the NotIn predicate on the "estimate_window_cost" field.
+func EstimateWindowCostNotIn(vs ...float64) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldNotIn(FieldEstimateWindowCost, vs...))
+}
+
+// EstimateWindowCostGT applies the GT predicate on the "estimate_window_cost" field.
+func EstimateWindowCostGT(v float64) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldGT(FieldEstimateWindowCost, v))
+}
+
+// EstimateWindowCostGTE applies the GTE predicate on the "estimate_window_cost" field.
+func EstimateWindowCostGTE(v float64) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldGTE(FieldEstimateWindowCost, v))
+}
+
+// EstimateWindowCostLT applies the LT predicate on the "estimate_window_cost" field.
+func EstimateWindowCostLT(v float64) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldLT(FieldEstimateWindowCost, v))
+}
+
+// EstimateWindowCostLTE applies the LTE predicate on the "estimate_window_cost" field.
+func EstimateWindowCostLTE(v float64) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldLTE(FieldEstimateWindowCost, v))
+}
+
+// EstimateWindowCostIsNil applies the IsNil predicate on the "estimate_window_cost" field.
+func EstimateWindowCostIsNil() predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldIsNull(FieldEstimateWindowCost))
+}
+
+// EstimateWindowCostNotNil applies the NotNil predicate on the "estimate_window_cost" field.
+func EstimateWindowCostNotNil() predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldNotNull(FieldEstimateWindowCost))
+}
+
+// EstimateUsedPercentEQ applies the EQ predicate on the "estimate_used_percent" field.
+func EstimateUsedPercentEQ(v float64) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldEQ(FieldEstimateUsedPercent, v))
+}
+
+// EstimateUsedPercentNEQ applies the NEQ predicate on the "estimate_used_percent" field.
+func EstimateUsedPercentNEQ(v float64) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldNEQ(FieldEstimateUsedPercent, v))
+}
+
+// EstimateUsedPercentIn applies the In predicate on the "estimate_used_percent" field.
+func EstimateUsedPercentIn(vs ...float64) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldIn(FieldEstimateUsedPercent, vs...))
+}
+
+// EstimateUsedPercentNotIn applies the NotIn predicate on the "estimate_used_percent" field.
+func EstimateUsedPercentNotIn(vs ...float64) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldNotIn(FieldEstimateUsedPercent, vs...))
+}
+
+// EstimateUsedPercentGT applies the GT predicate on the "estimate_used_percent" field.
+func EstimateUsedPercentGT(v float64) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldGT(FieldEstimateUsedPercent, v))
+}
+
+// EstimateUsedPercentGTE applies the GTE predicate on the "estimate_used_percent" field.
+func EstimateUsedPercentGTE(v float64) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldGTE(FieldEstimateUsedPercent, v))
+}
+
+// EstimateUsedPercentLT applies the LT predicate on the "estimate_used_percent" field.
+func EstimateUsedPercentLT(v float64) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldLT(FieldEstimateUsedPercent, v))
+}
+
+// EstimateUsedPercentLTE applies the LTE predicate on the "estimate_used_percent" field.
+func EstimateUsedPercentLTE(v float64) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldLTE(FieldEstimateUsedPercent, v))
+}
+
+// EstimateUsedPercentIsNil applies the IsNil predicate on the "estimate_used_percent" field.
+func EstimateUsedPercentIsNil() predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldIsNull(FieldEstimateUsedPercent))
+}
+
+// EstimateUsedPercentNotNil applies the NotNil predicate on the "estimate_used_percent" field.
+func EstimateUsedPercentNotNil() predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldNotNull(FieldEstimateUsedPercent))
+}
+
+// EstimatedAtEQ applies the EQ predicate on the "estimated_at" field.
+func EstimatedAtEQ(v time.Time) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldEQ(FieldEstimatedAt, v))
+}
+
+// EstimatedAtNEQ applies the NEQ predicate on the "estimated_at" field.
+func EstimatedAtNEQ(v time.Time) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldNEQ(FieldEstimatedAt, v))
+}
+
+// EstimatedAtIn applies the In predicate on the "estimated_at" field.
+func EstimatedAtIn(vs ...time.Time) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldIn(FieldEstimatedAt, vs...))
+}
+
+// EstimatedAtNotIn applies the NotIn predicate on the "estimated_at" field.
+func EstimatedAtNotIn(vs ...time.Time) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldNotIn(FieldEstimatedAt, vs...))
+}
+
+// EstimatedAtGT applies the GT predicate on the "estimated_at" field.
+func EstimatedAtGT(v time.Time) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldGT(FieldEstimatedAt, v))
+}
+
+// EstimatedAtGTE applies the GTE predicate on the "estimated_at" field.
+func EstimatedAtGTE(v time.Time) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldGTE(FieldEstimatedAt, v))
+}
+
+// EstimatedAtLT applies the LT predicate on the "estimated_at" field.
+func EstimatedAtLT(v time.Time) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldLT(FieldEstimatedAt, v))
+}
+
+// EstimatedAtLTE applies the LTE predicate on the "estimated_at" field.
+func EstimatedAtLTE(v time.Time) predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldLTE(FieldEstimatedAt, v))
+}
+
+// EstimatedAtIsNil applies the IsNil predicate on the "estimated_at" field.
+func EstimatedAtIsNil() predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldIsNull(FieldEstimatedAt))
+}
+
+// EstimatedAtNotNil applies the NotNil predicate on the "estimated_at" field.
+func EstimatedAtNotNil() predicate.OpenAIQuotaPeriod {
+	return predicate.OpenAIQuotaPeriod(sql.FieldNotNull(FieldEstimatedAt))
 }
 
 // SnapshotAtEQ applies the EQ predicate on the "snapshot_at" field.

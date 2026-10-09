@@ -206,10 +206,9 @@ type AccountWithConcurrency struct {
 	SchedulerScore     *AccountSchedulerScore       `json:"scheduler_score,omitempty"`
 	SchedulerScores    []AccountSchedulerGroupScore `json:"scheduler_scores,omitempty"`
 	// 以下字段仅对 Anthropic OAuth/SetupToken 账号有效，且仅在启用相应功能时返回
-	CurrentWindowCost            *float64 `json:"current_window_cost,omitempty"` // 当前窗口费用
-	ActiveSessions               *int     `json:"active_sessions,omitempty"`     // 当前活跃会话数
-	CurrentRPM                   *int     `json:"current_rpm,omitempty"`         // 当前分钟 RPM 计数
-	CurrentOpenAIQuotaPrediction *float64 `json:"current_openai_quota_prediction,omitempty"`
+	CurrentWindowCost *float64 `json:"current_window_cost,omitempty"` // 当前窗口费用
+	ActiveSessions    *int     `json:"active_sessions,omitempty"`     // 当前活跃会话数
+	CurrentRPM        *int     `json:"current_rpm,omitempty"`         // 当前分钟 RPM 计数
 }
 
 // AccountListItemWithConcurrency is the compact account-list envelope used
@@ -217,13 +216,12 @@ type AccountWithConcurrency struct {
 // so groups/account_groups never appear in the list payload.
 type AccountListItemWithConcurrency struct {
 	*dto.AccountListItem
-	CurrentConcurrency           int                          `json:"current_concurrency"`
-	SchedulerScore               *AccountSchedulerScore       `json:"scheduler_score,omitempty"`
-	SchedulerScores              []AccountSchedulerGroupScore `json:"scheduler_scores,omitempty"`
-	CurrentWindowCost            *float64                     `json:"current_window_cost,omitempty"`
-	ActiveSessions               *int                         `json:"active_sessions,omitempty"`
-	CurrentRPM                   *int                         `json:"current_rpm,omitempty"`
-	CurrentOpenAIQuotaPrediction *float64                     `json:"current_openai_quota_prediction,omitempty"`
+	CurrentConcurrency int                          `json:"current_concurrency"`
+	SchedulerScore     *AccountSchedulerScore       `json:"scheduler_score,omitempty"`
+	SchedulerScores    []AccountSchedulerGroupScore `json:"scheduler_scores,omitempty"`
+	CurrentWindowCost  *float64                     `json:"current_window_cost,omitempty"`
+	ActiveSessions     *int                         `json:"active_sessions,omitempty"`
+	CurrentRPM         *int                         `json:"current_rpm,omitempty"`
 }
 
 type simpleModeGroupReference struct {
@@ -711,14 +709,6 @@ func (h *AccountHandler) List(c *gin.Context) {
 	}
 
 	concurrencyCounts := make(map[int64]int)
-	quotaPredictions := make(map[int64]float64)
-	if h.openAIQuotaPeriodService != nil && len(accountIDs) > 0 {
-		quotaPredictions, err = h.openAIQuotaPeriodService.GetCurrentPredictions(c.Request.Context(), accountIDs)
-		if err != nil {
-			response.ErrorFrom(c, err)
-			return
-		}
-	}
 	var windowCosts map[int64]float64
 	var activeSessions map[int64]int
 	var rpmCounts map[int64]int
@@ -827,9 +817,6 @@ func (h *AccountHandler) List(c *gin.Context) {
 			SchedulerScore:     schedulerScores[acc.ID],
 			SchedulerScores:    schedulerGroupScores[acc.ID],
 		}
-		if predicted, ok := quotaPredictions[acc.ID]; ok && predicted != 0 {
-			item.CurrentOpenAIQuotaPrediction = &predicted
-		}
 
 		// 添加窗口费用（仅当启用时）
 		if windowCosts != nil {
@@ -862,14 +849,13 @@ func (h *AccountHandler) List(c *gin.Context) {
 		for i := range result {
 			item := result[i]
 			compact[i] = AccountListItemWithConcurrency{
-				AccountListItem:              dto.AccountListItemFromAccount(item.Account),
-				CurrentConcurrency:           item.CurrentConcurrency,
-				SchedulerScore:               item.SchedulerScore,
-				SchedulerScores:              item.SchedulerScores,
-				CurrentWindowCost:            item.CurrentWindowCost,
-				ActiveSessions:               item.ActiveSessions,
-				CurrentRPM:                   item.CurrentRPM,
-				CurrentOpenAIQuotaPrediction: item.CurrentOpenAIQuotaPrediction,
+				AccountListItem:    dto.AccountListItemFromAccount(item.Account),
+				CurrentConcurrency: item.CurrentConcurrency,
+				SchedulerScore:     item.SchedulerScore,
+				SchedulerScores:    item.SchedulerScores,
+				CurrentWindowCost:  item.CurrentWindowCost,
+				ActiveSessions:     item.ActiveSessions,
+				CurrentRPM:         item.CurrentRPM,
 			}
 		}
 		etag := buildAccountsListETag(compact, total, page, pageSize, platform, accountType, status, search, true)

@@ -608,7 +608,7 @@ describe('AccountUsageCell', () => {
     expect(wrapper.text()).toContain('7d|36|900')
   })
 
-  it('仅为 OpenAI OAuth 7d 窗口计算预计总费用', async () => {
+  it('OpenAI OAuth 7d 直接展示后端预计总费用，不按本地金额重算', async () => {
     getUsage.mockResolvedValue({
       five_hour: {
         utilization: 25,
@@ -617,6 +617,7 @@ describe('AccountUsageCell', () => {
         window_stats: { requests: 1, tokens: 100, cost: 2 }
       },
       seven_day: {
+        estimated_total_cost: 23.45,
         utilization: 40,
         resets_at: null,
         remaining_seconds: 0,
@@ -642,22 +643,20 @@ describe('AccountUsageCell', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('5h|none')
-    expect(wrapper.text()).toContain('7d|30')
+    expect(wrapper.text()).toContain('7d|23.45')
   })
 
   it.each([
-    { id: 6801, utilization: 0, cost: 12 },
-    { id: 6802, utilization: -1, cost: 12 },
-    { id: 6803, utilization: Number.NaN, cost: 12 },
-    { id: 6804, utilization: 40, cost: 0 },
-    { id: 6805, utilization: 40, cost: Number.POSITIVE_INFINITY }
-  ])('OpenAI OAuth 7d 输入无效时不显示预计总费用 (%o)', async ({ id, utilization, cost }) => {
+    { id: 6801, estimate: null },
+    { id: 6802, estimate: undefined }
+  ])('后端没有预计总费用时不在前端重算 (%o)', async ({ id, estimate }) => {
     getUsage.mockResolvedValue({
       seven_day: {
-        utilization,
+        utilization: 40,
         resets_at: null,
         remaining_seconds: 0,
-        window_stats: { requests: 1, tokens: 100, cost }
+        estimated_total_cost: estimate,
+        window_stats: { requests: 1, tokens: 100, cost: 12 }
       }
     })
 

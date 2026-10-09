@@ -10,7 +10,6 @@ import (
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
 	"github.com/Wei-Shaw/sub2api/internal/service"
-	"github.com/lib/pq"
 )
 
 type openAIQuotaPeriodRepository struct {
@@ -26,6 +25,7 @@ type openAIQuotaPeriodState struct {
 	ResetAt             *time.Time `json:"reset_at,omitempty"`
 	LastUsedPercent     float64    `json:"last_used_percent"`
 	LastPercentSnapshot time.Time  `json:"last_percent_snapshot_at"`
+	LastSampledAt       time.Time  `json:"last_sampled_at,omitempty"`
 }
 
 func (r *openAIQuotaPeriodRepository) Sync(ctx context.Context, snapshot service.OpenAIQuotaPeriodSnapshot) (*service.OpenAIQuotaPeriod, error) {
@@ -51,6 +51,13 @@ func (r *openAIQuotaPeriodRepository) Sync(ctx context.Context, snapshot service
 		encoded, _ := json.Marshal(raw)
 		_ = json.Unmarshal(encoded, &state)
 	}
+	if snapshot.SampledAt.IsZero() {
+		snapshot.SampledAt = snapshot.ObservedAt
+	}
+	if snapshot.SampledAt.Before(state.LastSampledAt) {
+		return nil, nil
+	}
+	state.LastSampledAt = snapshot.SampledAt
 
 	if state.StartedAt.IsZero() {
 		state.StartedAt = snapshot.ObservedAt.Add(-7 * 24 * time.Hour)
@@ -61,6 +68,9 @@ func (r *openAIQuotaPeriodRepository) Sync(ctx context.Context, snapshot service
 
 	newerSnapshot := state.LastPercentSnapshot.IsZero() || snapshot.ObservedAt.After(state.LastPercentSnapshot)
 	if !newerSnapshot {
+		if snapshot.ObservedAt.Before(state.LastPercentSnapshot) {
+			snapshot.Estimate = nil
+		}
 		snapshot.UsedPercent = state.LastUsedPercent
 		snapshot.ResetAt = state.ResetAt
 	}
@@ -130,38 +140,46 @@ func (r *openAIQuotaPeriodRepository) Sync(ctx context.Context, snapshot service
 		TokenCount:   &tokenCount,
 		UsedUSD:      usedUSD,
 		UsedPercent:  snapshot.UsedPercent,
-		SnapshotAt:   snapshot.ObservedAt,
-	}
-	if snapshot.UsedPercent > 5 && usedUSD != 0 {
-		predicted := usedUSD * 100 / snapshot.UsedPercent
-		period.PredictedQuotaUSD = &predicted
+		SnapshotAt:   snapshot.SampledAt,
+		Estimate:     snapshot.Estimate,
 	}
 	if requestCount > 0 {
-		var predicted any
-		if period.PredictedQuotaUSD != nil {
-			predicted = *period.PredictedQuotaUSD
+		var estimateTotal, estimateStart, estimateCost, estimatePercent, estimatedAt any
+		if estimate := snapshot.Estimate; estimate != nil {
+			estimateTotal, estimateStart, estimateCost = estimate.TotalCost, estimate.WindowStartedAt, estimate.WindowCost
+			estimatePercent, estimatedAt = estimate.UsedPercent, estimate.SampledAt
 		}
+		var savedEstimate openAIQuotaEstimateColumns
 		if err := tx.QueryRowContext(ctx, `
 			INSERT INTO openai_quota_periods (
 				account_id, started_at, reset_at, request_count, token_count, used_usd,
-				used_percent, predicted_quota_usd, snapshot_at, created_at, updated_at
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
+				used_percent, snapshot_at, estimated_total_cost, estimate_window_started_at,
+				estimate_window_cost, estimate_used_percent, estimated_at, created_at, updated_at
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())
 			ON CONFLICT (account_id, started_at) DO UPDATE SET
 				reset_at = EXCLUDED.reset_at,
 				request_count = EXCLUDED.request_count,
 				token_count = EXCLUDED.token_count,
 				used_usd = EXCLUDED.used_usd,
 				used_percent = EXCLUDED.used_percent,
-				predicted_quota_usd = EXCLUDED.predicted_quota_usd,
 				snapshot_at = EXCLUDED.snapshot_at,
+				estimated_total_cost = COALESCE(EXCLUDED.estimated_total_cost, openai_quota_periods.estimated_total_cost),
+				estimate_window_started_at = COALESCE(EXCLUDED.estimate_window_started_at, openai_quota_periods.estimate_window_started_at),
+				estimate_window_cost = COALESCE(EXCLUDED.estimate_window_cost, openai_quota_periods.estimate_window_cost),
+				estimate_used_percent = COALESCE(EXCLUDED.estimate_used_percent, openai_quota_periods.estimate_used_percent),
+				estimated_at = COALESCE(EXCLUDED.estimated_at, openai_quota_periods.estimated_at),
 				updated_at = NOW()
-			RETURNING id, ended_at, created_at, updated_at
+			RETURNING id, ended_at, created_at, updated_at,
+				estimated_total_cost, estimate_window_started_at, estimate_window_cost, estimate_used_percent, estimated_at
 		`, period.AccountID, period.StartedAt, period.ResetAt, period.RequestCount, tokenCount,
-			period.UsedUSD, period.UsedPercent, predicted, period.SnapshotAt).Scan(
+			period.UsedUSD, period.UsedPercent, period.SnapshotAt,
+			estimateTotal, estimateStart, estimateCost, estimatePercent, estimatedAt).Scan(
 			&period.ID, &period.EndedAt, &period.CreatedAt, &period.UpdatedAt,
+			&savedEstimate.total, &savedEstimate.start, &savedEstimate.cost, &savedEstimate.percent, &savedEstimate.sampledAt,
 		); err != nil {
 			return nil, err
 		}
+		period.Estimate = savedEstimate.value()
 	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
@@ -177,32 +195,6 @@ func (r *openAIQuotaPeriodRepository) Sync(ctx context.Context, snapshot service
 	return period, nil
 }
 
-func (r *openAIQuotaPeriodRepository) GetCurrentPredictions(ctx context.Context, accountIDs []int64) (map[int64]float64, error) {
-	result := make(map[int64]float64)
-	if r == nil || r.db == nil || len(accountIDs) == 0 {
-		return result, nil
-	}
-	rows, err := r.db.QueryContext(ctx, `
-		SELECT account_id, predicted_quota_usd
-		FROM openai_quota_periods
-		WHERE account_id = ANY($1) AND ended_at IS NULL
-			AND predicted_quota_usd IS NOT NULL AND predicted_quota_usd <> 0
-	`, pq.Array(accountIDs))
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = rows.Close() }()
-	for rows.Next() {
-		var accountID int64
-		var predicted float64
-		if err := rows.Scan(&accountID, &predicted); err != nil {
-			return nil, err
-		}
-		result[accountID] = predicted
-	}
-	return result, rows.Err()
-}
-
 func (r *openAIQuotaPeriodRepository) List(ctx context.Context, accountID int64, params pagination.PaginationParams) ([]service.OpenAIQuotaPeriod, *pagination.PaginationResult, error) {
 	var total int64
 	if err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM openai_quota_periods WHERE account_id = $1`, accountID).Scan(&total); err != nil {
@@ -210,7 +202,8 @@ func (r *openAIQuotaPeriodRepository) List(ctx context.Context, accountID int64,
 	}
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT id, account_id, started_at, ended_at, reset_at, request_count, token_count, used_usd,
-			used_percent, predicted_quota_usd, snapshot_at, created_at, updated_at
+			used_percent, snapshot_at, created_at, updated_at,
+			estimated_total_cost, estimate_window_started_at, estimate_window_cost, estimate_used_percent, estimated_at
 		FROM openai_quota_periods
 		WHERE account_id = $1
 		ORDER BY started_at DESC, id DESC
@@ -223,17 +216,35 @@ func (r *openAIQuotaPeriodRepository) List(ctx context.Context, accountID int64,
 	periods := make([]service.OpenAIQuotaPeriod, 0)
 	for rows.Next() {
 		var period service.OpenAIQuotaPeriod
+		var estimate openAIQuotaEstimateColumns
 		if err := rows.Scan(
 			&period.ID, &period.AccountID, &period.StartedAt, &period.EndedAt, &period.ResetAt,
-			&period.RequestCount, &period.TokenCount, &period.UsedUSD, &period.UsedPercent, &period.PredictedQuotaUSD,
+			&period.RequestCount, &period.TokenCount, &period.UsedUSD, &period.UsedPercent,
 			&period.SnapshotAt, &period.CreatedAt, &period.UpdatedAt,
+			&estimate.total, &estimate.start, &estimate.cost, &estimate.percent, &estimate.sampledAt,
 		); err != nil {
 			return nil, nil, err
 		}
+		period.Estimate = estimate.value()
 		periods = append(periods, period)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, nil, err
 	}
 	return periods, paginationResultFromTotal(total, params), nil
+}
+
+type openAIQuotaEstimateColumns struct {
+	total, cost, percent *float64
+	start, sampledAt     *time.Time
+}
+
+func (c openAIQuotaEstimateColumns) value() *service.OpenAIQuotaEstimate {
+	if c.total == nil || c.start == nil || c.cost == nil || c.percent == nil || c.sampledAt == nil {
+		return nil
+	}
+	return &service.OpenAIQuotaEstimate{
+		TotalCost: *c.total, WindowStartedAt: *c.start, WindowCost: *c.cost,
+		UsedPercent: *c.percent, SampledAt: *c.sampledAt,
+	}
 }

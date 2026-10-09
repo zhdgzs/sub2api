@@ -5,6 +5,9 @@
     width="extra-wide"
     @close="emit('close')"
   >
+    <p class="mb-3 text-xs text-gray-500 dark:text-gray-400">
+      {{ t('admin.accounts.quotaHistoryEstimateHint') }}
+    </p>
     <div class="min-h-[24rem]">
       <div v-if="loading" class="flex h-[24rem] items-center justify-center">
         <LoadingSpinner />
@@ -31,7 +34,7 @@
 
       <div v-else class="h-[24rem] min-h-[20rem] w-full overflow-x-auto">
         <div class="h-full min-w-[52rem]">
-          <Bar :data="chartData" :options="chartOptions" :plugins="chartPlugins" />
+          <Bar :data="chartData" :options="chartOptions" />
         </div>
       </div>
     </div>
@@ -77,8 +80,7 @@ import {
   LinearScale,
   Tooltip,
   type ChartData,
-  type ChartOptions,
-  type Plugin
+  type ChartOptions
 } from 'chart.js'
 import { Bar } from 'vue-chartjs'
 import BaseDialog from '@/components/common/BaseDialog.vue'
@@ -86,28 +88,6 @@ import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import Icon from '@/components/icons/Icon.vue'
 import type { OpenAIQuotaPeriod, PaginatedResponse } from '@/types'
 import { formatCurrency, formatDateTime } from '@/utils/format'
-
-const GROUPED_BAR_GAP = 4
-const quotaBarGapPlugin: Plugin<'bar'> = {
-  id: 'quotaBarGap',
-  beforeDatasetsDraw(chart) {
-    const metas = chart.getSortedVisibleDatasetMetas().filter((meta) => meta.type === 'bar')
-    if (metas.length !== 2) return
-
-    const [leftMeta, rightMeta] = metas
-    const count = Math.min(leftMeta.data.length, rightMeta.data.length)
-    for (let index = 0; index < count; index++) {
-      const leftBar = leftMeta.data[index] as BarElement
-      const rightBar = rightMeta.data[index] as BarElement
-      const leftWidth = leftBar.getProps(['width']).width
-      const rightWidth = rightBar.getProps(['width']).width
-      const groupCenter = (leftBar.x + rightBar.x) / 2
-      leftBar.x = groupCenter - GROUPED_BAR_GAP / 2 - leftWidth / 2
-      rightBar.x = groupCenter + GROUPED_BAR_GAP / 2 + rightWidth / 2
-    }
-  }
-}
-const chartPlugins = [quotaBarGapPlugin]
 
 ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend)
 
@@ -162,8 +142,8 @@ const chartData = computed<ChartData<'bar'>>(() => ({
   labels: chronologicalPeriods.value.map(periodAxisLabel),
   datasets: [
     {
-      label: t('admin.accounts.quotaHistoryPredicted'),
-      data: chronologicalPeriods.value.map((period) => period.predicted_quota_usd ?? null),
+      label: t('admin.accounts.quotaHistoryEstimated'),
+      data: chronologicalPeriods.value.map((period) => period.estimate?.total_cost ?? null),
       backgroundColor: '#34D399',
       borderWidth: 0,
       borderRadius: 3,
@@ -223,7 +203,12 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => ({
             : t('admin.accounts.quotaHistoryCurrent')
           return `${formatDateTime(period.started_at)} - ${endLabel}`
         },
-        label: (item) => `${item.dataset.label}: ${formatCurrency(Number(item.raw))}`,
+        label: (item) => {
+          const amount = item.datasetIndex === 0
+            ? `$${Number(item.raw).toFixed(2)}`
+            : formatCurrency(Number(item.raw))
+          return `${item.dataset.label}: ${amount}`
+        },
         afterBody: (items) => {
           const period = chronologicalPeriods.value[items[0]?.dataIndex ?? -1]
           if (!period) return []
@@ -232,10 +217,16 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => ({
             `${t('admin.accounts.quotaHistoryTokens')}: ${period.token_count == null ? '-' : compactTokenFormatter.format(period.token_count)}`,
             `${t('admin.accounts.quotaHistoryRequests')}: ${period.request_count.toLocaleString()}`
           ]
-          if (period.predicted_quota_usd == null) {
-            details.unshift(
-              `${t('admin.accounts.quotaHistoryPredicted')}: ${t('admin.accounts.quotaHistoryNoPrediction')}`
+          const estimate = period.estimate
+          if (estimate) {
+            details.push(
+              `${t('admin.accounts.quotaHistoryEstimateWindow')}: ${formatDateTime(estimate.window_started_at)} - ${formatDateTime(estimate.sampled_at)}`,
+              `${t('admin.accounts.quotaHistoryEstimateCost')}: ${formatCurrency(estimate.window_cost)}`,
+              `${t('admin.accounts.quotaHistoryEstimatePercent')}: ${estimate.used_percent.toFixed(1)}%`,
+              `${t('admin.accounts.quotaHistoryEstimateSampledAt')}: ${formatDateTime(estimate.sampled_at)}`
             )
+          } else {
+            details.push(t('admin.accounts.quotaHistoryNoEstimate'))
           }
           return details
         }

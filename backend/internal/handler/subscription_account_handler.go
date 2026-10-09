@@ -85,25 +85,24 @@ type userCodexCreditsSnapshot struct {
 }
 
 type userSubscriptionAccount struct {
-	ID                           int64                           `json:"id"`
-	Name                         string                          `json:"name"`
-	Platform                     string                          `json:"platform"`
-	Type                         string                          `json:"type"`
-	Capacity                     userSubscriptionAccountCapacity `json:"capacity"`
-	Status                       string                          `json:"status"`
-	Schedulable                  bool                            `json:"schedulable"`
-	RateLimitResetAt             *time.Time                      `json:"rate_limit_reset_at,omitempty"`
-	OverloadUntil                *time.Time                      `json:"overload_until,omitempty"`
-	TempUnschedulableUntil       *time.Time                      `json:"temp_unschedulable_until,omitempty"`
-	TodayStats                   *service.WindowStats            `json:"today_stats,omitempty"`
-	Groups                       []userSubscriptionAccountGroup  `json:"groups"`
-	Usage                        *userSubscriptionAccountUsage   `json:"usage,omitempty"`
-	CodexCreditsSnapshot         *userCodexCreditsSnapshot       `json:"codex_credits_snapshot,omitempty"`
-	CurrentOpenAIQuotaPrediction *float64                        `json:"current_openai_quota_prediction,omitempty"`
-	SupportsOpenAIQuotaHistory   bool                            `json:"supports_openai_quota_history"`
-	RateMultiplier               float64                         `json:"rate_multiplier"`
-	LastUsedAt                   *time.Time                      `json:"last_used_at,omitempty"`
-	CreatedAt                    time.Time                       `json:"created_at"`
+	ID                         int64                           `json:"id"`
+	Name                       string                          `json:"name"`
+	Platform                   string                          `json:"platform"`
+	Type                       string                          `json:"type"`
+	Capacity                   userSubscriptionAccountCapacity `json:"capacity"`
+	Status                     string                          `json:"status"`
+	Schedulable                bool                            `json:"schedulable"`
+	RateLimitResetAt           *time.Time                      `json:"rate_limit_reset_at,omitempty"`
+	OverloadUntil              *time.Time                      `json:"overload_until,omitempty"`
+	TempUnschedulableUntil     *time.Time                      `json:"temp_unschedulable_until,omitempty"`
+	TodayStats                 *service.WindowStats            `json:"today_stats,omitempty"`
+	Groups                     []userSubscriptionAccountGroup  `json:"groups"`
+	Usage                      *userSubscriptionAccountUsage   `json:"usage,omitempty"`
+	CodexCreditsSnapshot       *userCodexCreditsSnapshot       `json:"codex_credits_snapshot,omitempty"`
+	SupportsOpenAIQuotaHistory bool                            `json:"supports_openai_quota_history"`
+	RateMultiplier             float64                         `json:"rate_multiplier"`
+	LastUsedAt                 *time.Time                      `json:"last_used_at,omitempty"`
+	CreatedAt                  time.Time                       `json:"created_at"`
 }
 
 // List 返回当前登录用户有效订阅分组内的账号。
@@ -188,25 +187,24 @@ func userSubscriptionAccountFromService(item *service.SubscriptionAccountItem) u
 	}
 
 	return userSubscriptionAccount{
-		ID:                           account.ID,
-		Name:                         account.Name,
-		Platform:                     account.Platform,
-		Type:                         account.Type,
-		Capacity:                     userSubscriptionAccountCapacityFromService(account, item),
-		Status:                       account.Status,
-		Schedulable:                  account.Schedulable,
-		RateLimitResetAt:             account.RateLimitResetAt,
-		OverloadUntil:                account.OverloadUntil,
-		TempUnschedulableUntil:       account.TempUnschedulableUntil,
-		TodayStats:                   item.TodayStats,
-		Groups:                       groups,
-		Usage:                        userSubscriptionAccountUsageFromService(item.Usage),
-		CodexCreditsSnapshot:         userSubscriptionAccountCodexCreditsFromService(account),
-		CurrentOpenAIQuotaPrediction: item.CurrentOpenAIQuotaPrediction,
-		SupportsOpenAIQuotaHistory:   service.SupportsOpenAIQuotaPeriods(account),
-		RateMultiplier:               account.BillingRateMultiplier(),
-		LastUsedAt:                   account.LastUsedAt,
-		CreatedAt:                    account.CreatedAt,
+		ID:                         account.ID,
+		Name:                       account.Name,
+		Platform:                   account.Platform,
+		Type:                       account.Type,
+		Capacity:                   userSubscriptionAccountCapacityFromService(account, item),
+		Status:                     account.Status,
+		Schedulable:                account.Schedulable,
+		RateLimitResetAt:           account.RateLimitResetAt,
+		OverloadUntil:              account.OverloadUntil,
+		TempUnschedulableUntil:     account.TempUnschedulableUntil,
+		TodayStats:                 item.TodayStats,
+		Groups:                     groups,
+		Usage:                      userSubscriptionAccountUsageFromService(item.Usage),
+		CodexCreditsSnapshot:       userSubscriptionAccountCodexCreditsFromService(account),
+		SupportsOpenAIQuotaHistory: service.SupportsOpenAIQuotaPeriods(account),
+		RateMultiplier:             account.BillingRateMultiplier(),
+		LastUsedAt:                 account.LastUsedAt,
+		CreatedAt:                  account.CreatedAt,
 	}
 }
 

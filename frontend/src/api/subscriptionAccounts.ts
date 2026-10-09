@@ -47,7 +47,6 @@ export interface SubscriptionAccount {
   groups: SubscriptionAccountGroup[]
   usage?: AccountUsageInfo
   codex_credits_snapshot?: NonNullable<Account['extra']>['codex_credits_snapshot']
-  current_openai_quota_prediction?: number | null
   supports_openai_quota_history: boolean
   rate_multiplier: number
   last_used_at?: string

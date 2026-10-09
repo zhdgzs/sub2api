@@ -118,16 +118,72 @@ func (_c *OpenAIQuotaPeriodCreate) SetNillableUsedPercent(v *float64) *OpenAIQuo
 	return _c
 }
 
-// SetPredictedQuotaUsd sets the "predicted_quota_usd" field.
-func (_c *OpenAIQuotaPeriodCreate) SetPredictedQuotaUsd(v float64) *OpenAIQuotaPeriodCreate {
-	_c.mutation.SetPredictedQuotaUsd(v)
+// SetEstimatedTotalCost sets the "estimated_total_cost" field.
+func (_c *OpenAIQuotaPeriodCreate) SetEstimatedTotalCost(v float64) *OpenAIQuotaPeriodCreate {
+	_c.mutation.SetEstimatedTotalCost(v)
 	return _c
 }
 
-// SetNillablePredictedQuotaUsd sets the "predicted_quota_usd" field if the given value is not nil.
-func (_c *OpenAIQuotaPeriodCreate) SetNillablePredictedQuotaUsd(v *float64) *OpenAIQuotaPeriodCreate {
+// SetNillableEstimatedTotalCost sets the "estimated_total_cost" field if the given value is not nil.
+func (_c *OpenAIQuotaPeriodCreate) SetNillableEstimatedTotalCost(v *float64) *OpenAIQuotaPeriodCreate {
 	if v != nil {
-		_c.SetPredictedQuotaUsd(*v)
+		_c.SetEstimatedTotalCost(*v)
+	}
+	return _c
+}
+
+// SetEstimateWindowStartedAt sets the "estimate_window_started_at" field.
+func (_c *OpenAIQuotaPeriodCreate) SetEstimateWindowStartedAt(v time.Time) *OpenAIQuotaPeriodCreate {
+	_c.mutation.SetEstimateWindowStartedAt(v)
+	return _c
+}
+
+// SetNillableEstimateWindowStartedAt sets the "estimate_window_started_at" field if the given value is not nil.
+func (_c *OpenAIQuotaPeriodCreate) SetNillableEstimateWindowStartedAt(v *time.Time) *OpenAIQuotaPeriodCreate {
+	if v != nil {
+		_c.SetEstimateWindowStartedAt(*v)
+	}
+	return _c
+}
+
+// SetEstimateWindowCost sets the "estimate_window_cost" field.
+func (_c *OpenAIQuotaPeriodCreate) SetEstimateWindowCost(v float64) *OpenAIQuotaPeriodCreate {
+	_c.mutation.SetEstimateWindowCost(v)
+	return _c
+}
+
+// SetNillableEstimateWindowCost sets the "estimate_window_cost" field if the given value is not nil.
+func (_c *OpenAIQuotaPeriodCreate) SetNillableEstimateWindowCost(v *float64) *OpenAIQuotaPeriodCreate {
+	if v != nil {
+		_c.SetEstimateWindowCost(*v)
+	}
+	return _c
+}
+
+// SetEstimateUsedPercent sets the "estimate_used_percent" field.
+func (_c *OpenAIQuotaPeriodCreate) SetEstimateUsedPercent(v float64) *OpenAIQuotaPeriodCreate {
+	_c.mutation.SetEstimateUsedPercent(v)
+	return _c
+}
+
+// SetNillableEstimateUsedPercent sets the "estimate_used_percent" field if the given value is not nil.
+func (_c *OpenAIQuotaPeriodCreate) SetNillableEstimateUsedPercent(v *float64) *OpenAIQuotaPeriodCreate {
+	if v != nil {
+		_c.SetEstimateUsedPercent(*v)
+	}
+	return _c
+}
+
+// SetEstimatedAt sets the "estimated_at" field.
+func (_c *OpenAIQuotaPeriodCreate) SetEstimatedAt(v time.Time) *OpenAIQuotaPeriodCreate {
+	_c.mutation.SetEstimatedAt(v)
+	return _c
+}
+
+// SetNillableEstimatedAt sets the "estimated_at" field if the given value is not nil.
+func (_c *OpenAIQuotaPeriodCreate) SetNillableEstimatedAt(v *time.Time) *OpenAIQuotaPeriodCreate {
+	if v != nil {
+		_c.SetEstimatedAt(*v)
 	}
 	return _c
 }
@@ -308,9 +364,25 @@ func (_c *OpenAIQuotaPeriodCreate) createSpec() (*OpenAIQuotaPeriod, *sqlgraph.C
 		_spec.SetField(openaiquotaperiod.FieldUsedPercent, field.TypeFloat64, value)
 		_node.UsedPercent = value
 	}
-	if value, ok := _c.mutation.PredictedQuotaUsd(); ok {
-		_spec.SetField(openaiquotaperiod.FieldPredictedQuotaUsd, field.TypeFloat64, value)
-		_node.PredictedQuotaUsd = &value
+	if value, ok := _c.mutation.EstimatedTotalCost(); ok {
+		_spec.SetField(openaiquotaperiod.FieldEstimatedTotalCost, field.TypeFloat64, value)
+		_node.EstimatedTotalCost = &value
+	}
+	if value, ok := _c.mutation.EstimateWindowStartedAt(); ok {
+		_spec.SetField(openaiquotaperiod.FieldEstimateWindowStartedAt, field.TypeTime, value)
+		_node.EstimateWindowStartedAt = &value
+	}
+	if value, ok := _c.mutation.EstimateWindowCost(); ok {
+		_spec.SetField(openaiquotaperiod.FieldEstimateWindowCost, field.TypeFloat64, value)
+		_node.EstimateWindowCost = &value
+	}
+	if value, ok := _c.mutation.EstimateUsedPercent(); ok {
+		_spec.SetField(openaiquotaperiod.FieldEstimateUsedPercent, field.TypeFloat64, value)
+		_node.EstimateUsedPercent = &value
+	}
+	if value, ok := _c.mutation.EstimatedAt(); ok {
+		_spec.SetField(openaiquotaperiod.FieldEstimatedAt, field.TypeTime, value)
+		_node.EstimatedAt = &value
 	}
 	if value, ok := _c.mutation.SnapshotAt(); ok {
 		_spec.SetField(openaiquotaperiod.FieldSnapshotAt, field.TypeTime, value)
@@ -520,27 +592,111 @@ func (u *OpenAIQuotaPeriodUpsert) AddUsedPercent(v float64) *OpenAIQuotaPeriodUp
 	return u
 }
 
-// SetPredictedQuotaUsd sets the "predicted_quota_usd" field.
-func (u *OpenAIQuotaPeriodUpsert) SetPredictedQuotaUsd(v float64) *OpenAIQuotaPeriodUpsert {
-	u.Set(openaiquotaperiod.FieldPredictedQuotaUsd, v)
+// SetEstimatedTotalCost sets the "estimated_total_cost" field.
+func (u *OpenAIQuotaPeriodUpsert) SetEstimatedTotalCost(v float64) *OpenAIQuotaPeriodUpsert {
+	u.Set(openaiquotaperiod.FieldEstimatedTotalCost, v)
 	return u
 }
 
-// UpdatePredictedQuotaUsd sets the "predicted_quota_usd" field to the value that was provided on create.
-func (u *OpenAIQuotaPeriodUpsert) UpdatePredictedQuotaUsd() *OpenAIQuotaPeriodUpsert {
-	u.SetExcluded(openaiquotaperiod.FieldPredictedQuotaUsd)
+// UpdateEstimatedTotalCost sets the "estimated_total_cost" field to the value that was provided on create.
+func (u *OpenAIQuotaPeriodUpsert) UpdateEstimatedTotalCost() *OpenAIQuotaPeriodUpsert {
+	u.SetExcluded(openaiquotaperiod.FieldEstimatedTotalCost)
 	return u
 }
 
-// AddPredictedQuotaUsd adds v to the "predicted_quota_usd" field.
-func (u *OpenAIQuotaPeriodUpsert) AddPredictedQuotaUsd(v float64) *OpenAIQuotaPeriodUpsert {
-	u.Add(openaiquotaperiod.FieldPredictedQuotaUsd, v)
+// AddEstimatedTotalCost adds v to the "estimated_total_cost" field.
+func (u *OpenAIQuotaPeriodUpsert) AddEstimatedTotalCost(v float64) *OpenAIQuotaPeriodUpsert {
+	u.Add(openaiquotaperiod.FieldEstimatedTotalCost, v)
 	return u
 }
 
-// ClearPredictedQuotaUsd clears the value of the "predicted_quota_usd" field.
-func (u *OpenAIQuotaPeriodUpsert) ClearPredictedQuotaUsd() *OpenAIQuotaPeriodUpsert {
-	u.SetNull(openaiquotaperiod.FieldPredictedQuotaUsd)
+// ClearEstimatedTotalCost clears the value of the "estimated_total_cost" field.
+func (u *OpenAIQuotaPeriodUpsert) ClearEstimatedTotalCost() *OpenAIQuotaPeriodUpsert {
+	u.SetNull(openaiquotaperiod.FieldEstimatedTotalCost)
+	return u
+}
+
+// SetEstimateWindowStartedAt sets the "estimate_window_started_at" field.
+func (u *OpenAIQuotaPeriodUpsert) SetEstimateWindowStartedAt(v time.Time) *OpenAIQuotaPeriodUpsert {
+	u.Set(openaiquotaperiod.FieldEstimateWindowStartedAt, v)
+	return u
+}
+
+// UpdateEstimateWindowStartedAt sets the "estimate_window_started_at" field to the value that was provided on create.
+func (u *OpenAIQuotaPeriodUpsert) UpdateEstimateWindowStartedAt() *OpenAIQuotaPeriodUpsert {
+	u.SetExcluded(openaiquotaperiod.FieldEstimateWindowStartedAt)
+	return u
+}
+
+// ClearEstimateWindowStartedAt clears the value of the "estimate_window_started_at" field.
+func (u *OpenAIQuotaPeriodUpsert) ClearEstimateWindowStartedAt() *OpenAIQuotaPeriodUpsert {
+	u.SetNull(openaiquotaperiod.FieldEstimateWindowStartedAt)
+	return u
+}
+
+// SetEstimateWindowCost sets the "estimate_window_cost" field.
+func (u *OpenAIQuotaPeriodUpsert) SetEstimateWindowCost(v float64) *OpenAIQuotaPeriodUpsert {
+	u.Set(openaiquotaperiod.FieldEstimateWindowCost, v)
+	return u
+}
+
+// UpdateEstimateWindowCost sets the "estimate_window_cost" field to the value that was provided on create.
+func (u *OpenAIQuotaPeriodUpsert) UpdateEstimateWindowCost() *OpenAIQuotaPeriodUpsert {
+	u.SetExcluded(openaiquotaperiod.FieldEstimateWindowCost)
+	return u
+}
+
+// AddEstimateWindowCost adds v to the "estimate_window_cost" field.
+func (u *OpenAIQuotaPeriodUpsert) AddEstimateWindowCost(v float64) *OpenAIQuotaPeriodUpsert {
+	u.Add(openaiquotaperiod.FieldEstimateWindowCost, v)
+	return u
+}
+
+// ClearEstimateWindowCost clears the value of the "estimate_window_cost" field.
+func (u *OpenAIQuotaPeriodUpsert) ClearEstimateWindowCost() *OpenAIQuotaPeriodUpsert {
+	u.SetNull(openaiquotaperiod.FieldEstimateWindowCost)
+	return u
+}
+
+// SetEstimateUsedPercent sets the "estimate_used_percent" field.
+func (u *OpenAIQuotaPeriodUpsert) SetEstimateUsedPercent(v float64) *OpenAIQuotaPeriodUpsert {
+	u.Set(openaiquotaperiod.FieldEstimateUsedPercent, v)
+	return u
+}
+
+// UpdateEstimateUsedPercent sets the "estimate_used_percent" field to the value that was provided on create.
+func (u *OpenAIQuotaPeriodUpsert) UpdateEstimateUsedPercent() *OpenAIQuotaPeriodUpsert {
+	u.SetExcluded(openaiquotaperiod.FieldEstimateUsedPercent)
+	return u
+}
+
+// AddEstimateUsedPercent adds v to the "estimate_used_percent" field.
+func (u *OpenAIQuotaPeriodUpsert) AddEstimateUsedPercent(v float64) *OpenAIQuotaPeriodUpsert {
+	u.Add(openaiquotaperiod.FieldEstimateUsedPercent, v)
+	return u
+}
+
+// ClearEstimateUsedPercent clears the value of the "estimate_used_percent" field.
+func (u *OpenAIQuotaPeriodUpsert) ClearEstimateUsedPercent() *OpenAIQuotaPeriodUpsert {
+	u.SetNull(openaiquotaperiod.FieldEstimateUsedPercent)
+	return u
+}
+
+// SetEstimatedAt sets the "estimated_at" field.
+func (u *OpenAIQuotaPeriodUpsert) SetEstimatedAt(v time.Time) *OpenAIQuotaPeriodUpsert {
+	u.Set(openaiquotaperiod.FieldEstimatedAt, v)
+	return u
+}
+
+// UpdateEstimatedAt sets the "estimated_at" field to the value that was provided on create.
+func (u *OpenAIQuotaPeriodUpsert) UpdateEstimatedAt() *OpenAIQuotaPeriodUpsert {
+	u.SetExcluded(openaiquotaperiod.FieldEstimatedAt)
+	return u
+}
+
+// ClearEstimatedAt clears the value of the "estimated_at" field.
+func (u *OpenAIQuotaPeriodUpsert) ClearEstimatedAt() *OpenAIQuotaPeriodUpsert {
+	u.SetNull(openaiquotaperiod.FieldEstimatedAt)
 	return u
 }
 
@@ -781,31 +937,129 @@ func (u *OpenAIQuotaPeriodUpsertOne) UpdateUsedPercent() *OpenAIQuotaPeriodUpser
 	})
 }
 
-// SetPredictedQuotaUsd sets the "predicted_quota_usd" field.
-func (u *OpenAIQuotaPeriodUpsertOne) SetPredictedQuotaUsd(v float64) *OpenAIQuotaPeriodUpsertOne {
+// SetEstimatedTotalCost sets the "estimated_total_cost" field.
+func (u *OpenAIQuotaPeriodUpsertOne) SetEstimatedTotalCost(v float64) *OpenAIQuotaPeriodUpsertOne {
 	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
-		s.SetPredictedQuotaUsd(v)
+		s.SetEstimatedTotalCost(v)
 	})
 }
 
-// AddPredictedQuotaUsd adds v to the "predicted_quota_usd" field.
-func (u *OpenAIQuotaPeriodUpsertOne) AddPredictedQuotaUsd(v float64) *OpenAIQuotaPeriodUpsertOne {
+// AddEstimatedTotalCost adds v to the "estimated_total_cost" field.
+func (u *OpenAIQuotaPeriodUpsertOne) AddEstimatedTotalCost(v float64) *OpenAIQuotaPeriodUpsertOne {
 	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
-		s.AddPredictedQuotaUsd(v)
+		s.AddEstimatedTotalCost(v)
 	})
 }
 
-// UpdatePredictedQuotaUsd sets the "predicted_quota_usd" field to the value that was provided on create.
-func (u *OpenAIQuotaPeriodUpsertOne) UpdatePredictedQuotaUsd() *OpenAIQuotaPeriodUpsertOne {
+// UpdateEstimatedTotalCost sets the "estimated_total_cost" field to the value that was provided on create.
+func (u *OpenAIQuotaPeriodUpsertOne) UpdateEstimatedTotalCost() *OpenAIQuotaPeriodUpsertOne {
 	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
-		s.UpdatePredictedQuotaUsd()
+		s.UpdateEstimatedTotalCost()
 	})
 }
 
-// ClearPredictedQuotaUsd clears the value of the "predicted_quota_usd" field.
-func (u *OpenAIQuotaPeriodUpsertOne) ClearPredictedQuotaUsd() *OpenAIQuotaPeriodUpsertOne {
+// ClearEstimatedTotalCost clears the value of the "estimated_total_cost" field.
+func (u *OpenAIQuotaPeriodUpsertOne) ClearEstimatedTotalCost() *OpenAIQuotaPeriodUpsertOne {
 	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
-		s.ClearPredictedQuotaUsd()
+		s.ClearEstimatedTotalCost()
+	})
+}
+
+// SetEstimateWindowStartedAt sets the "estimate_window_started_at" field.
+func (u *OpenAIQuotaPeriodUpsertOne) SetEstimateWindowStartedAt(v time.Time) *OpenAIQuotaPeriodUpsertOne {
+	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
+		s.SetEstimateWindowStartedAt(v)
+	})
+}
+
+// UpdateEstimateWindowStartedAt sets the "estimate_window_started_at" field to the value that was provided on create.
+func (u *OpenAIQuotaPeriodUpsertOne) UpdateEstimateWindowStartedAt() *OpenAIQuotaPeriodUpsertOne {
+	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
+		s.UpdateEstimateWindowStartedAt()
+	})
+}
+
+// ClearEstimateWindowStartedAt clears the value of the "estimate_window_started_at" field.
+func (u *OpenAIQuotaPeriodUpsertOne) ClearEstimateWindowStartedAt() *OpenAIQuotaPeriodUpsertOne {
+	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
+		s.ClearEstimateWindowStartedAt()
+	})
+}
+
+// SetEstimateWindowCost sets the "estimate_window_cost" field.
+func (u *OpenAIQuotaPeriodUpsertOne) SetEstimateWindowCost(v float64) *OpenAIQuotaPeriodUpsertOne {
+	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
+		s.SetEstimateWindowCost(v)
+	})
+}
+
+// AddEstimateWindowCost adds v to the "estimate_window_cost" field.
+func (u *OpenAIQuotaPeriodUpsertOne) AddEstimateWindowCost(v float64) *OpenAIQuotaPeriodUpsertOne {
+	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
+		s.AddEstimateWindowCost(v)
+	})
+}
+
+// UpdateEstimateWindowCost sets the "estimate_window_cost" field to the value that was provided on create.
+func (u *OpenAIQuotaPeriodUpsertOne) UpdateEstimateWindowCost() *OpenAIQuotaPeriodUpsertOne {
+	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
+		s.UpdateEstimateWindowCost()
+	})
+}
+
+// ClearEstimateWindowCost clears the value of the "estimate_window_cost" field.
+func (u *OpenAIQuotaPeriodUpsertOne) ClearEstimateWindowCost() *OpenAIQuotaPeriodUpsertOne {
+	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
+		s.ClearEstimateWindowCost()
+	})
+}
+
+// SetEstimateUsedPercent sets the "estimate_used_percent" field.
+func (u *OpenAIQuotaPeriodUpsertOne) SetEstimateUsedPercent(v float64) *OpenAIQuotaPeriodUpsertOne {
+	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
+		s.SetEstimateUsedPercent(v)
+	})
+}
+
+// AddEstimateUsedPercent adds v to the "estimate_used_percent" field.
+func (u *OpenAIQuotaPeriodUpsertOne) AddEstimateUsedPercent(v float64) *OpenAIQuotaPeriodUpsertOne {
+	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
+		s.AddEstimateUsedPercent(v)
+	})
+}
+
+// UpdateEstimateUsedPercent sets the "estimate_used_percent" field to the value that was provided on create.
+func (u *OpenAIQuotaPeriodUpsertOne) UpdateEstimateUsedPercent() *OpenAIQuotaPeriodUpsertOne {
+	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
+		s.UpdateEstimateUsedPercent()
+	})
+}
+
+// ClearEstimateUsedPercent clears the value of the "estimate_used_percent" field.
+func (u *OpenAIQuotaPeriodUpsertOne) ClearEstimateUsedPercent() *OpenAIQuotaPeriodUpsertOne {
+	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
+		s.ClearEstimateUsedPercent()
+	})
+}
+
+// SetEstimatedAt sets the "estimated_at" field.
+func (u *OpenAIQuotaPeriodUpsertOne) SetEstimatedAt(v time.Time) *OpenAIQuotaPeriodUpsertOne {
+	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
+		s.SetEstimatedAt(v)
+	})
+}
+
+// UpdateEstimatedAt sets the "estimated_at" field to the value that was provided on create.
+func (u *OpenAIQuotaPeriodUpsertOne) UpdateEstimatedAt() *OpenAIQuotaPeriodUpsertOne {
+	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
+		s.UpdateEstimatedAt()
+	})
+}
+
+// ClearEstimatedAt clears the value of the "estimated_at" field.
+func (u *OpenAIQuotaPeriodUpsertOne) ClearEstimatedAt() *OpenAIQuotaPeriodUpsertOne {
+	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
+		s.ClearEstimatedAt()
 	})
 }
 
@@ -1216,31 +1470,129 @@ func (u *OpenAIQuotaPeriodUpsertBulk) UpdateUsedPercent() *OpenAIQuotaPeriodUpse
 	})
 }
 
-// SetPredictedQuotaUsd sets the "predicted_quota_usd" field.
-func (u *OpenAIQuotaPeriodUpsertBulk) SetPredictedQuotaUsd(v float64) *OpenAIQuotaPeriodUpsertBulk {
+// SetEstimatedTotalCost sets the "estimated_total_cost" field.
+func (u *OpenAIQuotaPeriodUpsertBulk) SetEstimatedTotalCost(v float64) *OpenAIQuotaPeriodUpsertBulk {
 	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
-		s.SetPredictedQuotaUsd(v)
+		s.SetEstimatedTotalCost(v)
 	})
 }
 
-// AddPredictedQuotaUsd adds v to the "predicted_quota_usd" field.
-func (u *OpenAIQuotaPeriodUpsertBulk) AddPredictedQuotaUsd(v float64) *OpenAIQuotaPeriodUpsertBulk {
+// AddEstimatedTotalCost adds v to the "estimated_total_cost" field.
+func (u *OpenAIQuotaPeriodUpsertBulk) AddEstimatedTotalCost(v float64) *OpenAIQuotaPeriodUpsertBulk {
 	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
-		s.AddPredictedQuotaUsd(v)
+		s.AddEstimatedTotalCost(v)
 	})
 }
 
-// UpdatePredictedQuotaUsd sets the "predicted_quota_usd" field to the value that was provided on create.
-func (u *OpenAIQuotaPeriodUpsertBulk) UpdatePredictedQuotaUsd() *OpenAIQuotaPeriodUpsertBulk {
+// UpdateEstimatedTotalCost sets the "estimated_total_cost" field to the value that was provided on create.
+func (u *OpenAIQuotaPeriodUpsertBulk) UpdateEstimatedTotalCost() *OpenAIQuotaPeriodUpsertBulk {
 	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
-		s.UpdatePredictedQuotaUsd()
+		s.UpdateEstimatedTotalCost()
 	})
 }
 
-// ClearPredictedQuotaUsd clears the value of the "predicted_quota_usd" field.
-func (u *OpenAIQuotaPeriodUpsertBulk) ClearPredictedQuotaUsd() *OpenAIQuotaPeriodUpsertBulk {
+// ClearEstimatedTotalCost clears the value of the "estimated_total_cost" field.
+func (u *OpenAIQuotaPeriodUpsertBulk) ClearEstimatedTotalCost() *OpenAIQuotaPeriodUpsertBulk {
 	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
-		s.ClearPredictedQuotaUsd()
+		s.ClearEstimatedTotalCost()
+	})
+}
+
+// SetEstimateWindowStartedAt sets the "estimate_window_started_at" field.
+func (u *OpenAIQuotaPeriodUpsertBulk) SetEstimateWindowStartedAt(v time.Time) *OpenAIQuotaPeriodUpsertBulk {
+	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
+		s.SetEstimateWindowStartedAt(v)
+	})
+}
+
+// UpdateEstimateWindowStartedAt sets the "estimate_window_started_at" field to the value that was provided on create.
+func (u *OpenAIQuotaPeriodUpsertBulk) UpdateEstimateWindowStartedAt() *OpenAIQuotaPeriodUpsertBulk {
+	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
+		s.UpdateEstimateWindowStartedAt()
+	})
+}
+
+// ClearEstimateWindowStartedAt clears the value of the "estimate_window_started_at" field.
+func (u *OpenAIQuotaPeriodUpsertBulk) ClearEstimateWindowStartedAt() *OpenAIQuotaPeriodUpsertBulk {
+	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
+		s.ClearEstimateWindowStartedAt()
+	})
+}
+
+// SetEstimateWindowCost sets the "estimate_window_cost" field.
+func (u *OpenAIQuotaPeriodUpsertBulk) SetEstimateWindowCost(v float64) *OpenAIQuotaPeriodUpsertBulk {
+	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
+		s.SetEstimateWindowCost(v)
+	})
+}
+
+// AddEstimateWindowCost adds v to the "estimate_window_cost" field.
+func (u *OpenAIQuotaPeriodUpsertBulk) AddEstimateWindowCost(v float64) *OpenAIQuotaPeriodUpsertBulk {
+	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
+		s.AddEstimateWindowCost(v)
+	})
+}
+
+// UpdateEstimateWindowCost sets the "estimate_window_cost" field to the value that was provided on create.
+func (u *OpenAIQuotaPeriodUpsertBulk) UpdateEstimateWindowCost() *OpenAIQuotaPeriodUpsertBulk {
+	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
+		s.UpdateEstimateWindowCost()
+	})
+}
+
+// ClearEstimateWindowCost clears the value of the "estimate_window_cost" field.
+func (u *OpenAIQuotaPeriodUpsertBulk) ClearEstimateWindowCost() *OpenAIQuotaPeriodUpsertBulk {
+	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
+		s.ClearEstimateWindowCost()
+	})
+}
+
+// SetEstimateUsedPercent sets the "estimate_used_percent" field.
+func (u *OpenAIQuotaPeriodUpsertBulk) SetEstimateUsedPercent(v float64) *OpenAIQuotaPeriodUpsertBulk {
+	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
+		s.SetEstimateUsedPercent(v)
+	})
+}
+
+// AddEstimateUsedPercent adds v to the "estimate_used_percent" field.
+func (u *OpenAIQuotaPeriodUpsertBulk) AddEstimateUsedPercent(v float64) *OpenAIQuotaPeriodUpsertBulk {
+	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
+		s.AddEstimateUsedPercent(v)
+	})
+}
+
+// UpdateEstimateUsedPercent sets the "estimate_used_percent" field to the value that was provided on create.
+func (u *OpenAIQuotaPeriodUpsertBulk) UpdateEstimateUsedPercent() *OpenAIQuotaPeriodUpsertBulk {
+	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
+		s.UpdateEstimateUsedPercent()
+	})
+}
+
+// ClearEstimateUsedPercent clears the value of the "estimate_used_percent" field.
+func (u *OpenAIQuotaPeriodUpsertBulk) ClearEstimateUsedPercent() *OpenAIQuotaPeriodUpsertBulk {
+	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
+		s.ClearEstimateUsedPercent()
+	})
+}
+
+// SetEstimatedAt sets the "estimated_at" field.
+func (u *OpenAIQuotaPeriodUpsertBulk) SetEstimatedAt(v time.Time) *OpenAIQuotaPeriodUpsertBulk {
+	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
+		s.SetEstimatedAt(v)
+	})
+}
+
+// UpdateEstimatedAt sets the "estimated_at" field to the value that was provided on create.
+func (u *OpenAIQuotaPeriodUpsertBulk) UpdateEstimatedAt() *OpenAIQuotaPeriodUpsertBulk {
+	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
+		s.UpdateEstimatedAt()
+	})
+}
+
+// ClearEstimatedAt clears the value of the "estimated_at" field.
+func (u *OpenAIQuotaPeriodUpsertBulk) ClearEstimatedAt() *OpenAIQuotaPeriodUpsertBulk {
+	return u.Update(func(s *OpenAIQuotaPeriodUpsert) {
+		s.ClearEstimatedAt()
 	})
 }
 

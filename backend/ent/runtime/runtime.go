@@ -1315,11 +1315,11 @@ func init() {
 	// openaiquotaperiod.DefaultUsedPercent holds the default value on creation for the used_percent field.
 	openaiquotaperiod.DefaultUsedPercent = openaiquotaperiodDescUsedPercent.Default.(float64)
 	// openaiquotaperiodDescCreatedAt is the schema descriptor for created_at field.
-	openaiquotaperiodDescCreatedAt := openaiquotaperiodFields[10].Descriptor()
+	openaiquotaperiodDescCreatedAt := openaiquotaperiodFields[14].Descriptor()
 	// openaiquotaperiod.DefaultCreatedAt holds the default value on creation for the created_at field.
 	openaiquotaperiod.DefaultCreatedAt = openaiquotaperiodDescCreatedAt.Default.(func() time.Time)
 	// openaiquotaperiodDescUpdatedAt is the schema descriptor for updated_at field.
-	openaiquotaperiodDescUpdatedAt := openaiquotaperiodFields[11].Descriptor()
+	openaiquotaperiodDescUpdatedAt := openaiquotaperiodFields[15].Descriptor()
 	// openaiquotaperiod.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	openaiquotaperiod.DefaultUpdatedAt = openaiquotaperiodDescUpdatedAt.Default.(func() time.Time)
 	// openaiquotaperiod.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.

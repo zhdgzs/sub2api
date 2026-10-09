@@ -197,14 +197,6 @@
           @account-updated="handleQuotaResetAccountUpdated"
         />
       </div>
-      <div
-        v-if="(account.current_openai_quota_prediction ?? 0) !== 0"
-        class="mt-1 border-t border-gray-100 pt-1 text-[10px] font-medium text-gray-600 dark:border-dark-700 dark:text-gray-300"
-      >
-        {{ t('admin.accounts.quotaPrediction') }}：{{
-          formatCurrency(account.current_openai_quota_prediction)
-        }}
-      </div>
     </template>
 
     <!-- Antigravity OAuth accounts: fetch usage from API -->
@@ -689,7 +681,7 @@ import { adminAPI } from '@/api/admin'
 import type { Account, AccountUsageInfo, GeminiCredentials, WindowStats } from '@/types'
 import { buildOpenAIUsageRefreshKey } from '@/utils/accountUsageRefresh'
 import { enqueueUsageRequest } from '@/utils/usageLoadQueue'
-import { formatCompactNumber, formatCurrency } from '@/utils/format'
+import { formatCompactNumber } from '@/utils/format'
 import UsageProgressBar from './UsageProgressBar.vue'
 import AccountQuotaInfo from './AccountQuotaInfo.vue'
 import ClaudeResetCreditsCell from './ClaudeResetCreditsCell.vue'
@@ -819,24 +811,9 @@ const hasOpenAIUsageFallback = computed(() => {
   return !!usageInfo.value?.five_hour || !!usageInfo.value?.seven_day
 })
 
-const openAISevenDayEstimatedTotalCost = computed(() => {
-  const sevenDay = usageInfo.value?.seven_day
-  const utilization = sevenDay?.utilization
-  const currentCost = sevenDay?.window_stats?.cost
-  if (
-    typeof utilization !== 'number' ||
-    typeof currentCost !== 'number' ||
-    !Number.isFinite(utilization) ||
-    !Number.isFinite(currentCost) ||
-    utilization <= 0 ||
-    currentCost <= 0
-  ) {
-    return null
-  }
-
-  const estimate = (currentCost * 100) / utilization
-  return Number.isFinite(estimate) && estimate > 0 ? estimate : null
-})
+const openAISevenDayEstimatedTotalCost = computed(
+  () => usageInfo.value?.seven_day?.estimated_total_cost ?? null
+)
 
 const openAIUsageRefreshKey = computed(() => buildOpenAIUsageRefreshKey(props.account))
 
