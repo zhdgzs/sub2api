@@ -4,7 +4,7 @@
 
 # Sub2API
 
-[![Go](https://img.shields.io/badge/Go-1.27.0-00ADD8.svg)](https://golang.org/)
+[![Go](https://img.shields.io/badge/Go-1.27.2-00ADD8.svg)](https://golang.org/)
 [![Vue](https://img.shields.io/badge/Vue-3.4+-4FC08D.svg)](https://vuejs.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-336791.svg)](https://www.postgresql.org/)
 [![Redis](https://img.shields.io/badge/Redis-7+-DC382D.svg)](https://redis.io/)
@@ -25,6 +25,12 @@ This fork regularly merges `main` from [Wei-Shaw/sub2api](https://github.com/Wei
 The account list keeps direct integer priority editing (Enter or blur saves) and provides arrow controls to step the priority; lower values are used first, with a minimum of 1. Remote Docker builds regenerate Ent and Wire from the merged source definitions before backend compilation; release agents do not run generators or builds locally.
 
 After configuring concrete model mappings in an OpenAI account's editor, **Test Connection** includes the public names on the left even when their targets are absent from the upstream `/models` catalog. Requests keep the configured targets, including subscription routes. This applies to API key and OAuth accounts without an extra switch. Wildcard rules do not become concrete choices, and passthrough keeps using the upstream catalog. Public model discovery remains filtered by upstream availability; the actual test request determines whether a configured model works.
+
+## Upstream 0.2.15 Compatibility
+
+This update adds a platform catalog and unified protocol routing, including Command Code and Cline API key accounts. Administrators choose the platform, mode, API protocol, and endpoints in the account editor. Model-routed accounts can configure protocol rules and additional supported protocols; a supported inbound protocol passes through without conversion. Unmatched rules use the upstream model catalog, falling back to Chat Completions when unavailable. Explicitly pinned protocols still take precedence. Upgrade migration `242_drop_platform_check_constraints.sql` moves platform validation from database constraints to the application.
+
+OpenAI OAuth requests replaying `web_search_call` history automatically receive a cached-only Web Search tool declaration without configuration. Requests that declared no tools still cannot invoke new tools, and `/responses/compact` keeps its wire shape. The Go baseline for source builds and release images is now `1.27.2`.
 
 ## Codex Outbound Identity
 
@@ -222,7 +228,7 @@ Community projects that extend or integrate with Sub2API:
 
 | Component | Technology |
 |-----------|------------|
-| Backend | Go 1.27.0, Gin, Ent |
+| Backend | Go 1.27.2, Gin, Ent |
 | Frontend | Vue 3.4+, Vite 5+, TailwindCSS |
 | Database | PostgreSQL 15+ |
 | Cache/Queue | Redis 7+ |
@@ -527,7 +533,7 @@ Build and run from source code for development or customization.
 
 #### Prerequisites
 
-- Go 1.21+
+- Go 1.27.2+
 - Node.js 18+
 - PostgreSQL 15+
 - Redis 7+

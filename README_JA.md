@@ -4,7 +4,7 @@
 
 # Sub2API
 
-[![Go](https://img.shields.io/badge/Go-1.27.0-00ADD8.svg)](https://golang.org/)
+[![Go](https://img.shields.io/badge/Go-1.27.2-00ADD8.svg)](https://golang.org/)
 [![Vue](https://img.shields.io/badge/Vue-3.4+-4FC08D.svg)](https://vuejs.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-336791.svg)](https://www.postgresql.org/)
 [![Redis](https://img.shields.io/badge/Redis-7+-DC382D.svg)](https://redis.io/)
@@ -25,6 +25,12 @@
 アカウント一覧では整数の優先度を直接入力して Enter またはフォーカスを外すと保存でき、矢印ボタンでも調整できます。数値が小さいほど優先され、最小値は 1 です。リモート Docker ビルドは、統合後の Ent schema と Wire provider からコードを生成してからバックエンドをコンパイルします。リリース agent はローカルで生成・ビルドを実行しません。
 
 OpenAI アカウントの編集画面で具体的なモデルマッピングを設定すると、「接続テスト」では上流の `/models` に対象モデルがなくても、マッピング左側の公開名を選択できます。リクエストは設定済みの対象名を使用し、サブスクリプションルートを自動変更しません。API Key と OAuth アカウントに適用され、追加のスイッチは不要です。ワイルドカード規則を具体的な選択肢として表示せず、パススルーモードでは上流カタログを使用します。公開モデル一覧は引き続き上流の利用可能性で絞り込み、設定モデルが動作するかは実際のテスト結果で確認します。
+
+## 上流 0.2.15 との互換性
+
+プラットフォーム一覧と共通プロトコルルーティングを導入し、Command Code、Cline の API Key アカウントに対応しました。管理者はアカウントの作成・編集画面でプラットフォーム、モード、API プロトコル、エンドポイントを指定します。モデル別ルーティングでは規則と追加対応プロトコルを設定でき、対応する入場プロトコルは変換せず転送します。規則に一致しない場合は上流モデル一覧の対応プロトコルを使い、一覧を取得できない場合は Chat Completions に戻ります。明示的に固定した API プロトコルが優先されます。更新には `242_drop_platform_check_constraints.sql` が含まれ、プラットフォームの検証を DB 制約からアプリケーションへ移します。
+
+OpenAI OAuth で `web_search_call` の履歴を再送する場合、追加設定なしでキャッシュ専用 Web Search ツール定義を補います。ツール未指定のリクエストでは新たなツール呼び出しを許可せず、`/responses/compact` の形式は維持します。ソースビルドとリリースイメージの Go 基準版は `1.27.2` です。
 
 ## Codex の送信 ID
 
@@ -224,7 +230,7 @@ Sub2API を拡張・統合するコミュニティプロジェクト:
 
 | コンポーネント | 技術 |
 |-----------|------------|
-| バックエンド | Go 1.27.0, Gin, Ent |
+| バックエンド | Go 1.27.2, Gin, Ent |
 | フロントエンド | Vue 3.4+, Vite 5+, TailwindCSS |
 | データベース | PostgreSQL 15+ |
 | キャッシュ/キュー | Redis 7+ |
@@ -515,7 +521,7 @@ cd sub2api/deploy
 
 #### 前提条件
 
-- Go 1.21+
+- Go 1.27.2+
 - Node.js 18+
 - PostgreSQL 15+
 - Redis 7+

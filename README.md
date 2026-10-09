@@ -4,7 +4,7 @@
 
 # Sub2API
 
-[![Go](https://img.shields.io/badge/Go-1.27.0-00ADD8.svg)](https://golang.org/)
+[![Go](https://img.shields.io/badge/Go-1.27.2-00ADD8.svg)](https://golang.org/)
 [![Vue](https://img.shields.io/badge/Vue-3.4+-4FC08D.svg)](https://vuejs.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-336791.svg)](https://www.postgresql.org/)
 [![Redis](https://img.shields.io/badge/Redis-7+-DC382D.svg)](https://redis.io/)
@@ -27,6 +27,12 @@
 - **账号优先级行内编辑**：管理后台账号列表支持直接输入整数优先级并在回车或失焦时保存，也可通过上下箭头步进调整；数值越小越优先，最低为 1。
 - **测试连接模型选择**：在编辑 OpenAI 账号时配置具体模型映射后，“测试连接”会保留这些映射的左侧模型名称，即使右侧目标未出现在上游 `/models` 目录中，也可选择并发起实际测试；测试仍按原映射目标调用，不会自动替换订阅路由。此行为适用于 API Key 和 OAuth 账号，无需额外开关；通配符规则不会直接成为具体选项，透传模式继续使用上游目录。公共模型目录仍按上游可用性筛选，实际模型是否可用由测试请求结果确认。
 - **前端查询条件保存**：管理后台账号列表会在浏览器本地保存平台、账号类型、状态、隐私模式、分组和关键词筛选条件，重新进入页面后自动恢复；URL 中的 `search` 参数优先。
+
+### 上游 0.2.15 兼容性
+
+本次同步引入平台清单和统一协议路由，支持 Command Code、Cline 等 API Key 平台。管理员在账号创建或编辑页选择平台、接入模式、API 协议与端点；按模型分流的账号可配置协议规则及“也支持”的协议，入站协议受模型支持时优先同协议直通。未匹配规则时使用上游模型目录的支持协议，目录不可用时回落 Chat Completions；显式固定的 API 协议仍优先生效。升级包含迁移 `242_drop_platform_check_constraints.sql`，平台合法性改由应用层校验。
+
+OpenAI OAuth 请求回放 `web_search_call` 历史时自动补全缓存专用 Web Search 工具声明，无需开关；原请求未声明工具时仍禁止新工具调用，`/responses/compact` 保持原请求形态。源码构建与发布镜像的 Go 基线更新为 `1.27.2`。
 
 ### Codex 出站身份一致性
 
@@ -226,7 +232,7 @@ Sub2API 是一个 AI API 网关平台，用于分发和管理 AI 产品订阅的
 
 | 组件 | 技术 |
 |------|------|
-| 后端 | Go 1.27.0, Gin, Ent |
+| 后端 | Go 1.27.2, Gin, Ent |
 | 前端 | Vue 3.4+, Vite 5+, TailwindCSS |
 | 数据库 | PostgreSQL 15+ |
 | 缓存/队列 | Redis 7+ |
@@ -543,7 +549,7 @@ cd sub2api/deploy
 
 #### 前置条件
 
-- Go 1.21+
+- Go 1.27.2+
 - Node.js 18+
 - PostgreSQL 15+
 - Redis 7+
