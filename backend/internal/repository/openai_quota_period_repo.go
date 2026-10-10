@@ -28,6 +28,10 @@ type openAIQuotaPeriodState struct {
 	LastSampledAt       time.Time  `json:"last_sampled_at,omitempty"`
 }
 
+// Reset-after headers drift as requests complete. A new quota window must move
+// the reset time beyond that drift; percentage changes alone are not a reset.
+const openAIQuotaResetTimeTolerance = 5 * time.Minute
+
 func (r *openAIQuotaPeriodRepository) Sync(ctx context.Context, snapshot service.OpenAIQuotaPeriodSnapshot) (*service.OpenAIQuotaPeriod, error) {
 	if r == nil || r.db == nil || snapshot.AccountID <= 0 {
 		return nil, nil
@@ -57,7 +61,6 @@ func (r *openAIQuotaPeriodRepository) Sync(ctx context.Context, snapshot service
 	if snapshot.SampledAt.Before(state.LastSampledAt) {
 		return nil, nil
 	}
-	state.LastSampledAt = snapshot.SampledAt
 
 	if state.StartedAt.IsZero() {
 		state.StartedAt = snapshot.ObservedAt.Add(-7 * 24 * time.Hour)
@@ -74,26 +77,73 @@ func (r *openAIQuotaPeriodRepository) Sync(ctx context.Context, snapshot service
 		snapshot.UsedPercent = state.LastUsedPercent
 		snapshot.ResetAt = state.ResetAt
 	}
+	if newerSnapshot && state.ResetAt != nil {
+		switch {
+		case snapshot.ResetAt == nil:
+			// Partial snapshots must not erase the known cycle boundary.
+			snapshot.ResetAt = state.ResetAt
+		case snapshot.ResetAt.Before(state.ResetAt.Add(-openAIQuotaResetTimeTolerance)):
+			// A shorter/model-specific window can appear in the generic bucket
+			// even without a window duration. Do not let it replace the weekly
+			// baseline and make a later weekly observation look like a reset.
+			snapshot.UsedPercent = state.LastUsedPercent
+			snapshot.ResetAt = state.ResetAt
+			snapshot.Estimate = nil
+		}
+	}
 
 	resetDetected := false
 	previousState := state
-	resetReason := "percent_drop"
+	state.LastSampledAt = snapshot.SampledAt
+	resetReason := "early_reset"
 	resetStartedAt := snapshot.ObservedAt
-	if newerSnapshot && !state.LastPercentSnapshot.IsZero() {
-		resetDetected = state.LastUsedPercent-snapshot.UsedPercent > 2
-		if !resetDetected && state.ResetAt != nil && snapshot.ResetAt != nil {
-			naturalReset := !state.ResetAt.After(snapshot.ObservedAt) && snapshot.ResetAt.After(*state.ResetAt)
-			if naturalReset {
-				resetDetected = true
-				resetReason = "window_expired"
-				resetStartedAt = *state.ResetAt
-			}
+	if newerSnapshot && !state.LastPercentSnapshot.IsZero() &&
+		state.ResetAt != nil && snapshot.ResetAt != nil && snapshot.ResetAt.After(snapshot.ObservedAt) &&
+		snapshot.ResetAt.After(state.ResetAt.Add(openAIQuotaResetTimeTolerance)) {
+		if !state.ResetAt.After(snapshot.ObservedAt) {
+			resetDetected = true
+			resetReason = "window_expired"
+			resetStartedAt = *state.ResetAt
+		} else if state.LastUsedPercent-snapshot.UsedPercent > 2 {
+			// An early reset needs both a lower ratio and a new reset window.
+			resetDetected = true
 		}
 	}
 	if resetDetected {
+		// Finalize the whole half-open interval, including requests since the
+		// previous throttled sample. An empty period may have no saved row yet.
+		previousSampledAt := previousState.LastSampledAt
+		if previousSampledAt.IsZero() {
+			previousSampledAt = previousState.LastPercentSnapshot
+		}
 		if _, err := tx.ExecContext(ctx, `
-			UPDATE openai_quota_periods
-			SET ended_at = $2, updated_at = NOW()
+			INSERT INTO openai_quota_periods (
+				account_id, started_at, ended_at, reset_at, request_count, token_count,
+				used_usd, used_percent, snapshot_at, created_at, updated_at
+			)
+			SELECT $1, $2, $3, $4, COUNT(*),
+				COALESCE(SUM(input_tokens::bigint + output_tokens::bigint + cache_creation_tokens::bigint + cache_read_tokens::bigint), 0),
+				COALESCE(SUM(COALESCE(account_stats_cost, total_cost) * COALESCE(account_rate_multiplier, 1)), 0),
+				$5, $6, NOW(), NOW()
+			FROM usage_logs
+			WHERE account_id = $1 AND created_at >= $2 AND created_at < $3
+			HAVING COUNT(*) > 0
+			ON CONFLICT (account_id, started_at) DO UPDATE SET
+				ended_at = EXCLUDED.ended_at,
+				request_count = CASE WHEN EXCLUDED.request_count >= openai_quota_periods.request_count
+					THEN EXCLUDED.request_count ELSE openai_quota_periods.request_count END,
+				token_count = CASE WHEN EXCLUDED.request_count >= openai_quota_periods.request_count
+					THEN EXCLUDED.token_count ELSE openai_quota_periods.token_count END,
+				used_usd = CASE WHEN EXCLUDED.request_count >= openai_quota_periods.request_count
+					THEN EXCLUDED.used_usd ELSE openai_quota_periods.used_usd END,
+				updated_at = NOW()
+		`, snapshot.AccountID, previousState.StartedAt, resetStartedAt,
+			previousState.ResetAt, previousState.LastUsedPercent, previousSampledAt); err != nil {
+			return nil, err
+		}
+		// Also close an existing row when all its source logs have been cleaned.
+		if _, err := tx.ExecContext(ctx, `
+			UPDATE openai_quota_periods SET ended_at = $2, updated_at = NOW()
 			WHERE account_id = $1 AND ended_at IS NULL
 		`, snapshot.AccountID, resetStartedAt); err != nil {
 			return nil, err

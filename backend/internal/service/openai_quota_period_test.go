@@ -83,6 +83,23 @@ func quotaEstimateAccount(now time.Time) *Account {
 	}
 }
 
+func TestOpenAIQuotaHistorySkipsNonWeeklyLongWindow(t *testing.T) {
+	now := time.Now().UTC()
+	for _, minutes := range []int{300, 1440, 10080, 0} {
+		account := quotaEstimateAccount(now)
+		account.Extra["codex_7d_window_minutes"] = minutes
+		repo := &quotaEstimatePeriodRepo{}
+		svc := NewOpenAIQuotaPeriodService(repo, nil, nil)
+		_, err := svc.SyncUsage(context.Background(), account, nil, now)
+		require.NoError(t, err)
+		if minutes == 10080 || minutes == 0 {
+			require.Equal(t, 1, repo.calls) // retain compatibility with legacy snapshots
+		} else {
+			require.Zero(t, repo.calls) // daily/model limits must not split weekly history
+		}
+	}
+}
+
 func TestOpenAIQuotaEstimatePageAndHistoryShareSnapshot(t *testing.T) {
 	for _, saveErr := range []error{nil, errors.New("history unavailable")} {
 		now := time.Now().UTC()

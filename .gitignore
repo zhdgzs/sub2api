@@ -128,6 +128,7 @@ scripts
 !/scripts/
 /scripts/*
 !/scripts/update_docker_release_record.py
+!/scripts/repair-openai-quota-history.sql
 __pycache__/
 !backend/scripts/
 !backend/scripts/resolve-version.sh
@@ -149,6 +150,7 @@ docs/*
 !docs/COMPOSITE_GROUPS.md
 !docs/PLUGIN_DEVELOPMENT.md
 !docs/OPENAI_QUOTA_PERIOD_ESTIMATION_DESIGN.md
+!docs/OPENAI_QUOTA_HISTORY_REPAIR.md
 !docs/channel-monitor-v2-safe-defaults.md
 !docs/codex-credits.md
 !docs/legal/

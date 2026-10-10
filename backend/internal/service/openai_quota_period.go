@@ -106,6 +106,11 @@ func openAIQuotaPeriodSnapshot(account *Account, now time.Time) (OpenAIQuotaPeri
 	if !openAIQuotaPeriodEligible(account) || len(account.Extra) == 0 {
 		return OpenAIQuotaPeriodSnapshot{}, false
 	}
+	// A daily/model-specific limit can be normalized into the generic long
+	// window bucket. It must not split the main weekly history on a ratio drop.
+	if minutes := parseExtraInt(account.Extra["codex_7d_window_minutes"]); minutes > 0 && minutes != 7*24*60 {
+		return OpenAIQuotaPeriodSnapshot{}, false
+	}
 	usedRaw, ok := account.Extra["codex_7d_used_percent"]
 	if !ok {
 		return OpenAIQuotaPeriodSnapshot{}, false
