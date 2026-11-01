@@ -4,7 +4,6 @@
       <template #filters>
         <div class="flex flex-wrap-reverse items-start justify-between gap-3">
           <AccountTableFilters
-            class="lg:w-auto lg:flex-1"
             v-model:searchQuery="params.search"
             :filters="params"
             :groups="groups"
@@ -550,6 +549,7 @@ import { useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'
 import { adminAPI } from '@/api/admin'
+import { CONCRETE_PLATFORM_OPTIONS } from '@/constants/platforms'
 import { useTableLoader } from '@/composables/useTableLoader'
 import { useSwipeSelect, type SwipeSelectVirtualContext } from '@/composables/useSwipeSelect'
 import { useTableSelection } from '@/composables/useTableSelection'
@@ -769,14 +769,18 @@ const loadInitialAccountFilters = (): AccountListFilterValues => {
     const raw = window.localStorage.getItem(ACCOUNT_FILTERS_STORAGE_KEY)
     if (!raw) return fallback
 
-    const parsed = JSON.parse(raw) as Partial<Record<keyof AccountListFilterValues, unknown>>
+    const parsed: unknown = JSON.parse(raw)
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return fallback
+    const values = parsed as Partial<Record<keyof AccountListFilterValues, unknown>>
     return {
-      platform: sanitizePersistedAccountFilter(parsed.platform),
-      type: sanitizePersistedAccountFilter(parsed.type),
-      status: sanitizePersistedAccountFilter(parsed.status),
-      privacy_mode: sanitizePersistedAccountFilter(parsed.privacy_mode),
-      group: sanitizePersistedAccountFilter(parsed.group),
-      search: routeSearch ?? sanitizePersistedAccountFilter(parsed.search)
+      platform: typeof values.platform === 'string' && CONCRETE_PLATFORM_OPTIONS.some(option => option.value === values.platform)
+        ? values.platform : '',
+      type: sanitizePersistedAccountFilter(values.type),
+      status: typeof values.status === 'string' && ['active', 'inactive', 'error', 'rate_limited', 'temp_unschedulable', 'unschedulable'].includes(values.status)
+        ? values.status : '',
+      privacy_mode: sanitizePersistedAccountFilter(values.privacy_mode),
+      group: sanitizePersistedAccountFilter(values.group),
+      search: routeSearch ?? sanitizePersistedAccountFilter(values.search)
     }
   } catch (error) {
     console.error('Failed to load saved account filters:', error)

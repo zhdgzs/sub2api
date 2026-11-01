@@ -26,6 +26,12 @@ The account list keeps direct integer priority editing (Enter or blur saves) and
 
 After configuring concrete model mappings in an OpenAI account's editor, **Test Connection** includes the public names on the left even when their targets are absent from the upstream `/models` catalog. Requests keep the configured targets, including subscription routes. This applies to API key and OAuth accounts without an extra switch. Wildcard rules do not become concrete choices, and passthrough keeps using the upstream catalog. Public model discovery remains filtered by upstream availability; the actual test request determines whether a configured model works.
 
+## Upstream 0.2.19 Compatibility
+
+This release integrates upstream MCP management and security fixes. Source and release images use Go `1.27.3`, Node.js `24`, and Vue I18n `11`. MCP is disabled by default; configure `MCP_PUBLIC_URL=https://your-domain/api/v1/mcp` to enable it. Production requires HTTPS, and clients connect through browser OAuth authorization; see the [MCP deployment and permission guide](docs/mcp.md). Account filters retain full browser persistence and URL `search` precedence, with validation of stored platform and status values.
+
+The default Codex outbound identity now uses `codex_cli_rs`. Stored `codex-tui` identities are normalized on outbound requests together with their originator, removing the TUI trailer while preserving the effective version and device fingerprint. This fork's device and experimental fingerprint features remain available without new configuration; this does not guarantee different upstream risk or overload outcomes.
+
 ## Upstream 0.2.15 Compatibility
 
 This update adds a platform catalog and unified protocol routing, including Command Code and Cline API key accounts. Administrators choose the platform, mode, API protocol, and endpoints in the account editor. Model-routed accounts can configure protocol rules and additional supported protocols; a supported inbound protocol passes through without conversion. Unmatched rules use the upstream model catalog, falling back to Chat Completions when unavailable. Explicitly pinned protocols still take precedence. Upgrade migration `242_drop_platform_check_constraints.sql` moves platform validation from database constraints to the application.
