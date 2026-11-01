@@ -56,8 +56,15 @@ func TestSubscriptionAccountServiceListFiltersAndDeduplicates(t *testing.T) {
 		{GroupID: 40, Group: inactiveGroup},
 	}}
 	accountRepo := &subscriptionAccountRepoStub{byGroup: map[int64][]Account{
-		10: {{ID: 1, Name: "Shared", Platform: PlatformOpenAI}, {ID: 2, Name: "Only A", Platform: PlatformOpenAI}},
-		20: {{ID: 1, Name: "Shared", Platform: PlatformOpenAI}},
+		10: {
+			{ID: 1, Name: "Shared", Platform: PlatformOpenAI, Schedulable: true},
+			{ID: 2, Name: "Only A", Platform: PlatformOpenAI, Schedulable: true},
+			{ID: 5, Name: "Paused", Platform: PlatformOpenAI, Schedulable: false},
+		},
+		20: {
+			{ID: 1, Name: "Shared", Platform: PlatformOpenAI, Schedulable: true},
+			{ID: 5, Name: "Paused", Platform: PlatformOpenAI, Schedulable: false},
+		},
 		30: {{ID: 3, Name: "Must not leak", Platform: PlatformOpenAI}},
 		40: {{ID: 4, Name: "Inactive", Platform: PlatformOpenAI}},
 	}}
@@ -95,9 +102,10 @@ func TestSubscriptionAccountServiceListSearchAndPagination(t *testing.T) {
 	subRepo := &subscriptionAccountUserSubRepoStub{subs: []UserSubscription{{GroupID: 10, Group: group}}}
 	accountRepo := &subscriptionAccountRepoStub{byGroup: map[int64][]Account{
 		10: {
-			{ID: 1, Name: "Alpha", Platform: PlatformOpenAI, Type: AccountTypeOAuth},
-			{ID: 2, Name: "Beta", Platform: PlatformAnthropic, Type: AccountTypeAPIKey},
-			{ID: 3, Name: "Gamma", Platform: PlatformOpenAI, Type: AccountTypeOAuth},
+			{ID: 1, Name: "Alpha", Platform: PlatformOpenAI, Type: AccountTypeOAuth, Schedulable: true},
+			{ID: 2, Name: "Beta", Platform: PlatformAnthropic, Type: AccountTypeAPIKey, Schedulable: true},
+			{ID: 3, Name: "Gamma", Platform: PlatformOpenAI, Type: AccountTypeOAuth, Schedulable: true},
+			{ID: 4, Name: "Beta paused", Platform: PlatformOpenAI, Type: AccountTypeOAuth, Schedulable: false},
 		},
 	}}
 	svc := NewSubscriptionAccountService(subRepo, accountRepo, nil, nil, nil, nil, nil)
@@ -136,10 +144,12 @@ func TestSubscriptionAccountServiceListOpenAIQuotaPeriodsRequiresSubscriptionAcc
 	subRepo := &subscriptionAccountUserSubRepoStub{subs: []UserSubscription{{GroupID: 10, Group: group}}}
 	allowedAccount := &Account{
 		ID: 1, Name: "OpenAI Pro", Platform: PlatformOpenAI, Type: AccountTypeOAuth,
+		Schedulable: true,
 		Credentials: map[string]any{"plan_type": "pro"}, GroupIDs: []int64{10},
 	}
 	deniedAccount := &Account{
 		ID: 2, Name: "Other Pro", Platform: PlatformOpenAI, Type: AccountTypeOAuth,
+		Schedulable: true,
 		Credentials: map[string]any{"plan_type": "pro"}, GroupIDs: []int64{20},
 	}
 	accountRepo := &subscriptionAccountRepoStub{byID: map[int64]*Account{
@@ -161,4 +171,12 @@ func TestSubscriptionAccountServiceListOpenAIQuotaPeriodsRequiresSubscriptionAcc
 		context.Background(), 7, 2, pagination.PaginationParams{Page: 1, PageSize: 20},
 	)
 	require.ErrorIs(t, err, ErrAccountNotFound)
+
+	allowedAccount.Schedulable = false
+	quotaRepo.listedAccountID = 0
+	_, _, err = svc.ListOpenAIQuotaPeriods(
+		context.Background(), 7, 1, pagination.PaginationParams{Page: 1, PageSize: 20},
+	)
+	require.ErrorIs(t, err, ErrAccountNotFound)
+	require.Zero(t, quotaRepo.listedAccountID)
 }

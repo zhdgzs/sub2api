@@ -6,7 +6,6 @@ export default {
     empty: 'No matching accounts',
     noSubscription: 'No active subscription',
     columns: {
-      name: 'Name',
       platformType: 'Platform / Type',
       capacity: 'Capacity',
       status: 'Status',
@@ -14,8 +13,9 @@ export default {
       groups: 'Groups',
       usageWindows: 'Usage Windows',
       rateMultiplier: 'Account Rate',
+      priority: 'Priority',
       lastUsed: 'Last Used',
-      createdAt: 'Created',
+      expiresAt: 'Expires At',
     },
     status: {
       available: 'Available',

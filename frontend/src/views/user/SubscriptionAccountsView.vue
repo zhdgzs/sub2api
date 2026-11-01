@@ -57,10 +57,6 @@
           row-key="id"
           :estimate-row-height="150"
         >
-          <template #cell-name="{ row }">
-            <span class="font-medium text-gray-900 dark:text-white">{{ row.name }}</span>
-          </template>
-
           <template #cell-platform_type="{ row }">
             <PlatformTypeBadge :platform="row.platform" :type="row.type" />
           </template>
@@ -97,9 +93,15 @@
             </span>
           </template>
 
-          <template #cell-created_at="{ row }">
+          <template #cell-priority="{ row }">
+            <span class="font-mono text-sm text-gray-700 dark:text-gray-300">
+              {{ row.priority }}
+            </span>
+          </template>
+
+          <template #cell-expires_at="{ row }">
             <span class="whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-              {{ formatDateTime(row.created_at) }}
+              {{ row.expires_at ? formatDateTime(row.expires_at) : '-' }}
             </span>
           </template>
 
@@ -185,7 +187,6 @@ const quotaHistoryAccount = ref<SubscriptionAccount | null>(null)
 let controller: AbortController | null = null
 
 const columns = computed(() => [
-  { key: 'name', label: t('subscriptionAccounts.columns.name'), sortable: false },
   { key: 'platform_type', label: t('subscriptionAccounts.columns.platformType'), sortable: false },
   { key: 'capacity', label: t('subscriptionAccounts.columns.capacity'), sortable: false },
   { key: 'status', label: t('subscriptionAccounts.columns.status'), sortable: false },
@@ -193,8 +194,9 @@ const columns = computed(() => [
   { key: 'groups', label: t('subscriptionAccounts.columns.groups'), sortable: false },
   { key: 'usage_windows', label: t('subscriptionAccounts.columns.usageWindows'), sortable: false },
   { key: 'rate_multiplier', label: t('subscriptionAccounts.columns.rateMultiplier'), sortable: false },
+  { key: 'priority', label: t('subscriptionAccounts.columns.priority'), sortable: false },
   { key: 'last_used_at', label: t('subscriptionAccounts.columns.lastUsed'), sortable: false },
-  { key: 'created_at', label: t('subscriptionAccounts.columns.createdAt'), sortable: false },
+  { key: 'expires_at', label: t('subscriptionAccounts.columns.expiresAt'), sortable: false },
   { key: 'actions', label: t('common.actions'), sortable: false },
 ])
 

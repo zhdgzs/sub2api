@@ -101,6 +101,8 @@ type userSubscriptionAccount struct {
 	CodexCreditsSnapshot       *userCodexCreditsSnapshot       `json:"codex_credits_snapshot,omitempty"`
 	SupportsOpenAIQuotaHistory bool                            `json:"supports_openai_quota_history"`
 	RateMultiplier             float64                         `json:"rate_multiplier"`
+	Priority                   int                             `json:"priority"`
+	ExpiresAt                  *time.Time                      `json:"expires_at"`
 	LastUsedAt                 *time.Time                      `json:"last_used_at,omitempty"`
 	CreatedAt                  time.Time                       `json:"created_at"`
 }
@@ -203,6 +205,8 @@ func userSubscriptionAccountFromService(item *service.SubscriptionAccountItem) u
 		CodexCreditsSnapshot:       userSubscriptionAccountCodexCreditsFromService(account),
 		SupportsOpenAIQuotaHistory: service.SupportsOpenAIQuotaPeriods(account),
 		RateMultiplier:             account.BillingRateMultiplier(),
+		Priority:                   account.Priority,
+		ExpiresAt:                  account.ExpiresAt,
 		LastUsedAt:                 account.LastUsedAt,
 		CreatedAt:                  account.CreatedAt,
 	}

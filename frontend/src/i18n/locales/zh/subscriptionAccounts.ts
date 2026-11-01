@@ -6,7 +6,6 @@ export default {
     empty: '暂无匹配账号',
     noSubscription: '暂无有效订阅',
     columns: {
-      name: '名称',
       platformType: '平台 / 类型',
       capacity: '容量',
       status: '状态',
@@ -14,8 +13,9 @@ export default {
       groups: '分组',
       usageWindows: '用量窗口',
       rateMultiplier: '账号倍率',
+      priority: '优先级',
       lastUsed: '最近使用',
-      createdAt: '创建时间',
+      expiresAt: '过期时间',
     },
     status: {
       available: '可用',

@@ -28,7 +28,7 @@ func TestUserSubscriptionAccountFieldWhitelist(t *testing.T) {
 		},
 		ProxyID: int64Pointer(99), ErrorMessage: "internal upstream failure",
 		Concurrency: 5, RateMultiplier: &rate, Status: service.StatusActive, Schedulable: true,
-		LastUsedAt: &now, CreatedAt: now,
+		LastUsedAt: &now, CreatedAt: now, Priority: 3, ExpiresAt: &now,
 	}
 	item := &service.SubscriptionAccountItem{
 		Account: account,
@@ -49,6 +49,8 @@ func TestUserSubscriptionAccountFieldWhitelist(t *testing.T) {
 	jsonText := string(raw)
 	require.Contains(t, jsonText, `"name":"pool-8"`)
 	require.Contains(t, jsonText, `"rate_multiplier":1.25`)
+	require.Contains(t, jsonText, `"priority":3`)
+	require.Contains(t, jsonText, `"expires_at":"`+now.Format(time.RFC3339Nano)+`"`)
 	require.Contains(t, jsonText, `"five_hour":{"utilization":42`)
 	require.Contains(t, jsonText, `"estimated_total_cost":30`)
 	require.NotContains(t, jsonText, "current_openai_quota_prediction")
@@ -65,6 +67,15 @@ func TestUserSubscriptionAccountFieldWhitelist(t *testing.T) {
 	require.NotContains(t, jsonText, "proxy_id")
 	require.NotContains(t, jsonText, "credentials")
 	require.NotContains(t, jsonText, "extra")
+}
+
+func TestUserSubscriptionAccountWithoutExpiry(t *testing.T) {
+	out := userSubscriptionAccountFromService(&service.SubscriptionAccountItem{
+		Account: &service.Account{Priority: 1},
+	})
+	raw, err := json.Marshal(out)
+	require.NoError(t, err)
+	require.Contains(t, string(raw), `"expires_at":null`)
 }
 
 func TestUserSubscriptionAccountCodexCreditsSnapshot(t *testing.T) {

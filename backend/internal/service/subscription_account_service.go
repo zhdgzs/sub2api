@@ -104,6 +104,9 @@ func (s *SubscriptionAccountService) List(
 		}
 		for i := range accounts {
 			account := accounts[i]
+			if !account.Schedulable {
+				continue
+			}
 			if _, exists := accountByID[account.ID]; !exists {
 				copyAccount := account
 				accountByID[account.ID] = &copyAccount
@@ -214,7 +217,7 @@ func subscriptionAccountInAllowedGroup(
 	account *Account,
 	allowedGroups map[int64]SubscriptionAccountGroup,
 ) bool {
-	if account == nil {
+	if account == nil || !account.Schedulable {
 		return false
 	}
 	for _, groupID := range account.GroupIDs {

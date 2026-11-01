@@ -50,6 +50,8 @@ function makeAccount(): SubscriptionAccount {
     },
     supports_openai_quota_history: false,
     rate_multiplier: 1,
+    priority: 1,
+    expires_at: null,
     created_at: '2026-08-15T00:00:00Z',
   }
 }

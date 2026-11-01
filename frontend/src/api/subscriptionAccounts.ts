@@ -49,6 +49,8 @@ export interface SubscriptionAccount {
   codex_credits_snapshot?: NonNullable<Account['extra']>['codex_credits_snapshot']
   supports_openai_quota_history: boolean
   rate_multiplier: number
+  priority: number
+  expires_at: string | null
   last_used_at?: string
   created_at: string
 }
