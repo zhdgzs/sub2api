@@ -458,7 +458,7 @@ func (s *OpenAIGatewayService) proxyOpenAIWSHTTPBridgeTurn(
 		if c != nil && c.Request != nil {
 			clientHeaders = c.Request.Header
 		}
-		fpIDs := resolveCodexFingerprintIDsFromRequest(account, clientHeaders)
+		fpIDs := resolveCodexFingerprintIDsFromRequest(c, account, clientHeaders)
 		if fpIDs != nil {
 			fpBody, fpChanged, fpErr := applyCodexFingerprintClientMetadataRaw(body, fpIDs)
 			if fpErr != nil {
