@@ -28,6 +28,15 @@
 - **测试连接模型选择**：在编辑 OpenAI 账号时配置具体模型映射后，“测试连接”会保留这些映射的左侧模型名称，即使右侧目标未出现在上游 `/models` 目录中，也可选择并发起实际测试；测试仍按原映射目标调用，不会自动替换订阅路由。此行为适用于 API Key 和 OAuth 账号，无需额外开关；通配符规则不会直接成为具体选项，透传模式继续使用上游目录。公共模型目录仍按上游可用性筛选，实际模型是否可用由测试请求结果确认。
 - **前端查询条件保存**：管理后台账号列表会在浏览器本地保存平台、账号类型、状态、隐私模式、分组和关键词筛选条件，重新进入页面后自动恢复；URL 中的 `search` 参数优先。
 
+### 上游 0.2.20 兼容性
+
+本次同步引入上游 OpenAI 图片输出格式说明、网关请求体内存预算自适应、OpenAI 计费修复与 Antigravity 用量刷新；镜像基线仍为 Go `1.27.3`、Node.js `24` 与 Vue I18n `11`，代码生成基线不变（`wire_gen.go` 仍不提交，由构建时生成）。
+
+- **OpenAI 图片端点与输出格式**：`/v1/images/generations` 与 `/v1/images/edits` 的 OAuth / Setup Token 请求在映射后的模型属于已支持的 GPT Image 1.5、2、2.5、2.6 时改走 Codex 原生 Images 端点；2.6 只能走原生端点，2.6 之前可在原生端点返回 404/405 时回落 Responses。`output_format` 与 `output_compression` 仅透传，是否生效取决于上游账号与端点；返回格式可能与请求不一致但仍保留 200、图片与用量并照常计费，自动重试可能再次计费。详见上文「OpenAI 图片模型」。
+- **网关请求体内存预算自适应**：未显式配置 `gateway.request_body_memory_budget_bytes`（环境变量 `GATEWAY_REQUEST_BODY_MEMORY_BUDGET_BYTES`）时，按进程内存上限的 1/4 自动设定（取物理内存、cgroup v1/v2 限制与 `GOMEMLIMIT` 的最小值），且不低于 1 GiB；显式配置（含 `0`）保持原值。此前固定 1 GiB 在高并发大请求下会提前返回 503 `Request body buffering capacity is exhausted`。
+- **OpenAI 计费修复**：输入价格为 0 时仍保留 Fast 倍率；用量与计费记录保留 cache-write TTL。升级包含迁移 `250_openai_cache_write_ttl.sql`。
+- **Antigravity 用量刷新**：账号用量单元格新增查询按钮，可绕过内存缓存直接查询最新额度；`force=true` 不再被服务端忽略。
+
 ### 上游 0.2.19 兼容性
 
 本次同步接入上游 MCP 管理功能及安全修复，源码和发布镜像使用 Go `1.27.3`、Node.js `24` 与 Vue I18n `11`。MCP 默认关闭；配置 `MCP_PUBLIC_URL=https://你的域名/api/v1/mcp` 后启用，生产环境须使用 HTTPS，客户端通过浏览器 OAuth 授权连接，详见 [MCP 部署与权限说明](docs/mcp.md)。账号筛选继续完整保存在浏览器中，URL `search` 优先，并校验已保存的平台和状态值。
@@ -69,11 +78,11 @@ OpenAI OAuth 请求回放 `web_search_call` 历史时自动补全缓存专用 We
 <details open>
 <summary>点击折叠</summary>
 
-<p align="center"><a href="https://wandapi.ai/r/sub2api"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/partners/banners/wandapi-cn-dark.svg"><img src="assets/partners/banners/wandapi-cn.svg" alt="WandAPI" width="100%"></picture></a></p>
+<p align="center"><a href="https://wandapi.com/go/sub2api"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/partners/banners/wandapi-cn-dark.svg"><img src="assets/partners/banners/wandapi-cn.svg" alt="WandAPI" width="100%"></picture></a></p>
 
-**[WandAPI](https://wandapi.ai/r/sub2api)** —— 由该项目核心贡献者打造的企业级稳定 AI 大模型 API 网关。一个 API Key 即可调用 Claude、GPT、Gemini 等主流模型，原生兼容 OpenAI 与 Anthropic 协议，Claude Code、Codex 及现有 SDK 只需修改 Base URL 即可接入。按延迟与上游健康度实时路由，毫秒级自动故障切换，请求不掉线；服务可用性达 99.99%。按量计费，每次请求的 token 与费用明细清晰可查。
+**[WandAPI](https://wandapi.com/go/sub2api)** —— 由该项目核心贡献者打造的企业级稳定 AI 大模型 API 网关。一个 API Key 即可调用 Claude、GPT、Gemini 等主流模型，原生兼容 OpenAI 与 Anthropic 协议，Claude Code、Codex 及现有 SDK 只需修改 Base URL 即可接入。按延迟与上游健康度实时路由，毫秒级自动故障切换，请求不掉线；服务可用性达 99.99%。按量计费，每次请求的 token 与费用明细清晰可查。
 
-**免费试用额度**：通过[专属链接](https://wandapi.ai/r/sub2api)注册，即可领取免费试用额度。
+**免费试用额度**：通过[专属链接](https://wandapi.com/go/sub2api)注册，即可领取免费试用额度。
 
 ---
 
@@ -100,8 +109,8 @@ OpenAI OAuth 请求回放 `web_search_call` 历史时自动补全缓存专用 We
 </tr>
 
 <tr>
-<td width="180"><a href="https://api.aigocode.dev/invite/SUB2API"><img src="assets/partners/logos/aigocode.png" alt="AIGoCode" width="150"></a></td>
-<td>感谢 AIGoCode 赞助了本项目！AIGoCode 是一站式集成 Claude Code、Codex 以及最新 Gemini 模型的综合平台，为您提供稳定、高效、高性价比的 AI 编程服务。平台提供灵活的订阅方案，零封号风险，免 VPN 直连，响应极速。AIGoCode 为 sub2api 用户准备了专属福利：通过<a href="https://api.aigocode.dev/invite/SUB2API">此链接</a>注册，首次充值可额外获得 10% 赠送额度！</td>
+<td width="180"><a href="https://api.aigocode.dev/invite/SUB2API"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/partners/logos/aigocode-dark.png"><img src="assets/partners/logos/aigocode.png" alt="AIGoCode" width="150"></picture></a></td>
+<td>感谢 AIGoCode 赞助了本项目！AIGoCode 是按订阅制计费的 AI 编程平台，而不只是按 token 付费：一个账号一份月付套餐即可使用 Claude Code、Codex 与 Gemini，中国大陆可直连，响应快速。通过<a href="https://api.aigocode.dev/invite/SUB2API">此链接</a>订阅，可额外获得 10% 额度！</td>
 </tr>
 
 <tr>
@@ -175,11 +184,7 @@ OpenAI OAuth 请求回放 `web_search_call` 历史时自动补全缓存专用 We
 </tr>
 
 <tr>
-<td width="180"><a href="https://go.apimart.ai/gh-sub2api"><img src="assets/partners/logos/apimart.jpg" alt="APIMart" width="150"></a></td>
-<td>感谢 APIMart 赞助了本项目！<a href="https://go.apimart.ai/gh-sub2api">APIMart</a> 是专注于 AI 图片/视频生成的低价 API 平台，GPT-Image-2 低至 $0.006/张，1 美元可生成 160+ 张图片。图片、视频一套异步 API 通吃：提交任务获取 ID，通过轮询或回调获取结果；批量生成上万张图片也不会超时，切换模型无需修改代码。按量付费、无月费，通过<a href="https://go.apimart.ai/gh-sub2api">此注册链接</a>注册即可开始使用。</td>
-</tr>
 
-<tr>
 <td width="180"><a href="https://www.axisnow.io/"><img src="assets/partners/logos/axisnow.jpg" alt="AxisNow" width="150"></a></td>
 <td>感谢 AxisNow 赞助了本项目！<a href="https://www.axisnow.io/">AxisNow</a> 保护并加速网站与 API，兼顾中国大陆及全球的访问体验，并通过客户端 SDK，将加速与安全能力延伸至原生/移动 App — <strong>自建私有部署 CDN</strong>｜<strong>订阅式高防 CDN</strong>｜<strong>自主可控、灵活组合的 CDN 网络</strong>。</td>
 </tr>
@@ -217,6 +222,16 @@ OpenAI OAuth 请求回放 `web_search_call` 历史时自动补全缓存专用 We
 <tr>
 <td width="180"><a href="https://soleapi.com/r/sub2api"><img src="assets/partners/logos/soleapi.png" alt="SoleAPI" width="150"></a></td>
 <td>感谢 <a href="https://soleapi.com/r/sub2api">SoleAPI</a> 对本项目的支持！SoleAPI 是面向开发者与企业的 AI 模型网关：一个 API Key 即可调用 Claude、GPT、Gemini 等 30+ 主流模型。原生兼容 OpenAI 与 Anthropic 协议，Claude Code、Codex、Cursor 及现有 SDK 只需修改 Base URL 即可接入。请求按延迟与上游健康度实时路由，毫秒级自动切换至备用通道，服务可用性达 99.99%，并提供 7×24 小时技术支持。所有调用统一账单结算，每次请求的 token 与费用明细随时可查。通过本项目的<a href="https://soleapi.com/r/sub2api">推荐链接</a>注册即可获得免费试用额度，邀请好友充值还可持续获得返现！</td>
+</tr>
+
+<tr>
+<td width="180"><a href="https://api.muteki.site/register?aff=Sub2"><img src="assets/partners/logos/marucode.jpg" alt="MaruCode" width="150"></a></td>
+<td><a href="https://api.muteki.site/register?aff=Sub2">MaruCode</a> 是一个小而简的 API 站点，偶尔也做点公益。🍟 每周四举办限时倍率活动。已运营半年多，主群 3K 人，专注稳定性，欢迎高校、企业等合作 — 感谢 🙇。站点为自营账号池，没有充值营销套路，主要提供 Codex（GPT 6.2 Astra）、Claude Code（Claude Opus 5.5）与 GPT Image 2.6 等主流模型，支持 WebSocket 协议，价格公开（Codex 0.3x、CC 1.7x），汇率透明（1:1）。</td>
+</tr>
+
+<tr>
+<td width="180"><a href="https://massivetokens.com/signup?ref=SUB2API"><img src="assets/partners/logos/massivetokens.jpg" alt="Massive Tokens" width="150"></a></td>
+<td><a href="https://massivetokens.com/signup?ref=SUB2API">Massive Tokens</a> 面向企业与高频开发者，按 token 批发价提供 Claude API 接入。它提供标准 Anthropic Messages API，因此 Claude Code、Sub2API、LiteLLM 与 One API 无需改代码即可使用。使用优惠码 SUB2API 注册，每次调用可享 5% 折扣。</td>
 </tr>
 
 </table>
@@ -805,7 +820,17 @@ go generate -tags wireinject ./cmd/server
 
 支持 `gpt-image-2.5-flare`、`gpt-image-2.5-sunburst` 及其 `2026-09-08` 日期快照，可通过 `/v1/images/generations`、`/v1/images/edits` 调用。`quality` 支持 `xhigh`、`max`、`auto`，合法自定义尺寸和图片 usage 明细保持透传。
 
-OAuth / Setup Token 图片请求使用 Responses 主控模型调用 `image_generation` 工具，默认主控为 `gpt-5.6-luna`。可设置 `SUB2API_IMAGES_MAIN_MODEL` 切换为账号支持的文本模型；Docker Compose 用户修改 `.env` 后执行 `docker compose up -d` 重建容器。该配置不会替换所选图片模型，也不会覆盖 `/v1/responses` 请求中已经提供的文本主控模型。
+### 图片输出格式与端点选择
+
+`/v1/images/generations` 与 `/v1/images/edits` 的 OAuth / Setup Token 请求在映射后的上游模型属于已支持的 GPT Image 1.5、2、2.5、2.6 时，使用 Codex 原生 Images 端点；其中 2.6 模型只能走原生端点，2.6 之前的模型在原生端点返回 404 或 405 时回落到 Responses。
+
+Sub2API 会转发 `output_format` 与 `output_compression`，但是否生效取决于上游账号与端点。上游可能以 4xx 拒绝某个格式，也可能返回 HTTP 200 却给出不同格式：例如请求 `jpeg` 或 `svg` 时可能得到 `output_format: "png"` 与 PNG 数据，针对 `jpeg` 的 `gpt-image-2.5-flare` 请求也出现过该现象。
+
+保存或返回图片前，请比较响应中的 `output_format`（含逐图字段）与请求值，并以实际图片格式设置文件扩展名与 MIME 类型。返回格式与请求不一致的成功响应仍保留原状态码、图片内容与用量，且可能照常计费；自动重试可能再次生成并计费一张图片。
+
+### Responses 主控模型
+
+未走原生端点的图片请求通过 Responses 主控模型调用 `image_generation` 工具，默认主控为 `gpt-5.6-luna`。可设置 `SUB2API_IMAGES_MAIN_MODEL` 切换为账号支持的文本模型；Docker Compose 用户修改 `.env` 后执行 `docker compose up -d` 重建容器。该配置不会替换所选图片模型，也不会覆盖 `/v1/responses` 请求中已经提供的文本主控模型。
 
 升级后，无模型限制的账号自动支持新模型。已有显式账号映射或分组白名单需要加入两个 2.5 模型（日期快照按需加入）；升级不会自动扩大管理员设置的模型权限。新模型内置价格包含官方文本输入、图片输入和图片输出 token 费率，远端价格表尚未更新时使用内置 2.5 价格；实际按次或按 token 计费仍由既有分组/渠道配置决定。
 

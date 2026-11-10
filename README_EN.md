@@ -26,6 +26,15 @@ The account list keeps direct integer priority editing (Enter or blur saves) and
 
 After configuring concrete model mappings in an OpenAI account's editor, **Test Connection** includes the public names on the left even when their targets are absent from the upstream `/models` catalog. Requests keep the configured targets, including subscription routes. This applies to API key and OAuth accounts without an extra switch. Wildcard rules do not become concrete choices, and passthrough keeps using the upstream catalog. Public model discovery remains filtered by upstream availability; the actual test request determines whether a configured model works.
 
+## Upstream 0.2.20 Compatibility
+
+This release integrates upstream's OpenAI image output-format documentation, an adaptive gateway request-body memory budget, OpenAI billing fixes, and Antigravity usage refresh. Release images keep Go `1.27.3`, Node.js `24`, and Vue I18n `11`; the code-generation baseline is unchanged (`wire_gen.go` remains untracked and is generated during the image build).
+
+- **OpenAI image endpoints and output formats**: `/v1/images/generations` and `/v1/images/edits` OAuth / Setup Token requests use the Codex-native Images endpoints when the mapped model is a supported GPT Image 1.5, 2, 2.5, or 2.6. GPT Image 2.6 models must use the native endpoint; models before 2.6 can fall back to Responses on 404/405. `output_format` and `output_compression` are forwarded only, and whether they take effect depends on the upstream account and endpoint. A response may return a different format while keeping HTTP 200, the image, and its usage, and it can still be billed; automatic retries may bill another image. See [OpenAI Image Models](#openai-image-models).
+- **Adaptive gateway request-body memory budget**: when `gateway.request_body_memory_budget_bytes` (env `GATEWAY_REQUEST_BODY_MEMORY_BUDGET_BYTES`) is unset, the budget is auto-sized to one quarter of the process memory limit, taking the minimum of physical RAM, the cgroup v1/v2 limit, and `GOMEMLIMIT`, and never below 1 GiB. Explicit values, including `0`, are used as-is. The previous fixed 1 GiB returned 503 `Request body buffering capacity is exhausted` early under high concurrency with large requests.
+- **OpenAI billing fixes**: the Fast multiplier is retained when input prices are zero, and cache-write TTLs are preserved in usage and billing. The upgrade includes migration `250_openai_cache_write_ttl.sql`.
+- **Antigravity usage refresh**: the account usage cell gains a query button that bypasses the in-memory cache, and the server no longer ignores `force=true` for these accounts.
+
 ## Upstream 0.2.19 Compatibility
 
 This release integrates upstream MCP management and security fixes. Source and release images use Go `1.27.3`, Node.js `24`, and Vue I18n `11`. MCP is disabled by default; configure `MCP_PUBLIC_URL=https://your-domain/api/v1/mcp` to enable it. Production requires HTTPS, and clients connect through browser OAuth authorization; see the [MCP deployment and permission guide](docs/mcp.md). Account filters retain full browser persistence and URL `search` precedence, with validation of stored platform and status values.
@@ -87,8 +96,8 @@ Please read the following carefully before using this project:
 </tr>
 
 <tr>
-<td width="180"><a href="https://aigocode.com/invite/SUB2API"><img src="assets/partners/logos/aigocode.png" alt="AIGoCode" width="150"></a></td>
-<td>Thanks to AIGoCode for sponsoring this project! AIGoCode is an all-in-one platform that integrates Claude Code, Codex, and the latest Gemini models, providing you with stable, efficient, and highly cost-effective AI coding services. The platform offers flexible subscription plans, zero risk of account suspension, direct access with no VPN required, and lightning-fast responses. AIGoCode has prepared a special benefit for sub2api users: if you register via <a href="https://aigocode.com/invite/SUB2API">this link</a>, you'll receive an extra 10% bonus credit on your first top-up!</td>
+<td width="180"><a href="https://api.aigocode.dev/invite/SUB2API"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/partners/logos/aigocode-dark.png"><img src="assets/partners/logos/aigocode.png" alt="AIGoCode" width="150"></picture></a></td>
+<td>Thanks to AIGoCode for sponsoring this project! A subscription-based AI coding platform, not just pay-per-token. One account, one monthly plan for Claude Code, Codex and Gemini, with direct connection on the mainland and fast responses. Subscribe via <a href="https://api.aigocode.dev/invite/SUB2API">this link</a> to get an extra 10% credits!</td>
 </tr>
 
 <tr>
@@ -182,11 +191,6 @@ Please read the following carefully before using this project:
 </tr>
 
 <tr>
-<td width="180"><a href="https://go.apimart.ai/gh-sub2api"><img src="assets/partners/logos/apimart.jpg" alt="APIMart" width="150"></a></td>
-<td>Thanks to APIMart for sponsoring this project! <a href="https://go.apimart.ai/gh-sub2api">APIMart</a> is a low-cost API platform for AI image and video generation — GPT-Image-2 from $0.006 per image, with 160+ images per dollar. One async API covers both image and video: submit a task, get an ID, and retrieve results via polling or callback. Batch tens of thousands of images without timeouts, and switch models without changing code. Pay as you go with no monthly fee — <a href="https://go.apimart.ai/gh-sub2api">sign up here</a> to get started.</td>
-</tr>
-
-<tr>
 <td width="180"><a href="https://www.axisnow.io/"><img src="assets/partners/logos/axisnow.jpg" alt="AxisNow" width="150"></a></td>
 <td>Thanks to AxisNow for sponsoring this project! <a href="https://www.axisnow.io/">AxisNow</a> protects and accelerates websites and APIs across mainland China and globally. Client SDKs extend acceleration and security to native/mobile apps, with self-hosted private CDN deployments, subscription DDoS-protected CDN services, and flexible, independently controlled CDN networks.</td>
 </tr>
@@ -199,6 +203,16 @@ Please read the following carefully before using this project:
 <tr>
 <td width="180"><a href="https://colaproxy.com/?utm_source=sub2api&utm_medium=sub2api&ref=sub2api"><img src="assets/partners/logos/cola-proxy.jpg" alt="ColaProxy" width="150"></a></td>
 <td>ColaProxy provides residential proxies for web scraping, automation, and multi-account management, with a free trial, non-expiring traffic, prices from $0.3/GB, unlimited concurrent connections, and intelligent IP rotation. Use code COLA10 for 10% off. <a href="https://colaproxy.com/?utm_source=sub2api&utm_medium=sub2api&ref=sub2api">Get started with ColaProxy</a>.</td>
+</tr>
+
+<tr>
+<td width="180"><a href="https://api.muteki.site/register?aff=Sub2"><img src="assets/partners/logos/marucode.jpg" alt="MaruCode" width="150"></a></td>
+<td><a href="https://api.muteki.site/register?aff=Sub2">MaruCode</a> — a small, no-frills API site that does a bit of charity now and then. 🍟 Every Thursday it runs limited-time rate-multiplier events. In operation for over half a year, with a 3K-member main group, focused on stability and welcoming collaboration with universities, enterprises, and more — thank you 🙇. It runs a self-operated account pool with no top-up marketing gimmicks, mainly offering mainstream models such as Codex (GPT 6.2 Astra), Claude Code (Claude Opus 5.5), and GPT Image 2.6, with WebSocket protocol support, clearly published pricing (Codex 0.3x, CC 1.7x), and a transparent exchange rate (1:1).</td>
+</tr>
+
+<tr>
+<td width="180"><a href="https://massivetokens.com/signup?ref=SUB2API"><img src="assets/partners/logos/massivetokens.jpg" alt="Massive Tokens" width="150"></a></td>
+<td><a href="https://massivetokens.com/signup?ref=SUB2API">Massive Tokens</a> supplies Claude API access at wholesale per-token prices to businesses and high-volume developers. It serves the standard Anthropic Messages API, so it works with Claude Code, Sub2API, LiteLLM and One API without code changes. Sign up with code SUB2API for 5% off every call.</td>
 </tr>
 
 </table>
@@ -804,7 +818,17 @@ The root `Dockerfile` regenerates Ent and Wire before compiling. `remote-docker`
 
 `gpt-image-2.5-flare`, `gpt-image-2.5-sunburst`, and their `2026-09-08` snapshots are available through `/v1/images/generations` and `/v1/images/edits`. Supported quality values include `xhigh`, `max`, and `auto`; valid custom sizes and image usage details pass through.
 
-OAuth / Setup Token image requests invoke the `image_generation` tool through a Responses controller model, defaulting to `gpt-5.6-luna`. Set `SUB2API_IMAGES_MAIN_MODEL` to another text model supported by the account; Compose users must recreate the container with `docker compose up -d` after updating `.env`. This does not replace the selected image model or override an explicit text controller in `/v1/responses` requests.
+### Image Output Formats
+
+On `/v1/images/generations` and `/v1/images/edits`, OAuth / Setup Token requests use the Codex-native Images endpoints when the mapped upstream model is a supported GPT Image 1.5, 2, 2.5, or 2.6 model. GPT Image 2.6 models must use the native endpoint; models before 2.6 can fall back to Responses if the native endpoint returns 404 or 405.
+
+Sub2API forwards `output_format` and `output_compression`, but whether they take effect depends on the upstream account and endpoint. An upstream may reject a format with a 4xx error or return HTTP 200 with a different format: for example, requesting `jpeg` or `svg` can yield `output_format: "png"` and PNG data. This behavior has also been reported for `gpt-image-2.5-flare` requests for `jpeg`.
+
+Before saving or serving an image, compare the returned `output_format` (including any per-image value) with the request and verify the actual image format. Use the actual output format for the filename extension and MIME type. A successful response containing a different format retains its status, image content, and usage; it can still incur charges. Automatically retrying may generate and bill another image.
+
+### Responses Controller Model
+
+OAuth / Setup Token image requests that do not use the native endpoints invoke the `image_generation` tool through a Responses controller model, defaulting to `gpt-5.6-luna`. Set `SUB2API_IMAGES_MAIN_MODEL` to another text model supported by the account; Compose users must recreate the container with `docker compose up -d` after updating `.env`. This does not replace the selected image model or override an explicit text controller in `/v1/responses` requests.
 
 Unrestricted accounts gain access on upgrade. Explicit account mappings and group allowlists must include the two 2.5 models (snapshots as needed); upgrades do not broaden administrator-defined permissions. Built-in pricing covers text input, image input, and image output tokens and is used when remote pricing lacks these models. Existing group/channel settings still determine per-request or per-token billing.
 
